@@ -644,11 +644,3 @@ SEC("kprobe/tcp_parse_options")
 int BPF_KPROBE(tcp_parse_options, const struct sk_buff *skb, struct tcp_options_received *opt_rx) {
     return 0;
 }
-
-
-SEC("kretprobe/tcp_parse_options")
-int BPF_KRETPROBE(tcp_parse_options, const struct sk_buff *skb, struct tcp_options_received *opt_rx)
-{
-    //u32 rcv_tsval = BPF_CORE_READ(opt_rx, rcv_tsval);
-    return 0;       
-};
