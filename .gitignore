@@ -8,6 +8,8 @@
 ./bpftool/*
 ./libbpf/*
 
+# generate skel code
+./src-gen/*
 
 # Prerequisites
 *.d

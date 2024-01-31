@@ -154,10 +154,14 @@ else()
 endif()
 
 # Public macro
-macro(bpf_object name input)
+macro(bpf_object name input src_gen_dir)
   set(BPF_C_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${input})
   set(BPF_O_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.bpf.o)
-  set(BPF_SKEL_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.skel.h)
+
+  # fzy 修改 ----------------------------------------------------------------------------
+  #set(BPF_SKEL_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.skel.h)
+  set(BPF_SKEL_FILE_IN_SRC_GEN ${src_gen_dir}/${name}.skel.h)
+  # -------------------------------------------------------------------------------------
   set(OUTPUT_TARGET ${name}_skel)
 
   # Build BPF object file
@@ -171,14 +175,20 @@ macro(bpf_object name input)
     COMMENT "[clang] Building BPF object: ${name}")
 
   # Build BPF skeleton header
-  add_custom_command(OUTPUT ${BPF_SKEL_FILE}
-    COMMAND bash -c "${BPFOBJECT_BPFTOOL_EXE} gen skeleton ${BPF_O_FILE} > ${BPF_SKEL_FILE}"
+  # fzy 修改 ----------------------------------------------------------------------------
+  # add_custom_command(OUTPUT ${BPF_SKEL_FILE}
+  # COMMAND bash -c "${BPFOBJECT_BPFTOOL_EXE} gen skeleton ${BPF_O_FILE} > ${BPF_SKEL_FILE}"
+  add_custom_command(OUTPUT ${BPF_SKEL_FILE_IN_SRC_GEN}
+    COMMAND bash -c "${BPFOBJECT_BPFTOOL_EXE} gen skeleton ${BPF_O_FILE} > ${BPF_SKEL_FILE_IN_SRC_GEN}"
     VERBATIM
     DEPENDS ${BPF_O_FILE}
     COMMENT "[skel]  Building BPF skeleton: ${name}")
 
   add_library(${OUTPUT_TARGET} INTERFACE)
-  target_sources(${OUTPUT_TARGET} INTERFACE ${BPF_SKEL_FILE})
+  # fzy 修改 ----------------------------------------------------------------------------
+  # target_sources(${OUTPUT_TARGET} INTERFACE ${BPF_SKEL_FILE})
+  target_sources(${OUTPUT_TARGET} INTERFACE ${BPF_SKEL_FILE_IN_SRC_GEN})
+  # ------------------------------------------------------------------------------------
   target_include_directories(${OUTPUT_TARGET} INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
   target_include_directories(${OUTPUT_TARGET} SYSTEM INTERFACE ${LIBBPF_INCLUDE_DIRS})
   target_link_libraries(${OUTPUT_TARGET} INTERFACE ${LIBBPF_LIBRARIES} -lelf -lz)

@@ -7,7 +7,7 @@
 #include <sys/resource.h>
 #include <bpf/libbpf.h>
 #include "procstat.h"
-#include "procstat.skel.h"
+#include "memory/procstat.skel.h"
 #include <sys/select.h>
 #include <unistd.h>
 

@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 
 #include "delay_analysis.h"
-#include "delay_analysis.skel.h"
+#include "net/delay_analysis.skel.h"
 
 static volatile bool exiting = false;
 
