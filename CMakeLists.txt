@@ -6,17 +6,13 @@ set(CMAKE_CXX_COMPILER /usr/bin/clang)
 set(PROJECT_NAME MagicEyes)
 project(${PROJECT_NAME})
 
-# ---------------------------------
-# set(OS_PLATFORM "linux")
-# set(OS_ARCH "x86_64")     # x86_64、 aarch64
 # 创建代码生成目录，后面生成的skel代码均放在这里
 set(CONFIG_SRC_GEN_DIR ${CMAKE_SOURCE_DIR}/src-gen)
 if (NOT EXISTS ${CONFIG_SRC_GEN_DIR})
-    message(STATUS "src-gen文件夹不存在，将创建")
+    message(STATUS "src-gen文件夹不存在，准备创建")
     file(MAKE_DIRECTORY ${CONFIG_SRC_GEN_DIR})
 endif ()
 include_directories(${CONFIG_SRC_GEN_DIR})
-# ---------------------------------
 
 # 该项目仅支持Linux
 if (NOT DEFINED OS_PLATFORM)
@@ -64,7 +60,7 @@ ExternalProject_Add(bpftool
         INSTALL_COMMAND ""
         STEP_TARGETS build
 )
-# Rust语言用
+# Rust语言用，Rust需要编译 blazesym
 find_program(CARGO_EXISTS cargo)
 if(CARGO_EXISTS)
     ExternalProject_Add(blazesym
@@ -109,13 +105,8 @@ set(LIBBPF_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libbpf)
 set(LIBBPF_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/libbpf/libbpf.a)
 
 find_package(BpfObject REQUIRED)
-if (BpfObject_FOUND)
-    message(STATUS "find package : BpfObject")
+if (NOT BpfObject_FOUND)
+    message(STATUS "BpfObject not found, please check")
 endif ()
 
 add_subdirectory(src)
-
-
-
-# TODO
-# 新建src-gen文件夹，存放生成的skel代码

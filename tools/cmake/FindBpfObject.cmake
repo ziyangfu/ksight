@@ -100,6 +100,9 @@ endif()
 
 if(BPFOBJECT_VMLINUX_H)
   get_filename_component(GENERATED_VMLINUX_DIR ${BPFOBJECT_VMLINUX_H} DIRECTORY)
+  # fzy 修改 ----------------------------------------------------------------------------
+  include_directories(${GENERATED_VMLINUX_DIR})
+  # -------------------------------------------------------------------------------------
 elseif(BPFOBJECT_BPFTOOL_EXE)
   # Generate vmlinux.h
   set(GENERATED_VMLINUX_DIR ${CMAKE_CURRENT_BINARY_DIR})

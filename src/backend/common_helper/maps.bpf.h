@@ -6,8 +6,6 @@
 #include <bpf/bpf_helpers.h>
 #include <asm-generic/errno.h>
 
-#define AF_INET	2
-
 static __always_inline void *
 bpf_map_lookup_or_try_init(void *map, const void *key, const void *init)
 {
