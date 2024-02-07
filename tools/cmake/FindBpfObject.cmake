@@ -168,9 +168,10 @@ macro(bpf_object name input src_gen_dir)
   set(OUTPUT_TARGET ${name}_skel)
 
   # Build BPF object file
+  # fzy modified , add -I${BPF_COMMON_FILES_DIR}, because of add some help source file in this dir
   add_custom_command(OUTPUT ${BPF_O_FILE}
     COMMAND ${BPFOBJECT_CLANG_EXE} -g -O2 -target bpf -D__TARGET_ARCH_${ARCH}
-            ${CLANG_SYSTEM_INCLUDES} -I${GENERATED_VMLINUX_DIR}
+            ${CLANG_SYSTEM_INCLUDES} -I${GENERATED_VMLINUX_DIR} -I${BPF_COMMON_FILES_DIR}
             -isystem ${LIBBPF_INCLUDE_DIRS} -c ${BPF_C_FILE} -o ${BPF_O_FILE}
     COMMAND_EXPAND_LISTS
     VERBATIM

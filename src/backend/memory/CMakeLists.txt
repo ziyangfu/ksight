@@ -12,16 +12,17 @@ list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/sysstat.bpf.c)
 
 
 # 设置并创建  <>/src-gen/memory文件夹
-set(NET_SRC_MEM_DIR ${CONFIG_SRC_GEN_DIR}/memory)
-if (NOT EXISTS ${NET_SRC_MEM_DIR})
-    file(MAKE_DIRECTORY ${NET_SRC_MEM_DIR})
+set(SRC_GEN_MEM_DIR ${CONFIG_SRC_GEN_DIR}/memory)
+if (NOT EXISTS ${SRC_GEN_MEM_DIR})
+    file(MAKE_DIRECTORY ${SRC_GEN_MEM_DIR})
+    message(STATUS "create memory directory success")
 endif ()
 # 遍历文件夹内所有的bpf.c
 foreach(app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
 
     # Build object skeleton and depend skeleton on libbpf build
-    bpf_object(${app_stem} ${app_stem}.bpf.c ${NET_SRC_MEM_DIR})
+    bpf_object(${app_stem} ${app_stem}.bpf.c ${SRC_GEN_MEM_DIR})
     add_dependencies(${app_stem}_skel libbpf-build bpftool-build)
 
     add_executable(${app_stem} ${app_stem}.c)

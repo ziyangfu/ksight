@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
-# 使用clang编译器
-set(CMAKE_C_COMPILER /usr/bin/clang)
-set(CMAKE_CXX_COMPILER /usr/bin/clang)
+
+# 使用clang编译器，实际后面set(BPFOBJECT_CLANG_EXE clang)设置后，FindBpfObject.cmake中会判断查找
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang)
 
 set(PROJECT_NAME MagicEyes)
 project(${PROJECT_NAME})
@@ -13,6 +14,11 @@ if (NOT EXISTS ${CONFIG_SRC_GEN_DIR})
     file(MAKE_DIRECTORY ${CONFIG_SRC_GEN_DIR})
 endif ()
 include_directories(${CONFIG_SRC_GEN_DIR})
+
+# inlcude backend common source file
+set(BPF_COMMON_FILES_DIR ${CMAKE_SOURCE_DIR}/src/backend/common_helper)
+File(GLOB BPF_COMMON_FILES ${BPF_COMMON_FILES_DIR})
+include_directories(${BPF_COMMON_FILES_DIR})
 
 # 该项目仅支持Linux
 if (NOT DEFINED OS_PLATFORM)
@@ -103,6 +109,8 @@ set(BPFOBJECT_BPFTOOL_EXE ${CMAKE_CURRENT_BINARY_DIR}/bpftool/bootstrap/bpftool)
 set(BPFOBJECT_VMLINUX_H ${CMAKE_SOURCE_DIR}/vmlinux/${ARCH}/vmlinux.h)
 set(LIBBPF_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libbpf)
 set(LIBBPF_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/libbpf/libbpf.a)
+
+set(BPFOBJECT_CLANG_EXE clang)
 
 find_package(BpfObject REQUIRED)
 if (NOT BpfObject_FOUND)
