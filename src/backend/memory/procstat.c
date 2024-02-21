@@ -62,7 +62,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 static const struct argp argp = {
 	.options = opts,
 	.parser = parse_arg,
-	//        .doc = argp_program_doc,
+	//        .docs = argp_program_doc,
 };
 
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args)

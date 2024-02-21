@@ -16,7 +16,7 @@ endif ()
 include_directories(${CONFIG_SRC_GEN_DIR})
 
 # inlcude backend common source file
-set(BPF_COMMON_FILES_DIR ${CMAKE_SOURCE_DIR}/src/backend/common_helper)
+set(BPF_COMMON_FILES_DIR ${CMAKE_SOURCE_DIR}/src/backend/bpf_common_helper)
 File(GLOB BPF_COMMON_FILES ${BPF_COMMON_FILES_DIR})
 include_directories(${BPF_COMMON_FILES_DIR})
 
