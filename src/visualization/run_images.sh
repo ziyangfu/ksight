@@ -3,12 +3,12 @@
 # 拷贝自：https://github.com/linuxkerneltravel/lmp/blob/develop/eBPF_Visualization/eBPF_prometheus/runimages.sh
 # ------------------------------------------------------------
 # 定义镜像名
-prometheus_iamge="prom/prometheus"
-grafana_iamge="grafana/grafana-enterprise"
+prometheus_image="prom/prometheus"
+grafana_image="grafana/grafana-enterprise"
 
 # 使用 docker ps 命令列出所有容器的 ID，过滤出指定镜像的容器
-prometheus_info=$(sudo docker ps -a -q --filter "ancestor=$prometheus_iamge")
-grafana_info=$(sudo docker ps -a -q --filter "ancestor=$grafana_iamge")
+prometheus_info=$(sudo docker ps -a -q --filter "ancestor=$prometheus_image")
+grafana_info=$(sudo docker ps -a -q --filter "ancestor=$grafana_image")
 
 # 检查 Prometheus 容器是否存在
 if [ -n "$prometheus_info" ]; then
