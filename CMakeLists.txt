@@ -1,8 +1,27 @@
+# \copyright
+# Copyright (c) 2024 by the lmp/magic_eyes project authors. All Rights Reserved.
+#
+# This file is open source software, licensed to you under the terms
+# of the Apache License, Version 2.0 (the "License").  See the NOTICE file
+# distributed with this work for additional information regarding copyright
+# ownership.  You may not use this file except in compliance with the License.
+# You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+# -----------------------------------------------------------------------------------------
+# \brief
+#      magic_eyes 顶层 CMakeLists 文件
+# -----------------------------------------------------------------------------------------
+
 cmake_minimum_required(VERSION 3.16)
 
 # 使用clang编译器，实际后面set(BPFOBJECT_CLANG_EXE clang)设置后，FindBpfObject.cmake中会判断查找
-set(CMAKE_C_COMPILER clang)
-set(CMAKE_CXX_COMPILER clang)
+set(COMPILE_DIR /home/fzy/opt/GCC_ARM/gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu/bin)
+
+set(CMAKE_C_COMPILER ${COMPILE_DIR}/aarch64-none-linux-gnu-gcc)
+set(CMAKE_CXX_COMPILER ${COMPILE_DIR}/aarch64-none-linux-gnu-g++)
+set(CMAKE_SYSTEM_PROCESSOR "aarch64")
+
+#set(CMAKE_C_COMPILER clang)
+#set(CMAKE_CXX_COMPILER clang)
 
 set(PROJECT_NAME MagicEyes)
 project(${PROJECT_NAME})
@@ -14,6 +33,12 @@ if (NOT EXISTS ${CONFIG_SRC_GEN_DIR})
     file(MAKE_DIRECTORY ${CONFIG_SRC_GEN_DIR})
 endif ()
 include_directories(${CONFIG_SRC_GEN_DIR})
+
+# 修改默认安装路径为 <build_dir>/install，可通过 cmake -DCMAKE_INSTALL_PREFIX=<install_dir> 修改路径
+if (${CMAKE_INSTALL_PREFIX} STREQUAL "/usr/local")
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install/)
+endif ()
+message(STATUS "install directory： ${CMAKE_INSTALL_PREFIX}")
 
 # inlcude backend common source file
 set(BPF_COMMON_FILES_DIR ${CMAKE_SOURCE_DIR}/src/backend/bpf_common_helper)
@@ -117,4 +142,5 @@ if (NOT BpfObject_FOUND)
     message(STATUS "BpfObject not found, please check")
 endif ()
 
-add_subdirectory(src)
+add_subdirectory(src/backend)
+add_subdirectory(src/bridge)

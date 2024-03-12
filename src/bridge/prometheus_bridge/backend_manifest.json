@@ -1,0 +1,35 @@
+{
+  "net": [
+    {
+      "name": "delay_analysis",
+      "command": "./delay_analysis",
+      "params": 0
+    }
+  ],
+  "fs": [
+    {
+      "name": "vfsstat",
+      "command": "./vfsstat",
+      "params": 0
+    }
+  ],
+  "memory": [
+    {
+      "name": "oomkiller",
+      "command": "./oomkill",
+      "params": 0
+    },
+    {
+      "name": "mem_leak",
+      "command": "./mem_leak",
+      "params": 0
+    }
+  ],
+  "process": [
+    {
+      "name": "proc_image",
+      "command": "./proc_image",
+      "params": 0
+    }
+  ]
+}
