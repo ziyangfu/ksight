@@ -8,44 +8,17 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      magic_eyes 顶层 CMakeLists 文件
+#      lmp/magic_eyes 顶层 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
+cmake_minimum_required(VERSION 3.10)
 
-cmake_minimum_required(VERSION 3.16)
-
-# 使用clang编译器，实际后面set(BPFOBJECT_CLANG_EXE clang)设置后，FindBpfObject.cmake中会判断查找
-set(COMPILE_DIR /home/fzy/opt/GCC_ARM/gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu/bin)
-
-set(CMAKE_C_COMPILER ${COMPILE_DIR}/aarch64-none-linux-gnu-gcc)
-set(CMAKE_CXX_COMPILER ${COMPILE_DIR}/aarch64-none-linux-gnu-g++)
-set(CMAKE_SYSTEM_PROCESSOR "aarch64")
-
-#set(CMAKE_C_COMPILER clang)
-#set(CMAKE_CXX_COMPILER clang)
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang++)
 
 set(PROJECT_NAME MagicEyes)
 project(${PROJECT_NAME})
 
-# 创建代码生成目录，后面生成的skel代码均放在这里
-set(CONFIG_SRC_GEN_DIR ${CMAKE_SOURCE_DIR}/src-gen)
-if (NOT EXISTS ${CONFIG_SRC_GEN_DIR})
-    message(STATUS "src-gen文件夹不存在，准备创建")
-    file(MAKE_DIRECTORY ${CONFIG_SRC_GEN_DIR})
-endif ()
-include_directories(${CONFIG_SRC_GEN_DIR})
-
-# 修改默认安装路径为 <build_dir>/install，可通过 cmake -DCMAKE_INSTALL_PREFIX=<install_dir> 修改路径
-if (${CMAKE_INSTALL_PREFIX} STREQUAL "/usr/local")
-    set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install/)
-endif ()
-message(STATUS "install directory： ${CMAKE_INSTALL_PREFIX}")
-
-# inlcude backend common source file
-set(BPF_COMMON_FILES_DIR ${CMAKE_SOURCE_DIR}/src/backend/bpf_common_helper)
-File(GLOB BPF_COMMON_FILES ${BPF_COMMON_FILES_DIR})
-include_directories(${BPF_COMMON_FILES_DIR})
-
-# 该项目仅支持Linux
+# 查看目标系统，目前仅支持Linux
 if (NOT DEFINED OS_PLATFORM)
     string(TOLOWER ${CMAKE_SYSTEM_NAME} OS_PLATFORM)
 endif ()
@@ -56,6 +29,53 @@ if (OS_PLATFORM MATCHES "linux")
 else ()
     message(SEND_ERROR "${PROJECT_NAME} only support Linux platform now")
 endif ()
+# 查看CPU架构
+if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
+    set(ARCH "x86")
+elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+    set(ARCH "arm")
+elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+    set(ARCH "arm64")
+elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64le")
+    set(ARCH "powerpc")
+elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips")
+    set(ARCH "mips")
+elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "riscv64")
+    set(ARCH "riscv")
+elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "loongarch64")
+    set(ARCH "loongarch")
+endif()
+# 判断CPU架构
+# if (NOT DEFINED OS_ARCH)
+#    string(TOLOWER ${CMAKE_HOST_SYSTEM_PROCESSOR} OS_ARCH)
+#    message(STATUS "${PROJECT_NAME} running in OS ARCH： ${OS_ARCH}")
+#else ()
+#    message(STATUS "${PROJECT_NAME} will running in OS ARCH： ${OS_ARCH}")
+# endif ()
+
+# 创建代码生成目录，后面生成的skel代码均放在这里
+set(CONFIG_SRC_GEN_DIR ${CMAKE_SOURCE_DIR}/src-gen)
+if (NOT EXISTS ${CONFIG_SRC_GEN_DIR})
+    message(STATUS "src-gen文件夹不存在，准备创建")
+    file(MAKE_DIRECTORY ${CONFIG_SRC_GEN_DIR})
+endif ()
+include_directories(${CONFIG_SRC_GEN_DIR})
+
+# 修改默认安装路径为 <build_dir>/install而不是/usr/local
+# 可通过 cmake -DCMAKE_INSTALL_PREFIX=<install_dir> 修改路径
+if (${CMAKE_INSTALL_PREFIX} STREQUAL "/usr/local")
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install/)
+endif ()
+message(STATUS "install directory： ${CMAKE_INSTALL_PREFIX}")
+
+# include backend common source file
+set(BPF_COMMON_FILES_DIR ${CMAKE_SOURCE_DIR}/src/backend/bpf_common_helper)
+file(GLOB BPF_COMMON_FILES ${BPF_COMMON_FILES_DIR})
+include_directories(${BPF_COMMON_FILES_DIR})
+# include component source file
+set(PROJECT_COMPONENT_FILES_DIR ${CMAKE_SOURCE_DIR}/src/backend/component_helper)
+file(GLOB PROJECT_COMPONENT_FILES ${PROJECT_COMPONENT_FILES_DIR})
+include_directories(${PROJECT_COMPONENT_FILES_DIR})
 
 # Tell cmake where to find BpfObject module
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/tools/cmake)
@@ -104,37 +124,11 @@ if(CARGO_EXISTS)
             STEP_TARGETS build
     )
 endif()
-# Set BpfObject input parameters -- note this is usually not necessary unless
-# you're in a highly vendored environment (like libbpf-bootstrap)
-# CPU架构
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
-    set(ARCH "x86")
-elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-    set(ARCH "arm")
-elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
-    set(ARCH "arm64")
-elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64le")
-    set(ARCH "powerpc")
-elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips")
-    set(ARCH "mips")
-elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "riscv64")
-    set(ARCH "riscv")
-elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "loongarch64")
-    set(ARCH "loongarch")
-endif()
-# 判断CPU架构
-# if (NOT DEFINED OS_ARCH)
-#    string(TOLOWER ${CMAKE_HOST_SYSTEM_PROCESSOR} OS_ARCH)
-#    message(STATUS "${PROJECT_NAME} running in OS ARCH： ${OS_ARCH}")
-#else ()
-#    message(STATUS "${PROJECT_NAME} will running in OS ARCH： ${OS_ARCH}")
-# endif ()
 
 set(BPFOBJECT_BPFTOOL_EXE ${CMAKE_CURRENT_BINARY_DIR}/bpftool/bootstrap/bpftool)
 set(BPFOBJECT_VMLINUX_H ${CMAKE_SOURCE_DIR}/vmlinux/${ARCH}/vmlinux.h)
 set(LIBBPF_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libbpf)
 set(LIBBPF_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/libbpf/libbpf.a)
-
 set(BPFOBJECT_CLANG_EXE clang)
 
 find_package(BpfObject REQUIRED)

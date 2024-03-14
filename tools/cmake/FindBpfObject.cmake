@@ -156,10 +156,12 @@ else()
   message(FATAL_ERROR "Failed to determine target architecture: ${ARCH_error}")
 endif()
 
-# Public macro
+# 将 *.bpf.c 使用clang编译成 *.o，然后将 *.o 使用 bpftool 转换为 *.skel.h
 macro(bpf_object name input src_gen_dir)
-  set(BPF_C_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${input})
+  set(BPF_C_FILE ${CMAKE_CURRENT_SOURCE_DIR}/bpf/${input})
   set(BPF_O_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.bpf.o)
+  # bpf/*.bpf.c文件需要用到的头文件目录，一般为 <tool>/include目录
+  set(BPF_PROJECT_SPECIAL_HEADER_FILES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
   # fzy 修改 ----------------------------------------------------------------------------
   #set(BPF_SKEL_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.skel.h)
@@ -172,6 +174,7 @@ macro(bpf_object name input src_gen_dir)
   add_custom_command(OUTPUT ${BPF_O_FILE}
     COMMAND ${BPFOBJECT_CLANG_EXE} -g -O2 -target bpf -D__TARGET_ARCH_${ARCH}
             ${CLANG_SYSTEM_INCLUDES} -I${GENERATED_VMLINUX_DIR} -I${BPF_COMMON_FILES_DIR}
+            -I${BPF_PROJECT_SPECIAL_HEADER_FILES_DIR}
             -isystem ${LIBBPF_INCLUDE_DIRS} -c ${BPF_C_FILE} -o ${BPF_O_FILE}
     COMMAND_EXPAND_LISTS
     VERBATIM
