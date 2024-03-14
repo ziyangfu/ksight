@@ -1,37 +1,56 @@
-# 遍历文件夹内所有的 .bpf.c
-file(GLOB apps *.bpf.c)
+# \copyright
+# Copyright (c) 2024 by the lmp/magic_eyes project authors. All Rights Reserved.
+#
+# This file is open source software, licensed to you under the terms
+# of the Apache License, Version 2.0 (the "License").  See the NOTICE file
+# distributed with this work for additional information regarding copyright
+# ownership.  You may not use this file except in compliance with the License.
+# You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+# -----------------------------------------------------------------------------------------
+# \brief
+#      delay_analysis 工具 CMakeLists 文件
+# -----------------------------------------------------------------------------------------
+set(TOOL_NAME delay_analysis)
+set(TOOL_BELONG_TO_MODULE net)
+
+file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
+# 若不用Rust，则排除 profile.bpf.c
 if(NOT CARGO_EXISTS)
-    list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/profile.bpf.c)   # 排除掉profile.bpf.c
+    list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/profile.bpf.c)
 endif()
-# 设置并创建  <>/src-gen/net文件夹
-set(NET_SRC_GEN_DIR ${CONFIG_SRC_GEN_DIR}/net)
-if (NOT EXISTS ${NET_SRC_GEN_DIR})
-    file(MAKE_DIRECTORY ${NET_SRC_GEN_DIR})
+
+# 设置并创建  <>/src-gen/TOOL_BELONG_TO_MODULE/TOOL_NAME 文件夹
+set(SRC_GEN_TARGET_DIR ${CONFIG_SRC_GEN_DIR}/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
+if (NOT EXISTS ${SRC_GEN_TARGET_DIR})
+    file(MAKE_DIRECTORY ${SRC_GEN_TARGET_DIR})
+    message(STATUS "directory create success")
 endif ()
 
+# 遍历文件夹内所有的bpf.c
 foreach(app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
-
     # Build object skeleton and depend skeleton on libbpf build
-    # 调用 FindBpfObject.cmake 中的宏 bpf_object， 生成 *.skel.h
-    bpf_object(${app_stem} ${app_stem}.bpf.c ${NET_SRC_GEN_DIR})
+    bpf_object(${app_stem} ${app_stem}.bpf.c ${SRC_GEN_TARGET_DIR})
     add_dependencies(${app_stem}_skel libbpf-build bpftool-build)
+endforeach()
 
-    add_executable(${app_stem} ${app_stem}.c)
-    target_link_libraries(${app_stem} ${app_stem}_skel)  # ${app_stem}_skel 即依赖项 libbpf-build bpftool-build
-    if(${app_stem} STREQUAL profile)  # 名字相同,Rust才执行
+add_executable(${TOOL_NAME} src/${TOOL_NAME}.c)
+foreach (app ${apps})
+    get_filename_component(app_stem ${app} NAME_WE)
+    target_link_libraries(${TOOL_NAME} ${app_stem}_skel)
+
+    if(${app_stem} STREQUAL "profile")
         target_include_directories(${app_stem} PRIVATE
                 ${CMAKE_SOURCE_DIR}/blazesym/include)
         target_link_libraries(${app_stem}
                 ${CMAKE_SOURCE_DIR}/blazesym/target/release/libblazesym.a -lpthread -lrt -ldl)
     endif()
+endforeach ()
 
-    # 安装
-    install(TARGETS ${app_stem}
-            RUNTIME DESTINATION ${CMAKE_BINARY_DIR}/install/backend/net/bin)
-endforeach()
-
-install(FILES ../nettrace.yaml
-        PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE
-        DESTINATION ${CMAKE_BINARY_DIR}/install/backend/net/etc/
-)
+# 将可执行文件，配置文件等安装在对应的位置
+# 设置安装目录
+set(CPU_WATCHER_INSTALL_DIR backend/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
+# 安装可执行文件到 ${CPU_WATCHER_INSTALL_DIR}/bin
+install(TARGETS ${TOOL_NAME}
+        RUNTIME DESTINATION ${CPU_WATCHER_INSTALL_DIR}/bin)
+# 安装配置文件到 ${CPU_WATCHER_INSTALL_DIR}/etc

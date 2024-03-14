@@ -8,10 +8,10 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      cpu_watcher 工具 CMakeLists 文件
+#      kvm_watcher 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
-set(TOOL_NAME cpu_watcher)
-set(TOOL_BELONG_TO_MODULE process)
+set(TOOL_NAME kvm_watcher)
+set(TOOL_BELONG_TO_MODULE hypervisor)
 
 file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
 # 若不用Rust，则排除 profile.bpf.c

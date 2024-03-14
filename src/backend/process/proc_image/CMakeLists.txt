@@ -8,17 +8,21 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      cpu_watcher 工具 CMakeLists 文件
+#      proc_image 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
 set(TOOL_NAME proc_image)
-file(GLOB apps *.bpf.c)
+set(TOOL_BELONG_TO_MODULE process)
+
+file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
 # 若不用Rust，则排除 profile.bpf.c
 if(NOT CARGO_EXISTS)
-    list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/profile.bpf.c)
+    list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/profile.bpf.c)
 endif()
+# TODO(fzy, 2024.03.13): prev->mm->rss_stat是高版本内核独有？ 编译报错，先移除了
+list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/resource_image.bpf.c)
 
-# 设置并创建  <>/src-gen/process/<tool_name> 文件夹
-set(SRC_GEN_TARGET_DIR ${CONFIG_SRC_GEN_DIR}/process/${TOOL_NAME})
+# 设置并创建  <>/src-gen/TOOL_BELONG_TO_MODULE/<tool_name> 文件夹
+set(SRC_GEN_TARGET_DIR ${CONFIG_SRC_GEN_DIR}/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
 
 if (NOT EXISTS ${SRC_GEN_TARGET_DIR})
     file(MAKE_DIRECTORY ${SRC_GEN_TARGET_DIR})
@@ -33,21 +37,21 @@ foreach(app ${apps})
     add_dependencies(${app_stem}_skel libbpf-build bpftool-build)
 endforeach()
 
-add_executable(${TOOL_NAME} ${TOOL_NAME}.c)
+add_executable(${TOOL_NAME} src/${TOOL_NAME}.c)
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
-    target_link_libraries(${TOOL_NAME} ${app_stem}_skel)
-endforeach ()
+    target_link_libraries(${TOOL_NAME} ${app_stem}_skel -lpthread)
 
-if(${app_stem} STREQUAL profile)
-    target_include_directories(${app_stem} PRIVATE
-            ${CMAKE_SOURCE_DIR}/blazesym/include)
-    target_link_libraries(${app_stem}
-            ${CMAKE_SOURCE_DIR}/blazesym/target/release/libblazesym.a -lpthread -lrt -ldl)
-endif()
+    if(${app_stem} STREQUAL profile)
+        target_include_directories(${app_stem} PRIVATE
+                ${CMAKE_SOURCE_DIR}/blazesym/include)
+        target_link_libraries(${app_stem}
+                ${CMAKE_SOURCE_DIR}/blazesym/target/release/libblazesym.a -lpthread -lrt -ldl)
+    endif()
+endforeach ()
 
 # 安装
 # 设置安装目录
-set(CPU_WATCHER_INSTALL_DIR backend/process/${TOOL_NAME}/)
+set(CPU_WATCHER_INSTALL_DIR backend/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME}/)
 install(TARGETS ${TOOL_NAME}
         RUNTIME DESTINATION ${CPU_WATCHER_INSTALL_DIR}/bin)

@@ -8,12 +8,14 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      cpu_watcher 工具 CMakeLists 文件
+#      stack_analyzer 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
-set(TOOL_NAME cpu_watcher)
-set(TOOL_BELONG_TO_MODULE process)
+set(TOOL_NAME stack_analyzer)
+set(TOOL_BELONG_TO_MODULE system_diagnosis)
 
+file(GLOB STACK_ANALYZER_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
 file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
+
 # 若不用Rust，则排除 profile.bpf.c
 if(NOT CARGO_EXISTS)
     list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/profile.bpf.c)
@@ -34,10 +36,10 @@ foreach(app ${apps})
     add_dependencies(${app_stem}_skel libbpf-build bpftool-build)
 endforeach()
 
-add_executable(${TOOL_NAME} src/${TOOL_NAME}.c)
+add_executable(${TOOL_NAME} ${STACK_ANALYZER_SOURCE_FILES})
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
-    target_link_libraries(${TOOL_NAME} ${app_stem}_skel)
+    target_link_libraries(${TOOL_NAME} ${app_stem}_skel -lstdc++)
 
     if(${app_stem} STREQUAL "profile")
         target_include_directories(${app_stem} PRIVATE

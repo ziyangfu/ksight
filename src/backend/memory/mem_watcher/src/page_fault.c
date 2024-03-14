@@ -6,8 +6,9 @@
 #include <sys/resource.h>
 #include <bpf/libbpf.h>
 //#include <bpf/bpf_load.h>
-#include "page_fault.h"
-#include "page_fault.skel.h"
+#include "mem_watcher/include/page_fault.h"
+
+#include "memory/page_fault/page_fault.skel.h"
 
 #define INTERVAL_MAX 6U
 

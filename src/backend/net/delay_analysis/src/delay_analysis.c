@@ -6,8 +6,9 @@
 #include <bpf/libbpf.h>
 #include <arpa/inet.h>
 
-#include "delay_analysis.h"
-#include "net/delay_analysis.skel.h"
+#include "delay_analysis/include/delay_analysis.h"
+
+#include "net/delay_analysis/delay_analysis.skel.h"
 
 static volatile bool exiting = false;
 

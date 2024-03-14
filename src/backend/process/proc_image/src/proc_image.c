@@ -28,13 +28,15 @@
 #include <pthread.h>
 #include <bpf/libbpf.h>
 #include <bpf/bpf.h>
-#include "proc_image.h"
-#include "process/proc_image/resource_image.skel.h"
+
+#include "proc_image/include/proc_image.h"
+#include "proc_image/include/helpers.h"
+
+// #include "process/proc_image/resource_image.skel.h"
 #include "process/proc_image/syscall_image.skel.h"
 #include "process/proc_image/lock_image.skel.h"
 #include "process/proc_image/keytime_image.skel.h"
 #include "process/proc_image/schedule_image.skel.h"
-#include "helpers.h"
 
 static int prev_image = 0;
 static volatile bool exiting = false;
@@ -645,7 +647,7 @@ static void sig_handler(int signo)
 
 int main(int argc, char **argv)
 {
-	struct resource_image_bpf *resource_skel = NULL;
+	//struct resource_image_bpf *resource_skel = NULL;
 	struct syscall_image_bpf *syscall_skel = NULL;
 	struct ring_buffer *syscall_rb = NULL;
 	struct lock_image_bpf *lock_skel = NULL;
@@ -674,6 +676,7 @@ int main(int argc, char **argv)
 	signal(SIGALRM,sig_handler);
 
 	if(env.enable_resource){
+#if 0
 		resource_skel = resource_image_bpf__open();
 		if(!resource_skel) {
 			fprintf(stderr, "Failed to open BPF resource skeleton\n");
@@ -695,6 +698,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Failed to attach BPF resource skeleton\n");
 			goto cleanup;
 		}
+#endif
 	}
 
 	if(env.enable_syscall){
@@ -841,7 +845,7 @@ int main(int argc, char **argv)
 		}
 
 		if(env.enable_resource && env.output_resourse){
-			err = print_resource(resource_skel->maps.total);
+			//err = print_resource(resource_skel->maps.total);
 			/* Ctrl-C will cause -EINTR */
 			if (err == -EINTR) {
 				err = 0;
@@ -907,7 +911,7 @@ int main(int argc, char **argv)
 
 /* 卸载BPF程序 */
 cleanup:
-	resource_image_bpf__destroy(resource_skel);
+	//resource_image_bpf__destroy(resource_skel);
 	ring_buffer__free(syscall_rb);
 	syscall_image_bpf__destroy(syscall_skel);
 	ring_buffer__free(lock_rb);

@@ -8,10 +8,13 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      cpu_watcher 工具 CMakeLists 文件
+#      TODO: 1. <tool_name> 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
-set(TOOL_NAME cpu_watcher)
-set(TOOL_BELONG_TO_MODULE process)
+#TODO: 2. 工具名称，以及它属于哪个子系统
+set(TOOL_NAME <your tool name>)
+set(TOOL_BELONG_TO_MODULE <which subsystem>)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
 # 若不用Rust，则排除 profile.bpf.c
@@ -47,10 +50,11 @@ foreach (app ${apps})
     endif()
 endforeach ()
 
-# 将可执行文件，配置文件等安装在对应的位置
+# TODO 3. 拷贝文件至相应位置(bin, etc ...)
 # 设置安装目录
-set(CPU_WATCHER_INSTALL_DIR backend/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
-# 安装可执行文件到 ${CPU_WATCHER_INSTALL_DIR}/bin
+set(CPU_WATCHER_INSTALL_DIR backend/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME}/)
 install(TARGETS ${TOOL_NAME}
         RUNTIME DESTINATION ${CPU_WATCHER_INSTALL_DIR}/bin)
-# 安装配置文件到 ${CPU_WATCHER_INSTALL_DIR}/etc
+# 拷贝配置文件至etc目录
+
+# 拷贝 script 至 script 目录
