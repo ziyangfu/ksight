@@ -14,9 +14,3 @@ install
 ```
 
 run.sh: 启动run docker, prometheus_client。prometheus_client启动backend后端的工具 
-
-
-
-
-
-- [ ] make install
