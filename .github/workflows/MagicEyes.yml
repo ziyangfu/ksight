@@ -27,7 +27,7 @@ jobs:
       - name: Start SSH agent
         run: |
           eval $(ssh-agent -s)
-          ssh-add <(echo "$SSH_PRIVATE_KEY")     
+          ssh-add <(echo "$CICD_PRIVATE_KEY")     
 
       - name: Checkout code
         uses: actions/checkout@v2
