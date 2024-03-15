@@ -15,17 +15,19 @@ on:
 permissions:
   contents: write
 
-env:
-  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-
 jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
       - name: Setup SSH
-        uses: actions/setup-ssh@v2
+        uses: actions/setup-ssh@v1
         with:
-          ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}
+          ssh-private-key: ${{ secrets.CICD_PRIVATE_KEY }}
+          SSH-agent: ssh-agent
+      - name: Start SSH agent
+        run: |
+          eval $(ssh-agent -s)
+          ssh-add <(echo "$SSH_PRIVATE_KEY")     
 
       - name: Checkout code
         uses: actions/checkout@v2
