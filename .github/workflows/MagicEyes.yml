@@ -19,18 +19,18 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup git ssh
-        uses: actions/setup-git@v1
-        with:
-          ssh-private-key: ${{ secrets.CICD_PRIVATE_KEY }}
-          SSH-agent: ssh-agent
-      - name: Start SSH agent
+      - name: Setup SSH Keys
         run: |
-          eval $(ssh-agent -s)
-          ssh-add <(echo "$CICD_PRIVATE_KEY")     
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.CICD_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          ssh-key: ${{ secrets.CICD_PRIVATE_KEY }}     
 
       - name: Install dependencies and Init Env
         run: |
