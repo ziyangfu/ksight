@@ -19,8 +19,8 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup SSH
-        uses: actions/setup-ssh@v1
+      - name: Setup git ssh
+        uses: actions/setup-git@v1
         with:
           ssh-private-key: ${{ secrets.CICD_PRIVATE_KEY }}
           SSH-agent: ssh-agent
