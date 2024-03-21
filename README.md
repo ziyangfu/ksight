@@ -35,7 +35,7 @@
 ## 4. 编译安装
 
 ```bash
-git clone git clone --recurse-submodules <magic_eyes_address>
+git clone --recurse-submodules <magic_eyes_address>
 mkdir build && cd build
 # 编译所有工具
 cmake -DBUILD_ALL=ON -DCMAKE_INSTALL_PREFIX=<install_dir> ..
