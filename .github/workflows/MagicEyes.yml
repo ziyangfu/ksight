@@ -19,18 +19,8 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup SSH Keys
-        run: |
-          mkdir -p ~/.ssh/
-          echo "${{ secrets.CICD_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
       - name: Checkout Code
         uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-          ssh-key: ${{ secrets.CICD_PRIVATE_KEY }}     
 
       - name: Install dependencies and Init Env
         run: |
