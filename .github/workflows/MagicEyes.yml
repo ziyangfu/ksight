@@ -1,0 +1,45 @@
+name: MagicEyes
+
+on:
+  push:
+    branches:
+      - "*"
+    paths:
+      - '.github/workflows/MagicEyes.yml'
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - '.github/workflows/MagicEyes.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Setup SSH Keys
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.CICD_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          ssh-key: ${{ secrets.CICD_PRIVATE_KEY }}     
+
+      - name: Install dependencies and Init Env
+        run: |
+          sudo apt update
+          sudo apt install libbpf-dev clang-14 llvm-14 libelf-dev libpcap-dev gcc-multilib build-essential cmake
+          git submodule update --init --recursive
+
+      - name: Build
+        run: |
+          mkdir build && cd build
+          cmake -DBUILD_ALL=ON ..
+          make
