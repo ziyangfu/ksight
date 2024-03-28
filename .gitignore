@@ -11,6 +11,9 @@
 # generate skel code
 ./src-gen/*
 
+# cross compile dependency
+./platforms/aarch64/arm64_deps/*
+
 # Prerequisites
 *.d
 
