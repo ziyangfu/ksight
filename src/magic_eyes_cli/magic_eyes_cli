@@ -1,0 +1,15 @@
+#!/bin/sh
+
+MAGIC_EYES_CLI_INSTALL_DIR=$(dirname $(realpath $0))
+
+# check the Python interpreter
+/usr/bin/env python3 -V > /dev/null
+
+# The previous command returns 0 if successful
+if [ $? -eq 0 ]; then
+    # $@ contains all arguments except $0 which is the path to this script
+    python3 ${MAGIC_EYES_CLI_INSTALL_DIR}/src/magic_eyes_cli.py $@
+else
+    echo "No Python3 interpreter found in PATH"
+fi
+

@@ -14,6 +14,13 @@
 # cross compile dependency
 ./platforms/aarch64/arm64_deps/*
 
+# magic_eyes_cli, python
+# venv
+./src/magic_eyes_cli/venv/*
+# __pycache__
+*.pyc
+./src/magic_eyes_cli/core/__pycache__/*
+
 # Prerequisites
 *.d
 
