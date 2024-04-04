@@ -17,7 +17,7 @@ from core.cli_arg_parser import CliArgParser
 
 sys.path.append(os.path.dirname(os.path.abspath('.')))
 
-if __name__ == '__main__':
+def main():
     # parse command line arguments
     if sys.argv[1] == "-h" or sys.argv[1] == "--help":
         add_help = True
@@ -31,3 +31,6 @@ if __name__ == '__main__':
         args.func()
     else:
         print("TODO:")
+
+if __name__ == '__main__':
+    main()
