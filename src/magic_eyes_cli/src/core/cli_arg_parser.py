@@ -40,8 +40,9 @@ class CliArgParser:
     def __init__(self, is_add_help) -> None:
         """Initialize the parser """
         self._arg_parser = argparse.ArgumentParser(
-            description=''' MagicEyes: tools for Linux kernel diagnosis and optimization ''',
-            add_help=is_add_help)
+            description=''' magic_eyes_cli: command tools for Linux kernel diagnosis and optimization ''',
+            add_help=is_add_help,
+            epilog='''eg: magic_eyes_cli list''')
         self._parsed_args = None
         self._setup_args()
         # argcomplete.autocomplete(self._arg_parser) #TODO

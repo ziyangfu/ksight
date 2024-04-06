@@ -24,3 +24,11 @@ MagicEyes help
 MagicEyes cpu cpu_watcher -h
 # <--------------自动补全 | 非自动补全
 ```
+
+
+```bash
+# 生成requirements.txt
+pip3 freeze > requirements.txt
+#  安装
+pip3 install -r requiredments.txt
+```
