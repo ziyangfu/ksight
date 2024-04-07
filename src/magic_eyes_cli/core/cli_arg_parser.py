@@ -65,7 +65,7 @@ class CliArgParser:
             help=" list all avaliable tools ")
         comm_opts.add_argument(
             "-c", action='store_true', dest='check',
-            help="check all tools' dependency, and whether it can be run in current platform"
+            help="check all tools dependency, and whether it can be run in current platform"
         )
         subparser = self._arg_parser.add_subparsers(dest='command')
         # 获取subsystem以及下属的工具清单

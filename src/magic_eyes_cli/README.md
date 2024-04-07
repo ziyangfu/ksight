@@ -1,30 +1,68 @@
-后端命令行工具
+## magic_eyes_cli 命令行前端
 
-- 统一后端工具使用，唯一命令行前端
-- 采用类似ip子命令模式，具有命令行补全功能
+### 1. 简述
 
-  - 采用argcomplete？readline？
-- 安装在 <install_dir>/sbin下
+将所有的后端工具统一到一个命令行前端，并且具备自动补全功能。
 
+Tips：**记得Tab**
 
-1. argparse中的-h参数拦截
-2. 固定的参数部分
-3. 动态的参数部分
-   1. 扫描后端工具文件夹，读取文件夹名与文件名
-      1. 每次运行均扫描一次，或者将扫描结果保存在一个cache文件中
-4. 若是动态参数，即使用工具，则使用subprocess创建一个子进程，将命令参数传递出去
-5. 命令自动补全
+### 2. 使用之前
 
 ```bash
-# 1. 列出所有可用的工具
-MagicEyes list
-MagicEyes check
-MagicEyes help
-#2. 自动补全
-MagicEyes cpu cpu_watcher -h
-# <--------------自动补全 | 非自动补全
+mkdir build && cd build
+cmake .. && make && make install
+cd ./install/magic_eyes_cli
+# 运行前置条件脚本
+source ./before_running.sh
 ```
 
+### 3. 使用
+
+```bash
+(venv) $ ./magic_eyes_cli -h
+/home/fzy/Downloads/04_bcc_ebpf/MagicEyes
+usage: magic_eyes_cli [-h] [-l | -c] {net,memory,system_diagnosis,process} ...
+
+magic_eyes_cli: command tools for Linux kernel diagnosis and optimization
+
+positional arguments:
+  {net,memory,system_diagnosis,process}
+    net                 tool for Linux net subsystem
+    memory              tool for Linux memory subsystem
+    system_diagnosis    tool for Linux system_diagnosis subsystem
+    process             tool for Linux process subsystem
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+all of common options:
+  -l                    list all avaliable tools
+  -c                    check all tools dependency, and whether it can be run in current platform
+
+eg: magic_eyes_cli -l
+```
+
+**固定命令**
+
+magic_eyes_cli具有2个固定命令， 即
+
+```bash
+-l : 即list， 列出所有可用的后端命令
+-c : 即check， 检查所有运行依赖项（暂未实现）
+```
+
+**动态命令**
+
+{net,memory,system_diagnosis,process}为动态命令，会根据backend文件夹下的情况动态调整。
+
+### 4. 例程
+
+```bash
+magic_eyes_cli process cpu_watcher -h
+# <------------------ 自动补全 | 非自动补全
+```
+
+### 5.其他
 
 ```bash
 # 生成requirements.txt
