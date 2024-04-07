@@ -68,8 +68,8 @@ def write_to_file(filepath, file_content):
 
 # 列出所有子系统以及子系统下属的所有工具
 def get_all_tools():
-    
-    backend_path = os.path.abspath(os.curdir) + "/../backend_test/"
+    backend_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 
+                                '..', '..' ,'backend')
     if not os.path.isdir(backend_path):
         print("invalid path")
         return []
@@ -89,9 +89,11 @@ def get_all_tools():
 
 
 def print_all_tools():
-    print("list all avaliable tools")
+    print("list all avaliable tools:")
     tools_lists = get_all_tools()
     for subsystem, tools in tools_lists:
-        print(f"    [{subsystem}]")
+        print(f"{' '.ljust(2)}[{subsystem}]")
         for tool in tools:
-            print(f"        {tool}")
+            print(f"{' '.ljust(8)}{tool}")
+        print()
+
