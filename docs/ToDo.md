@@ -1,52 +1,15 @@
 ## ToDo Lists
 
-- [ ] 如何启动所有工具？并且能够按照需要启动
-- [ ] 如何聚合所有工具到一个命令行前端，形成一个好用的命令行工具
+- [x] 聚合所有工具至一个命令行前端，统一入口，支持命令行补全
 
-> 这个可以参照buildHelper，以及 ip 指令
->
-> 采用python开发，shell辅助
->
-> 支持命令自动补全（GNU readline库？）
->
-> ```bash
-> # 检查所有工具的运行环境是否满足
-> # 如内核相关配置选项是否开启： BTF,BPF等等
-> # 每一个工具写一个脚本，写上它需要的条件是什么？
-> # 然后是否可以一个个的检查条件是否满足
-> ./sbin/MagicEyes --check   
-> ./sbin/MagicEyes -h   # MagicEyes的帮助文件
-> ./sbin/MagicEyes cpu cpuwatcher -h # 单个工具的帮助文件
-> ./sbin/MagicEyes --list   # 列出所有可用的工具
-> ```
+- [ ] 提供man信息，写法可模仿nettrace，在cmake中写好，随着make install进行安装。 man信息安装在 `/usr/share/man/zh_CN/man8`下面
+
+- [ ] 提供工具内部complete自动补全功能，可模仿nettrace，complete在 `/usr/share/bash-completion/completions/`下，工具写一个bash-complete.sh脚本，在scripts下
 
 - [ ] 如何交叉编译ARM64架构可执行文件（是否有必要？优先级：后）
+
 - [ ] bridge开发，采用python开发
+
 - [ ] 人性化的可视化前端
 
-
-
-
-
-
-
-
-
-
-
-```bash
-install
-	|--- bin_backend
-	|--- etc
-			|--- fs
-			|--- net
-			|--- process
-			|--- memory
-	|--- brige
-	|		|--- prometheus_client
-	|---visualization
-			|--- run docker(grafana + prometheus)
-	|--- run.sh/py
-```
-
-run.sh: 启动run docker, prometheus_client。prometheus_client启动backend后端的工具 
+- [ ] 如何启动所有工具？并且能够按照需要启动
