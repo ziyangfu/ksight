@@ -23,7 +23,7 @@ Linux内存一站式观测与诊断工具。
 
 采用unix哲学， "一个工具只解决一个问题"。通过聚合多个子功能，提供一站式、保姆型、可定制观测与诊断服务。
 
-相关“竞品”工具： stream， lmbench， perf， ftrace， KASAN
+相关“竞品”工具： stream， lmbench， perf， ftrace， KASAN，UBSAN（内存安全），kfence（内存安全）
 
 持续开发中...... 
 
