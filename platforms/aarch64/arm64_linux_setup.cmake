@@ -18,14 +18,16 @@ message(STATUS "The C compiler identification is ${CMAKE_C_COMPILER} now")
 message(STATUS "The CXX compiler identification is ${CMAKE_CXX_COMPILER} now")
 
 set(CC ${CMAKE_C_COMPILER})
-message(STATUS "The C compiler identification is ${CC} now")
+
 
 #引入libbpf的依赖库zlib, elf
-set(zlib_source_dir ${PROJECT_SOURCE_DIR}/platforms/aarch64/dependency/zlib-1.3.1/)
-set(elf_source_dir ${PROJECT_SOURCE_DIR}/platforms/aarch64/dependency/elfutils-0.189/)
+set(ZLIB_ARM64_DIR "${PROJECT_SOURCE_DIR}/platforms/aarch64/dependency/zlib-1.3.1/lib")
+set(ELF_ARM64_DIR "${PROJECT_SOURCE_DIR}/platforms/aarch64/dependency/elfutils-0.189/lib")
+set(ZLIB_SOURCE_DIR ${PROJECT_SOURCE_DIR}/platforms/aarch64/dependency/zlib-1.3.1/)
+set(ELF_SOURCE_DIR ${PROJECT_SOURCE_DIR}/platforms/aarch64/dependency/elfutils-0.189/)
 include_directories(
-    ${zlib_source_dir}/include
-    ${elf_source_dir}/include)
+    ${ZLIB_SOURCE_DIR}/include
+    ${ELF_SOURCE_DIR}/include)
 
 message(STATUS "Arm64 cross-compilation set-up run successfully")
 #bpf.c 使用clang编译，.c使用gcc编译
