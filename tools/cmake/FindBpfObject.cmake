@@ -204,12 +204,10 @@ macro(bpf_object name input src_gen_dir)
   if(ARCH STREQUAL "x86")
     target_link_libraries(${OUTPUT_TARGET} INTERFACE ${LIBBPF_LIBRARIES} -lelf -lz)
   elseif(ARCH STREQUAL "arm64")
-    set(z-lib "${PROJECT_SOURCE_DIR}/platforms/aarch64/dependency/zlib-1.3.1/lib")
-    set(elf-lib "${PROJECT_SOURCE_DIR}/platforms/aarch64/dependency/elfutils-0.189/lib")
     target_link_libraries(${OUTPUT_TARGET} INTERFACE 
     ${LIBBPF_LIBRARIES} 
-    ${z-lib}/libz.a 
-    ${elf-lib}/libelf.a )
+    ${ZLIB_ARM64_DIR}/libz.a 
+    ${ELF_ARM64_DIR}/libelf.a )
   else()
   endif()
 

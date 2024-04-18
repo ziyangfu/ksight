@@ -51,12 +51,10 @@ set(CROSS_COMPILE "")
 set(CC ${CMAKE_C_COMPILER})
 
 #lht增加：cmake -Dcross_compilation_arm64=ON .. 来配置交叉编译arm64的环境
-if(DEFINED cross_compilation_arm64 AND cross_compilation_arm64)
+if(DEFINED TARCH AND TARCH STREQUAL arm64 OR TARCH STREQUAL aarch64)
     message(STATUS "Cross-compilation for arm64 is enabled.")
     set(ARCH "arm64")
     include(${PROJECT_SOURCE_DIR}/platforms/aarch64/arm64_linux_setup.cmake)
-elseif(DEFINED cross_compilation_arm64 AND cross_compilation_arm64=OFF)
-    message(STATUS "Cross-compilation for arm64 is not enabled.")
 else()
 endif()
 
