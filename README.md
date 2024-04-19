@@ -37,10 +37,14 @@
 ```bash
 git clone --recurse-submodules <magic_eyes_address>
 mkdir build && cd build
-# 编译所有工具
+# -------------------------------------------------------
+# 若想要编译所有工具
 cmake -DBUILD_ALL=ON -DCMAKE_INSTALL_PREFIX=<install_dir> ..
-# 编译单独某个工具，如 fs_watcher
+# 若想要编译单独某个工具，如 fs_watcher
 cmake -DBUILD_FS_WATCHER=ON ..
+# 若想在x64平台交叉编译出arm64平台的程序（TARCH 即 target arch）
+cmake -DBUILD_ALL=ON -DTARCH=arm64 ..
+# -------------------------------------------------------
 make
 make install
 ```
