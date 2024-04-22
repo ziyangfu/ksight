@@ -4,7 +4,7 @@
 #define TASK_COMM_LEN 16
 #define MAX_FILENAME_LEN 127
 
-#define ___GFP_DMA              0x01u
+#define ___GFP_DMA              0x01u    // GFP： get_free_page
 #define ___GFP_HIGHMEM          0x02u
 #define ___GFP_DMA32            0x04u
 #define ___GFP_MOVABLE          0x08u
@@ -76,9 +76,8 @@ struct procstat_event {
 	long Vstk;               //User stack
 	long long VPTE;
 };
-
+/* 系统内存状态报告 */
 struct sysstat_event {
-	/*系统内存状态报告*/
 	unsigned long present;
 	unsigned long anon_inactive; // 0
 	unsigned long anon_active;	 // 1
@@ -132,6 +131,17 @@ union combined_alloc_info {
         __u64 number_of_allocs : 24;
     };
     __u64 bits;
+};
+
+/**
+ * oom_kill
+*/
+struct data_t {
+    __u32 fpid;
+    __u32 tpid;
+    __u64 pages;
+    char fcomm[TASK_COMM_LEN];
+    char tcomm[TASK_COMM_LEN];
 };
 
 #endif /* __MEM_WATCHER_H */

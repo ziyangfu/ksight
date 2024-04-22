@@ -1,12 +1,16 @@
 
-/* 请一定注意vmlinux.h头文件是依赖于特定架构的，本机编译的时候需要自行生成，
-生成方法：
-1、切换至本代码../../vmlinux/你的架构目录下；
-2、安装Linux开发工具包：sudo apt install linux-tools-$(uname -r)
-3、删除那个vmlinux_数字.h文件（记住它的名字）；
-4、生成vmlinux.h文件：bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
-5、将生成的vmlinux.h文件名字改成刚刚删除的vmlinux_数字.h
-如果编译不通过，提示找不到vmlinux.h文件，那么请在本代码同级目录下运行生成vmlinux.h命令 */
+/**
+ * \brief 监控内核中的 shrink_page_list 函数
+ * \details
+ * 		| 参数          | 含义                                         |
+		| ------------- | -------------------------------------------- |
+		| reclaim       | 要回收的页面数量                             |
+		| reclaimed     | 已经回收的页面数量                           |
+		| unqueue_dirty | 还没开始回写和还没在队列等待的脏页           |
+		| congested     | 正在块设备上回写的页面，含写入交换空间的页面 |
+		| writeback     | 正在回写的页面                               |
+	\todo 文件名称不直观，考虑改名
+*/
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>

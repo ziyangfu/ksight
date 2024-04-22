@@ -4,11 +4,11 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2022 Jingxiang Zeng
 // Copyright (c) 2022 Krisztian Fekete
-#include <vmlinux.h>
+#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_tracing.h>
-#include "oomkill.h"
+#include "mem_watcher.h"
 
 // char LICENSE[] SEC("license") = "GPL";
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
@@ -36,6 +36,3 @@ int BPF_KPROBE(oom_kill_process, struct oom_control *oc, const char *message)
 
     return 0;
 }
-
-
-

@@ -1,12 +1,28 @@
 
-/* 请一定注意vmlinux.h头文件是依赖于特定架构的，本机编译的时候需要自行生成，
-生成方法：
-1、切换至本代码../../vmlinux/你的架构目录下；
-2、安装Linux开发工具包：sudo apt install linux-tools-$(uname -r)
-3、删除那个vmlinux_数字.h文件（记住它的名字）；
-4、生成vmlinux.h文件：bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
-5、将生成的vmlinux.h文件名字改成刚刚删除的vmlinux_数字.h
-如果编译不通过，提示找不到vmlinux.h文件，那么请在本代码同级目录下运行生成vmlinux.h命令 */
+/*!
+	\brief 提取各种类型内存的活动和非活动页面数量，以及其他内存回收相关的统计数据，
+			除了常规的事件信息外，程序还输出了与内存管理相关的详细信息，包括了不同
+			类型内存的活动（active）和非活动（inactive）页面，未被驱逐（unevictable）
+			页面，脏（dirty）页面，写回（writeback）页面，映射（mapped）页面，
+			以及各种类型的内存回收相关统计数据。
+	\details
+			| file_active    | 活跃文件映射内存大小              |
+			| file_inactive  | 不活跃文件映射内存大小            |
+			| unevictable    | 不可回收内存大小                 |
+			| dirty          | 脏页大小                        |
+			| writeback      | 正在回写的内存大小                |
+			| anonpages      | RMAP页面                        |
+			| mapped         | 所有映射到用户地址空间的内存大小 	|
+			| shmem          | 共享内存                         |
+			| kreclaimable   | 内核可回收内存                    |
+			| slab           | 用于slab的内存大小                |
+			| sreclaimable   | 可回收slab内存                   |
+			| sunreclaim     | 不可回收slab内存                 |
+			| NFS_unstable   | NFS中还没写到磁盘中的内存          |
+			| writebacktmp   | 回写所使用的临时缓存大小           |
+			| anonhugepages  | 透明巨页大小                     |
+			| shmemhugepages | shmem或tmpfs使用的透明巨页       |
+*/
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>

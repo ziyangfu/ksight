@@ -26,21 +26,22 @@
 #include <bpf/libbpf.h>
 #include <sys/select.h>
 #include <unistd.h>
-#include "paf.skel.h"
-#include "pr.skel.h"
-#include "procstat.skel.h"
-#include "sysstat.skel.h"
-#include "memleak.skel.h"
-#include "mem_watcher.h"
+#include "memory/mem_watcher/paf.skel.h"
+#include "memory/mem_watcher/pr.skel.h"
+#include "memory/mem_watcher/procstat.skel.h"
+#include "memory/mem_watcher/sysstat.skel.h"
+#include "memory/mem_watcher/memleak.skel.h"
+#include "mem_watcher/include/mem_watcher.h"
 
-#include "blazesym.h"
+//#include "blazesym.h"
+//#include "blazesym/capi/include/blazesym.h"
 
 static const int perf_max_stack_depth = 127;    //stack id 对应的堆栈的深度
 static const int stack_map_max_entries = 10240; //最大允许存储多少个stack_id
 static __u64 *g_stacks = NULL;
 static size_t g_stacks_size = 0;
 
-static struct blaze_symbolizer *symbolizer;
+//static struct blaze_symbolizer *symbolizer;
 
 static int attach_pid;
 static char binary_path[128] = {0};
@@ -172,7 +173,7 @@ static const struct argp argp = {
 	.parser = parse_arg,
 	.doc = argp_program_doc,
 };
-
+# if 0
 static void print_frame(const char *name, uintptr_t input_addr, uintptr_t addr, uint64_t offset, const blaze_symbolize_code_info *code_info) {
 	// If we have an input address  we have a new symbol.
 	if (input_addr != 0) {
@@ -242,6 +243,7 @@ static void show_stack_trace(__u64 *stack, int stack_sz, pid_t pid) {
 	blaze_result_free(result);
 }
 
+
 int print_outstanding_combined_allocs(struct memleak_bpf *skel, pid_t pid) {
     const size_t combined_allocs_key_size = bpf_map__key_size(skel->maps.combined_allocs);
     const size_t stack_traces_key_size = bpf_map__key_size(skel->maps.stack_traces);
@@ -295,6 +297,7 @@ int print_outstanding_combined_allocs(struct memleak_bpf *skel, pid_t pid) {
 
     return 0;
 }
+#endif
 
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args) {
 	return vfprintf(stderr, format, args);
@@ -633,7 +636,7 @@ int main(int argc, char **argv) {
 			printf("%-8s %-8s %-8s %-8s %-8s %-8s %-8s %-8s %-8s %-8s %-8s %-8s\n", "ACTIVE", "INACTVE", "ANON_ACT", "ANON_INA", "FILE_ACT", "FILE_INA", "UNEVICT", "DIRTY", "WRITEBK", "ANONPAG", "MAP", "SHMEM");
 		}
 	}
-
+	#if 0
 	else if (env.memleak) {
 		if (argc != 3) {
 			printf("usage:%s attach_pid\n", argv[0]);
@@ -641,8 +644,8 @@ int main(int argc, char **argv) {
 		}
 
 		attach_pid = atoi(argv[2]);
-
-		strcpy(binary_path, "/lib/x86_64-linux-gnu/libc.so.6");
+		/* TODO: 增加宏定义，适配ARM64与X86-64架构 */
+		strcpy(binary_path, "/lib/x86_64-linux-gnu/libc.so.6");  
 
 		/* Set up libbpf errors and debug info callback */
 		libbpf_set_print(libbpf_print_fn);
@@ -696,7 +699,8 @@ int main(int argc, char **argv) {
 			sleep(1);
 		}
 	}
-
+	#endif
+	
 	while (!exiting) {
 		if (env.paf || env.pr || env.procstat || env.sysstat) {
 			err = ring_buffer__poll(rb, 1000 /* timeout, ms */);
@@ -746,10 +750,11 @@ sysstat_cleanup:
 	ring_buffer__free(rb);
 	sysstat_bpf__destroy(skel_sysstat);
 	return err < 0 ? -err : 0;
-
+/**
 memleak_cleanup:
 	memleak_bpf__destroy(skel);
 	blaze_symbolizer_free(symbolizer);
 	free(g_stacks);
 	return err < 0 ? -err : 0;
+*/
 }

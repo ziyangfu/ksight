@@ -1,12 +1,8 @@
 
-/* 请一定注意vmlinux.h头文件是依赖于特定架构的，本机编译的时候需要自行生成，
-生成方法：
-1、切换至本代码../../vmlinux/你的架构目录下；
-2、安装Linux开发工具包：sudo apt install linux-tools-$(uname -r)
-3、删除那个vmlinux_数字.h文件（记住它的名字）；
-4、生成vmlinux.h文件：bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
-5、将生成的vmlinux.h文件名字改成刚刚删除的vmlinux_数字.h
-如果编译不通过，提示找不到vmlinux.h文件，那么请在本代码同级目录下运行生成vmlinux.h命令 */
+/*!
+*	\brief 用于跟踪用户空间进程的内存使用情况。具体功能是在用户空间进程切换时，
+*			记录切换前进程的内存信息，并将这些信息写入环形缓冲区中
+*/
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
@@ -33,7 +29,7 @@ pid_t user_pid = 0;
 SEC("kprobe/finish_task_switch")
 int BPF_KPROBE(finish_task_switch, struct task_struct *prev) {
 	struct procstat_event *e;
-	struct percpu_counter rss = {};
+	//struct percpu_counter rss = {};
 	struct mm_struct *mms;
 	long long *t;
 	pid_t pid = bpf_get_current_pid_tgid() >> 32;
@@ -65,12 +61,14 @@ int BPF_KPROBE(finish_task_switch, struct task_struct *prev) {
 	e->nvcsw = BPF_CORE_READ(prev, nvcsw);
 	e->nivcsw = BPF_CORE_READ(prev, nivcsw);
 
-	rss = *BPF_CORE_READ(prev, mm, rss_stat);
-	t = (long long *)(rss.count);
-	e->rssfile = *t;
-	e->rssanon = *(t + 1);
-	e->vswap = *(t + 2);
-	e->rssshmem = *(t + 3);
+	//rss = *BPF_CORE_READ(prev, mm, rss_stat);
+	//t = (long long *)(rss.count);
+
+	t = (long long *)(BPF_CORE_READ(prev, mm, rss_stat).count);
+	e->rssfile = *t;  		// MM_FILEPAGES
+	e->rssanon = *(t + 1);  // MM_ANONPAGES
+	e->vswap = *(t + 2);	// MM_SWAPENTS
+	e->rssshmem = *(t + 3);	// MM_SHMEMPAGES
 	e->size = *t + *(t + 1) + *(t + 3);
 
 	bpf_ringbuf_submit(e, 0);

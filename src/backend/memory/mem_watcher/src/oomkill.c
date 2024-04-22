@@ -16,10 +16,11 @@
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
-#include "memory/oomkill.skel.h"
-#include "oomkill.h"
+
 #include "btf_helpers.h"
 #include "trace_helpers.h"
+#include "memory/mem_watcher/oomkill.skel.h"
+#include "mem_watcher/include/mem_watcher.h"
 
 static volatile sig_atomic_t exiting = 0;
 

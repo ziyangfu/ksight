@@ -1,11 +1,16 @@
-/* 请一定注意vmlinux.h头文件是依赖于特定架构的，本机编译的时候需要自行生成，
-生成方法：
-1、切换至本代码../../vmlinux/你的架构目录下；
-2、安装Linux开发工具包：sudo apt install linux-tools-$(uname -r)
-3、删除那个vmlinux_数字.h文件（记住它的名字）；
-4、生成vmlinux.h文件：bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
-5、将生成的vmlinux.h文件名字改成刚刚删除的vmlinux_数字.h
-如果编译不通过，提示找不到vmlinux.h文件，那么请在本代码同级目录下运行生成vmlinux.h命令 */
+/**
+ * \brief 监控内核中的`get_page_from_freelist`函数。这个函数在内核中
+ * 		  用于从内存空闲页列表中获取一个页面
+ * \details
+ * 			| 参数    | 含义                                 |
+			| ------- | ------------------------------------ |
+			| min     | 内存管理区处于最低警戒水位的页面数量 |
+			| low     | 内存管理区处于低水位的页面数量       |
+			| high    | 内存管理区处于高水位的页面数量       |
+			| present | 内存管理区实际管理的页面数量         |
+			| flag    | 申请页面时的权限（标志）             |
+	\todo 文件名称不直观，考虑改名
+*/
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
@@ -31,7 +36,8 @@ pid_t user_pid = 0;
 
 
 SEC("kprobe/get_page_from_freelist")
-int BPF_KPROBE(get_page_from_freelist, gfp_t gfp_mask, unsigned int order, int alloc_flags, const struct alloc_context *ac)
+int BPF_KPROBE(get_page_from_freelist, gfp_t gfp_mask, unsigned int order, 
+			   int alloc_flags, const struct alloc_context *ac)
 {
 	struct paf_event *e; 
 	unsigned long *t, y;
