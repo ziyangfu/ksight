@@ -144,4 +144,15 @@ struct data_t {
     char tcomm[TASK_COMM_LEN];
 };
 
+/**
+ * memory compaction
+*/
+struct compaction_data_t {
+	__u32 count;				// 统计进入内存规整的次数
+	__u32 pid;
+	__u64 pages;
+	char comm[TASK_COMM_LEN];	// 谁在调用内存规整
+};
+
+
 #endif /* __MEM_WATCHER_H */

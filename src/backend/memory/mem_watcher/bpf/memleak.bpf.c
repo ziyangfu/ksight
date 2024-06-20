@@ -82,7 +82,7 @@ static int gen_alloc_exit2(void *ctx, u64 address) {
         return 0;
     }
 
-    __builtin_memset(&info, 0, sizeof(info));
+    __builtin_memset(&info, 0, sizeof(info));  // gcc/clang 内置函数
     info.size = *size;
 
     bpf_map_delete_elem(&sizes, &pid);
@@ -108,7 +108,7 @@ static int gen_alloc_exit2(void *ctx, u64 address) {
 
     return 0;
 }
-
+// PT_REGS_RC: 从 ctx 字段中读取本次函数跟踪的返回值
 static int gen_alloc_exit(struct pt_regs *ctx) {
     return gen_alloc_exit2(ctx, PT_REGS_RC(ctx));
 }
