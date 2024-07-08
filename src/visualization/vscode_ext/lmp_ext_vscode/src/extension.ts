@@ -11,6 +11,7 @@ import * as fs from 'fs'    // fzy: 为了检查面板文件是否存在
 
 
 let default_panel_path = "/home/fzy/Desktop/panels/"  // fzy: 为了检查面板文件是否存在
+let default_tool_config_path = "/home/fzy/Desktop/config/"  // fzy: 为了检查面板文件是否存在
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed

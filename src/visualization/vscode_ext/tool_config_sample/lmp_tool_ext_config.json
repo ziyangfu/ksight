@@ -1,0 +1,26 @@
+{
+    "name" : "lmp_tool_vscode_extension_config",
+    "version" : "0.0.1",
+    "subsystem" : [
+        "CPU",
+        "memory",
+        "fs",
+        "network",
+        "system_diagnosis",
+        "hypervisor"
+    ],
+    "sub_tool_name" :[
+        "cpu_watcher",
+        "proc_image",
+        "mem_watcher",
+        "net_watcher",
+        "net_manager",
+        "stack_analyzer",
+        "kvm_watcher"
+    ]
+
+}
+    
+
+        
+

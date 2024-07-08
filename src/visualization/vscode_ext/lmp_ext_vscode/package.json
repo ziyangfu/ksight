@@ -101,7 +101,13 @@
           "default": "/home/fzy/Desktop/panels/",
           "description": "the default panels search path",
           "order": 4
-        }   
+        },
+        "grafana-vscode.default_tool_config_path": {
+          "type": "string",
+          "default": "/home/fzy/Desktop/config/",
+          "description": "the default tool config path",
+          "order": 5
+        }     
       }
     },
     "viewsContainers": {
