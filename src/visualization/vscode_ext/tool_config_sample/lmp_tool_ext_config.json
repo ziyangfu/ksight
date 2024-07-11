@@ -9,16 +9,48 @@
         "system_diagnosis",
         "hypervisor"
     ],
-    "sub_tool_name" :[
-        "cpu_watcher",
-        "proc_image",
-        "mem_watcher",
-        "net_watcher",
-        "net_manager",
-        "stack_analyzer",
-        "kvm_watcher"
-    ]
-
+    "CPU" : {
+        "description" : "CPU子系统观测工具集",
+        "cpu_watcher" : {
+            "description" : "cpu观测"
+        },
+        "proc_image" : {
+            "description" : "进程画像"
+        }
+    },
+    "memory" : {
+        "description" : "Linux 内存子系统观测工具集",
+        "mem_watcher" : {
+            "description" : "内存观测"
+        }
+    },
+    "fs" : {
+        "description" : "Linux 文件子系统观测工具集",
+        "fs_watcher" : {
+            "description" : "文件系统观测"
+        }
+    },
+    "network" : {
+        "description" : "Linux 网络子系统观测工具集",
+        "net_watcher" : {
+            "description" : "网络观测"
+        },
+        "net_manager" : {
+            "description" : "网络画像"
+        }
+    },
+    "system_diagnosis" : {
+        "description" : "Linux 系统诊断子系统观测工具集",
+        "stack_analyzer" : {
+            "description" : "栈调用分析器"
+        }
+    },
+    "hypervisor" : {
+        "description" : "Linux 虚拟化子系统观测工具集",
+        "kvm_watcher" : {
+            "description" : "kvm虚拟化"
+        }
+    }
 }
     
 

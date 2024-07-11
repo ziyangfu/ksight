@@ -10,8 +10,9 @@ import { setVersion } from "./util";
 import * as fs from 'fs'    // fzy: 为了检查面板文件是否存在
 
 
-let default_panel_path = "/home/fzy/Desktop/panels/"  // fzy: 为了检查面板文件是否存在
-let default_tool_config_path = "/home/fzy/Desktop/config/"  // fzy: 为了检查面板文件是否存在
+let default_panel_path = "/home/fzy/Desktop/panels/";  // fzy: 为了检查面板文件是否存在
+let default_tool_config_path = "/home/fzy/Desktop/config/tool.json";
+let jsonData: any; // 保存 json 数据
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -72,6 +73,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
       default_panel_path = String(settings.get("default_panel_path"));
       //console.log("path = ", default_panel_path);
     }
+    readLmpConfig();    // 读取json配置文件信息
 
   });
 
@@ -98,6 +100,7 @@ export function deactivate() {
 // ---------------------------------------------------------------------------------
 // fzy
 import { CancellationToken, Event, ProviderResult, TreeDataProvider, TreeItem, TreeItemCollapsibleState, window} from "vscode";
+import { json } from "stream/consumers";
 
 // 扩展 TreeItem
 /*
@@ -127,6 +130,7 @@ export class TreeItemNode extends TreeItem {
 */
 
 export class TreeViewProvider implements TreeDataProvider<TreeItem> {
+
     onDidChangeTreeData?: Event<void | TreeItem | TreeItem[] | null | undefined> | undefined;
 
     getTreeItem(element: TreeItem): TreeItem | Thenable<TreeItem> {
@@ -287,6 +291,28 @@ export class TreeViewProvider implements TreeDataProvider<TreeItem> {
     }
 
 }
+
+
+export function readLmpConfig() {
+
+  if (fs.existsSync('app/public/static/Data.json')) //判断是否存在此文件
+  {
+    try {
+      //读取文件内容，并转化为Json对象
+      jsonData = JSON.parse(fs.readFileSync(default_tool_config_path, "utf8"));
+      console.log(jsonData);
+      //获取Json里key为data的数据
+      //const data = userBugsJson['data'];
+      //return data;
+          
+    } 
+    catch (error){
+      console.error('Error parsing JSON:', error);
+    }
+  }
+  return jsonData;
+}
+
 // fzy end
 // ---------------------------------------------------------------------------------
 
