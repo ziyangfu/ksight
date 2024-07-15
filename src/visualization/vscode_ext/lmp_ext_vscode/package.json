@@ -102,10 +102,10 @@
           "description": "the default panels search path",
           "order": 4
         },
-        "grafana-vscode.default_tool_config_path": {
+        "grafana-vscode.default_tool_config_file": {
           "type": "string",
-          "default": "/home/fzy/Desktop/config/",
-          "description": "the default tool config path",
+          "default": "/home/fzy/lmp_tool_ext_config.json",
+          "description": "the default tool config file",
           "order": 5
         }     
       }
