@@ -38,9 +38,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
   );
   // fzy
   // -------------------------------------------------------------------------------------
-  console.log("running in here");
   TreeViewProvider.initTreeViewItem();
-  console.log("running in here++++++++");
 	ctx.subscriptions.push(vscode.commands.registerCommand('itemClick', (label) => {
     let file_path = default_panel_path + label + '.json';
     //console.log('file_path = ', file_path);
@@ -80,7 +78,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
     if (event.affectsConfiguration("grafana-vscode.default_tool_config_file")) {
       const settings = vscode.workspace.getConfiguration("grafana-vscode"); 
       default_tool_config_file = String(settings.get("default_tool_config_file"));
-       console.log("file = ", default_tool_config_file);
+       //console.log("file = ", default_tool_config_file);
        sub_key = 0; // 全局变量先清零，不然 subsystem无法匹配
        TreeViewProvider.initTreeViewItem();
     }
