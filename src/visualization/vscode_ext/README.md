@@ -10,6 +10,14 @@
 
 ![import_vscode_ext](./images/import_vscode_ext.png)
 
+lmp_vscode_ext_0.01.vsix 是用json文件中读取侧边栏目录
+
+lmp_grafana-vscode-0.0.16.vsix 侧边栏目录是写死在代码里的
+
+推荐使用 lmp_vscode_ext_0.01。
+
+注意：本插件是基于grafana官方插件0.0.16版本源码修改的，因此不要更新，不可共存。
+
 安装成功如下：
 
 ![lmp_ext_install_success](./images/lmp_ext_install_success.png)
