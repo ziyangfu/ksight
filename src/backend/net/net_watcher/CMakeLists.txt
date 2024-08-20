@@ -10,7 +10,7 @@
 # \brief
 #      net_watcher 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
-set(TOOL_NAME net_watcher)
+set(TOOL_NAME netwatcher)
 set(TOOL_BELONG_TO_MODULE net)
 
 file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)

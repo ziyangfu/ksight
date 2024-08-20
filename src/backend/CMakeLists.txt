@@ -25,7 +25,7 @@ option(BUILD_FS_WATCHER "is build fs_watcher? "             OFF)
 # memory部分
 option(BUILD_MEM_WATCHER "is build mem_watcher? "           OFF)
 # net部分
-option(BUILD_NET_WATCHER "is build net_watcher? "           OFF)
+option(BUILD_NET_WATCHER "is build net_watcher? "           ON)
 option(BUILD_DELAY_ANALYSIS "is build delay_analysis? "     OFF)
 # process部分
 option(BUILD_CPU_WATCHER "is build cpu_watcher? "           OFF)
