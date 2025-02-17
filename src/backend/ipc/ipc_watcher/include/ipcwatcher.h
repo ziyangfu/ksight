@@ -33,9 +33,13 @@ struct uds_event {
     u32 recv_pid;                       /** 接收进程 */
     char path[108];                     /** UNIX域socket路径最大长度（sun_path长度） */
     u32 size;                           /** 发送/接收的数据大小 */
-    u8 direction;                       // 0:发送, 1:接收
+    u16 type;                           /** SOCK_STREAM(1) / SOCK_DGRAM(2) / ... */
     u64 timestamp;                      /** 记录发送的时间戳 */
-    char payload[MAX_PAYLOAD_LEN];      /** 记录发送/接收的实际数据 */
+    //char payload[MAX_PAYLOAD_LEN];      /** 记录发送/接收的实际数据 */
+};
+
+struct uds_payload {
+    char payload[MAX_PAYLOAD_LEN];
 };
 
 

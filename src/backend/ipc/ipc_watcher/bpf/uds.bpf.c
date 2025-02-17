@@ -51,22 +51,18 @@
 static void get_uds_path(struct unix_sock *u, char *path) {
     struct unix_address *addr;
     struct sockaddr_un *sun;
-
     addr = BPF_CORE_READ(u, addr);
     if (!addr) {
         bpf_probe_read_kernel_str(path, 6, "<none>");
         return;
     }
-
     sun = BPF_CORE_READ(addr, name);
     if (!sun) {
         bpf_probe_read_kernel_str(path, 6, "<none>");
         return;
     }
-
     bpf_probe_read_kernel_str(path, sizeof(sun->sun_path), sun->sun_path);
 }
-
 
 /*!
 \brief
@@ -98,13 +94,14 @@ int BPF_KPROBE(unix_dgram_recvmsg, const struct socket *sock, const struct msghd
 SEC("kprobe/unix_stream_sendmsg")
 int BPF_KPROBE(unix_stream_sendmsg, struct socket *sock, struct msghdr *msg,
                size_t len) {
-    struct uds_event *event;
     u64 current_pid = bpf_get_current_pid_tgid() >> 32;
     struct sock *sk = BPF_CORE_READ(sock, sk);
-    // 从 ringbuffer 分配事件内存
-    event = bpf_ringbuf_reserve(&uds_events, sizeof(struct uds_event), 0);
-    if (!event)
+    struct uds_event zero = {0};
+    struct uds_event* event;
+    event = (struct uds_event*)bpf_map_lookup_or_try_init(&uds_data_map, &sk, &zero);
+    if (event == NULL) {
         return 0;
+    }
     struct unix_sock *unix_sk = (struct unix_sock*)sk;
     const struct unix_address *addr = BPF_CORE_READ(unix_sk, addr);
     /** 存在显性路径 */
@@ -113,95 +110,49 @@ int BPF_KPROBE(unix_stream_sendmsg, struct socket *sock, struct msghdr *msg,
         bpf_probe_read_kernel_str(event->path, sizeof(event->path), path);
     }
     else {
-        //if (filter_is_exist_path) {
-        //    return 0;
-        //}
-        //else {
         bpf_probe_read_kernel_str(event->path, 7, "<none>");
-        // }
-
     }
-    // 记录 PID
     event->send_pid = current_pid;
-    event->recv_pid = 0;
-    event->timestamp = 0;
-    event->direction = 0;
-    event->size = len;
-    event->payload[0] = '\0';
-
-
+    event->size = (u32)len;
+    event->type = BPF_CORE_READ(sk, sk_type);
+    event->timestamp = bpf_ktime_get_ns() / 1000;
     return 0;
 }
 
 /*!
 \brief
     挂载点 unix_stream_recvmsg, 负责采集流式uds的基本信息与接收的数据
+    获取接收侧 PID， uds path， 接收的size大小， payload，接收时间点
 */
 SEC("kprobe/unix_stream_recvmsg")
 int BPF_KPROBE(unix_stream_recvmsg, const struct socket *sock, const struct msghdr *msg,
 			       size_t size, int flags) {
-    // 提交事件到用户态
-    bpf_ringbuf_submit(event, 0);
-
-//    struct uds_event event = {};
-//    struct sock *sk = BPF_CORE_READ(sock, sk);
-//    struct unix_sock *u = (struct unix_sock *)sk;
-//
-//    event.pid = bpf_get_current_pid_tgid() >> 32;
-//    event.len = size;
-//    event.direction = 1;
-//    get_uds_path(u, event.path);
-//
-//    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
-    return 0;
-
-
-
-    /*
-    struct event *e;
-    struct sockaddr_un *saddr, *daddr;
-    struct sock *sk;
-    u32 pid;
-
-    sk = (struct sock *)ctx->skaddr;
-    if (!sk)
+    struct sock* sk = BPF_CORE_READ(sock, sk);
+    struct uds_event* event = bpf_map_lookup_elem(&uds_data_map, &sk);
+    if (!event)
         return 0;
+    event->recv_pid = bpf_get_current_pid_tgid() >> 32;
+    //event->payload[0] = '\0';
 
-    if (sk->__sk_common.skc_family != AF_UNIX)
+    struct uds_event* trans_rb_event =
+            bpf_ringbuf_reserve(&uds_events, sizeof(struct uds_event), 0);
+    if (trans_rb_event == NULL) {
+        bpf_map_delete_elem(&uds_data_map, &sk);
         return 0;
-
-    pid = bpf_get_current_pid_tgid() >> 32;
-    e = bpf_ringbuf_reserve(&events, sizeof(*e), 0);
-    if (!e)
-        return 0;
-
-    e->pid = pid;
-    bpf_get_current_comm(&e->comm, sizeof(e->comm));
-    e->len = ctx->size;
-    e->ts = bpf_ktime_get_ns();
-
-    saddr = (struct sockaddr_un *)ctx->saddr;
-    daddr = (struct sockaddr_un *)ctx->daddr;
-
-    if (saddr) {
-        e->saddr_len = saddr->sun_path[0] ? sizeof(struct sockaddr_un) : 0;
-        if (e->saddr_len)
-            bpf_probe_read_kernel(&e->saddr, sizeof(struct sockaddr_un), saddr);
-    } else {
-        e->saddr_len = 0;
     }
+    trans_rb_event->send_pid = event->send_pid;
+    trans_rb_event->recv_pid = event->recv_pid;
+    bpf_probe_read_kernel_str(trans_rb_event->path, sizeof(event->path), event->path);
+    trans_rb_event->size = event->size;
+    trans_rb_event->type = event->type;
+    trans_rb_event->timestamp = event->timestamp;
+    //trans_rb_event->payload[0] = '\0';
 
-    if (daddr) {
-        e->daddr_len = daddr->sun_path[0] ? sizeof(struct sockaddr_un) : 0;
-        if (e->daddr_len)
-            bpf_probe_read_kernel(&e->daddr, sizeof(struct sockaddr_un), daddr);
-    } else {
-        e->daddr_len = 0;
-    }
+    bpf_map_delete_elem(&uds_data_map, &sk);
 
-    bpf_ringbuf_submit(e, 0);
+    bpf_ringbuf_submit(trans_rb_event, 0);
+
     return 0;
-    */
 }
 
 char LICENSE[] SEC("license") = "GPL";

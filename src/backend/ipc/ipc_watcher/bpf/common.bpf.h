@@ -43,18 +43,18 @@ struct {
 } uds_events SEC(".maps");
 
 struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 1024);
-    __type(key, u32);   /** fixme： 怎么唯一标识数据包？ */
-    __type(value, struct uds_data);
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 256 * 1024);
+    __type(key, struct sock*);   /** fixme： 怎么唯一标识数据包？ sock? */
+    __type(value, struct uds_event);
 } uds_data_map SEC(".maps");
 
-// 定义Perf Buffer用于向用户态传输事件
 struct {
-    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-    __uint(key_size, sizeof(__u32));
-    __uint(value_size, sizeof(__u32));
-} events SEC(".maps");
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 256 * 1024);
+    __type(key, struct sock*);
+    __type(value, struct uds_payload);
+} uds_payload_map SEC(".maps");
 
 // 操作BPF映射的一个辅助函数
 static __always_inline void * //__always_inline强制内联

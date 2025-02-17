@@ -25,12 +25,14 @@
 
 #if __cplusplus >= 202002L
 #include <format>
+namespace fmt = std;
 #else
 #include "fmt/format.h"
 #endif
 
 #include "UdsBpf.h"
 #include "Version.h"
+#include "ConfigArgs.h"
 
 std::atomic<bool> g_interrupted(false);
 
@@ -59,7 +61,7 @@ void initSignalHandling() noexcept {
 }
 
 
-int cmdParser(argparse::ArgumentParser& parser) {
+int cmdParser(argparse::ArgumentParser& parser, ipc::ipcWatcher::ConfigArgs& config) {
     parser.add_argument("-u", "--uds")
         .help("Trace unix domain socket")
         .default_value(false)
@@ -71,10 +73,10 @@ int cmdParser(argparse::ArgumentParser& parser) {
     parser.add_argument("--filter_path")
         .help("Filter path")
         .default_value("")
-        .action([](const std::string& path) {
+        .action([&config](const std::string& path) {
             /** --filter_path=/tmp/uds.socket
              * path: /tmp/uds.socket */
-            std::cout << path << std::endl;
+            config.filter_path = path;
         });
     parser.add_argument("--filter_exist_path")
         .help("过滤存在路径的数据包")
@@ -92,8 +94,8 @@ int cmdParser(argparse::ArgumentParser& parser) {
         .help("Save output to pcap file")
         .default_value("")
         .action(
-                [](const std::string& value) {
-
+                [&config](const std::string& path) {
+                    config.pcap_file = path;
         });
     parser.add_argument("--vvv", "--verbose")
         .help("Output more information")
@@ -109,14 +111,16 @@ int cmdParser(argparse::ArgumentParser& parser) {
                     exit(0);
                 }
                 );
+    /** add_argument: read config from config.file */
     return 0;
 }
 
 int main(int argc, char *argv[]) {
     spdlog::set_level(spdlog::level::info);
     //initSignalHandling();
+    ipc::ipcWatcher::ConfigArgs config;
     argparse::ArgumentParser parser("ipc_watcher");
-    cmdParser(parser);
+    cmdParser(parser, config);
     try {
         parser.parse_args(argc, argv);
     } catch (const std::runtime_error& err) {
@@ -124,17 +128,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     // 获取解析后的参数值
-    bool traceUds = parser.get<bool>("--uds");
-    bool traceMmap = parser.get<bool>("--mmap");
-    std::string filter_path = parser.get<std::string>("--filter_path");
-    bool print_payload = parser.get<bool>("--payload");
-    bool force_payload = parser.get<bool>("--force");
-    std::string pcap_file = parser.get<std::string>("--pcap_file");
-    bool verbose = parser.get<bool>("--verbose");
+    config.traceUds = parser.get<bool>("--uds");
 
 
-    int udsSetValue = static_cast<int>(parser.get<bool>("--filter_exist_path"));
-    ipc::ipcWatcher::UdsBpf udsBpf;
+
+
+
+
+
+    ipc::ipcWatcher::UdsBpf udsBpf(config);
     udsBpf.open();
     //udsBpf.setRodataFlags(udsSetValue);
     udsBpf.load();

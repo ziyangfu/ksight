@@ -6,6 +6,8 @@
 #define IPC_IPC_WATCHER_UDS_BPF_H
 
 #include <string>
+#include <unordered_map>
+#include "ConfigArgs.h"
 extern "C" {
 #include "ipc/ipcwatcher/uds.skel.h"
 }
@@ -13,8 +15,27 @@ extern "C" {
 namespace ipc::ipcWatcher {
 
 class UdsBpf final {
+private:
+    enum class FormatType : std::uint8_t {
+        kPrintNormal8 = 0,
+        kPrintWithPayload9,
+        kReserve,
+    };
+private:
+    ConfigArgs& config_;
+    uds_bpf *skel_;
+    //perf_buffer *pb;
+    ring_buffer *rb_;
+    std::string data_;
+    const int kPollPeriodMs {200};
+    FormatType type_;
+    std::string formatHeader;
+    std::string formatHeaderVars;
+
+    std::unordered_map<std::uint32_t, std::string> pidToCommand_;
+
 public:
-    UdsBpf();
+    UdsBpf(ConfigArgs& config);
     ~UdsBpf();
     void open();
     void load();
@@ -23,24 +44,19 @@ public:
     void destroy();
 
     void setRodataFlags(int value) {
-        skel->rodata->filter_is_exist_path = value;
+        skel_->rodata->filter_is_exist_path = value;
     }
     void setBpfProgsLoadOpt();
 
-    void printHeader();
+
     void poll();
 private:
     static void handleEvent(void *ctx, void *data, size_t len);
-    std::string pidToCommand(pid_t pid);
-private:
-    uds_bpf *skel;
-    //perf_buffer *pb;
-    ring_buffer *rb;
-    std::string data;
-    const int kPollPeriodMs {200};
-    static const std::string formatHeader;
-    static const std::string formatHeaderNotPayload;
-    /** struct ArgsOpt 从构造函数中传入命令行的所有参数， 供类内使用 */
+    std::string pidToCommand(std::uint32_t pid);
+    std::string findCommand(std::uint32_t pid);
+    std::string getUdsType(int enumId);
+    void setHeader(FormatType type);
+    void printHeader();
 
 };
 
