@@ -4,25 +4,12 @@
     1. 将抓取到的数据，在终端输出
     2. 将抓取到的数据，存入pcap文件中，并可以使用wireshark进行分析
 */
-/*!
- * 1. 命令行参数解析
- *      - -u --uds 追踪unix domain socket
- *      - -m --mmap 追踪mmap
- *      - --filter_path=/path/to/file 追踪指定路径下的文件
- *      - --payload 是否打印 payload， 为保证性能，仅支持过滤状态跟踪，可使用 --force 强制开启全局payload打印
- *      - --force 强制开启全局payload打印
- *      - --pcap_file=/path/to/file.pcap 将输出结果保存为pcap文件，可以使用wireshark进行分析
- *      - --vvv --verbose 输出更多信息
- *      - -v --version 输出版本信息
- *      - -h --help 输出帮助信息
- * */
-
 #include <iostream>
 #include <csignal>
 
 #include "argparse/argparse.hpp"
-#include "spdlog/spdlog.h"  /** 注意 spdlog与fmt的顺序 */
 
+#include "spdlog/spdlog.h"  /** 注意 spdlog与fmt的顺序 */
 #if __cplusplus >= 202002L
 #include <format>
 namespace fmt = std;
@@ -65,42 +52,50 @@ int cmdParser(argparse::ArgumentParser& parser, ipc::ipcWatcher::ConfigArgs& con
     parser.add_argument("-u", "--uds")
         .help("Trace unix domain socket")
         .default_value(false)
-        .implicit_value(true);
+        .implicit_value(true)
+        .store_into(config.traceUds);
     parser.add_argument("-m", "--mmap")
         .help("Trace mmap")
         .default_value(false)
-        .implicit_value(true);
-    parser.add_argument("--filter_path")
+        .implicit_value(true)
+        .store_into(config.traceMmap);
+    parser.add_argument("--filterPath")
         .help("Filter path")
         .default_value("")
         .action([&config](const std::string& path) {
             /** --filter_path=/tmp/uds.socket
              * path: /tmp/uds.socket */
-            config.filter_path = path;
+            config.filterPath = path;
         });
-    parser.add_argument("--filter_exist_path")
-        .help("过滤存在路径的数据包")
+    parser.add_argument("--traceNoAnonUds")
+        .help("only trace no anon uds like /tmp/sample.uds")
         .default_value(false)
-        .implicit_value(true);
+        .implicit_value(true)
+        .store_into(config.traceNoAnonUds);
     parser.add_argument("--payload")
         .help("Print payload")
         .default_value(false)
-        .implicit_value(true);
+        .implicit_value(true)
+        .store_into(config.printPayload);
     parser.add_argument("--force")
         .help("Force enable payload printing")
         .default_value(false)
-        .implicit_value(true);
-    parser.add_argument("--pcap_file")
+        .implicit_value(true)
+        .store_into(config.forcePayload);
+    parser.add_argument("--pcapFile")
         .help("Save output to pcap file")
         .default_value("")
-        .action(
-                [&config](const std::string& path) {
-                    config.pcap_file = path;
-        });
+        .store_into(config.pcapFile);
+    parser.add_argument("--fromJson")
+        .help("read config args from json file")
+        .default_value(false)
+        .implicit_value(true)
+        .store_into(config.readFromJson);
     parser.add_argument("--vvv", "--verbose")
         .help("Output more information")
         .default_value(false)
-        .implicit_value(true);
+        .implicit_value(true)
+        .store_into(config.verbose);
     parser.add_argument("-v", "--version")
         .help("Output version information")
         .default_value(false)
@@ -111,7 +106,10 @@ int cmdParser(argparse::ArgumentParser& parser, ipc::ipcWatcher::ConfigArgs& con
                     exit(0);
                 }
                 );
-    /** add_argument: read config from config.file */
+//    parser.add_argument("reserve_sample_int")
+//        .help("Positional Arguments sample like: <...>/ipcwatcher 10")
+//        .scan<'i', int>();
+    //config.reserve = parser.get<int>("reserve_int");
     return 0;
 }
 
@@ -127,16 +125,21 @@ int main(int argc, char *argv[]) {
         SPDLOG_ERROR("{}", err.what());
         return 1;
     }
-    // 获取解析后的参数值
-    config.traceUds = parser.get<bool>("--uds");
-
-    ipc::ipcWatcher::UdsBpf udsBpf(config);
-    udsBpf.open();
-    //udsBpf.setRodataFlags(udsSetValue);
-    udsBpf.load();
-    udsBpf.attach();
-    while (!g_interrupted) {
-        udsBpf.poll();
+    if (config.traceUds) {
+        ipc::ipcWatcher::UdsBpf udsBpf(config);
+        udsBpf.open();
+        udsBpf.load();
+        udsBpf.attach();
+        while (!g_interrupted) {
+            udsBpf.poll();
+        }
     }
+    else if (config.traceMmap) {
+        fmt::print("do not support right now, exiting...\n");
+     }
+    else {
+        fmt::print("No trace type selected, exiting...\n");
+    }
+
 
 }

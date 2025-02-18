@@ -26,7 +26,7 @@ typedef unsigned short u16;
 typedef unsigned int u32;
 typedef unsigned long long u64;
 
-#define MAX_PAYLOAD_LEN 256
+#define MAX_PAYLOAD_LEN 512
 
 struct uds_event {
     u32 send_pid;                       /** 发送进程 */
