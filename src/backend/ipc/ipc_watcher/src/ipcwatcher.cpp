@@ -130,12 +130,6 @@ int main(int argc, char *argv[]) {
     // 获取解析后的参数值
     config.traceUds = parser.get<bool>("--uds");
 
-
-
-
-
-
-
     ipc::ipcWatcher::UdsBpf udsBpf(config);
     udsBpf.open();
     //udsBpf.setRodataFlags(udsSetValue);

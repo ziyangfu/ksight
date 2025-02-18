@@ -1,10 +1,10 @@
 /*!
  * \brief ipc_watcher工具环境参数，接收自命令行参数，或配置文件
- * \file  env.h
+ * \file  ConfigArgs.h
  * */
 
-#ifndef IPC_IPC_WATCHER_ENV_H
-#define IPC_IPC_WATCHER_ENV_H
+#ifndef IPC_IPC_WATCHER_CONFIG_ARGS_H
+#define IPC_IPC_WATCHER_CONFIG_ARGS_H
 
 #include <string>
 
@@ -31,6 +31,6 @@ struct ConfigArgs {
     ~ConfigArgs() = default;
 };
 
-}
+}  // namespace ipc::ipcWatcher
 
-#endif //IPC_IPC_WATCHER_ENV_H
+#endif //IPC_IPC_WATCHER_CONFIG_ARGS_H

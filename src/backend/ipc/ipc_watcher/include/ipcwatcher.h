@@ -14,8 +14,8 @@
 //
 
 /*!
- * \file ipcwatcher.h
  * \brief ipcwatcher工具的头文件，定义内核态与用户态数据传递的结构体
+ * \file ipcwatcher.h
  * */
 
 #ifndef IPC_IPC_WATCHER_IPC_WATCHER_H

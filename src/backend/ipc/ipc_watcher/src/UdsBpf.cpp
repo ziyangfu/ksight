@@ -18,7 +18,8 @@ UdsBpf::UdsBpf(ConfigArgs& config)
       rb_(nullptr),
       formatHeader(),
       pidCommandHash_(std::make_unique<std::unordered_map<std::uint32_t, std::string>>()),
-      type_(FormatType::kPrintNormal8)
+      type_(FormatType::kPrintNormal8),
+      printType_(PrintType::kTerminal)
 {
 }
 
@@ -290,4 +291,11 @@ switch (enumId) {
         break;
     }
     return type;
+}
+
+/*!
+ * \brief 将数据保存在pcap文件中
+ * */
+void UdsBpf::saveToPcap() {
+
 }

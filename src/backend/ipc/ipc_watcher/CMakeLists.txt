@@ -16,10 +16,16 @@ set(TOOL_BELONG_TO_MODULE ipc)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)
+set(FMT_DIR ${CMAKE_SOURCE_DIR}/third_party/fmt/include)
+set(SPDLOG_DIR ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
+if (NOT EXISTS ${ARG_PARSE_DIR} OR NOT EXISTS ${FMT_DIR} OR NOT EXISTS ${SPDLOG_DIR})
+    message(FATAL_ERROR "third party include directory does not exist.")
+endif ()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_SOURCE_DIR}/third_party/argparse/include)  # cmd parser
-include_directories(${CMAKE_SOURCE_DIR}/third_party/fmt/include) # fmt
-include_directories(${CMAKE_SOURCE_DIR}/third_party/spdlog/include)  # for log
+include_directories(${ARG_PARSE_DIR})  # cmd parser
+include_directories(${FMT_DIR}) # fmt
+include_directories(${SPDLOG_DIR})  # for log
 
 file(GLOB_RECURSE ${TOOL_NAME}_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
@@ -48,7 +54,7 @@ endforeach()
 
 
 add_executable(${TOOL_NAME} ${${TOOL_NAME}_SRCS})
-target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} pcap)
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
     target_link_libraries(${TOOL_NAME} ${app_stem}_skel)
