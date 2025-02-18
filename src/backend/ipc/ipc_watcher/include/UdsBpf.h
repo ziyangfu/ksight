@@ -7,6 +7,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <memory>
 #include "ConfigArgs.h"
 extern "C" {
 #include "ipc/ipcwatcher/uds.skel.h"
@@ -31,8 +32,7 @@ private:
     FormatType type_;
     std::string formatHeader;
     std::string formatHeaderVars;
-
-    std::unordered_map<std::uint32_t, std::string> pidToCommand_;
+    std::unique_ptr<std::unordered_map<std::uint32_t, std::string>> pidCommandHash_;
 
 public:
     UdsBpf(ConfigArgs& config);
@@ -52,12 +52,11 @@ public:
     void poll();
 private:
     static void handleEvent(void *ctx, void *data, size_t len);
-    std::string pidToCommand(std::uint32_t pid);
+    static std::string pidToCommand(std::uint32_t pid);
     std::string findCommand(std::uint32_t pid);
-    std::string getUdsType(int enumId);
-    void setHeader(FormatType type);
-    void printHeader();
-
+    static void handleCommand(std::string& command);
+    static std::string getUdsType(int enumId);
+    void setAndPrintHeader(FormatType type);
 };
 
 } // namespace ipc::ipcWatcher

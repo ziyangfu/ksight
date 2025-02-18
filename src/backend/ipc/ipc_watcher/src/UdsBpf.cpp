@@ -16,10 +16,10 @@ UdsBpf::UdsBpf(ConfigArgs& config)
       skel_(nullptr),
       //pb(nullptr),
       rb_(nullptr),
-      formatHeader()
+      formatHeader(),
+      pidCommandHash_(std::make_unique<std::unordered_map<std::uint32_t, std::string>>()),
+      type_(FormatType::kPrintNormal8)
 {
-    setHeader(FormatType::kPrintNormal8);
-
 }
 
 UdsBpf::~UdsBpf() {
@@ -72,36 +72,37 @@ void UdsBpf::attach() {
 
 /*!
  * \brief 选择部分事件，独立挂载
+ * \details 是否挂载，依据传递的ConfigArgs
  * */
 void UdsBpf::setBpfProgsLoadOpt() {
-    bpf_program__set_autoload(skel_->progs.unix_dgram_sendmsg, false);
-    bpf_program__set_autoload(skel_->progs.unix_dgram_recvmsg, false);
+    bpf_program__set_autoload(skel_->progs.unix_dgram_sendmsg, true);
+    bpf_program__set_autoload(skel_->progs.unix_dgram_recvmsg, true);
     bpf_program__set_autoload(skel_->progs.unix_stream_sendmsg, true);
     bpf_program__set_autoload(skel_->progs.unix_stream_recvmsg, true);
 }
 
 /*!
- * \brief 根据选项要求，打印头部信息
+ * \brief 根据选项要求，设置并打印头部信息
  */
-void UdsBpf::setHeader(FormatType type) {
+void UdsBpf::setAndPrintHeader(FormatType type) {
     type_ = type;
     switch (type) {
         case FormatType::kPrintNormal8: {
-            formatHeader = "{:<25} {:<15} {:<25} {:<15} {:<25} {:<10} {20} {30}\n";
-            formatHeaderVars = R"("Timestamp", "sendPID", "sendComm"
-                                     "recvPID", "recvComm", "Size", "Type", "Path")";
+            formatHeader = "{:<14} {:<10} {:<30} {:<10} {:<30} {:<10} {:<12} {:<30}\n";
+            fmt::print(formatHeader, "Timestamp", "sendPID", "sendComm",
+                       "recvPID", "recvComm", "Size", "Type", "Path");
             break;
         }
         case FormatType::kPrintWithPayload9: {
-            formatHeader = "{:<25} {:<15} {:<25} {:<15} {:<25} {:<10} {20} {30} {60}\n";
-            formatHeaderVars = R"("Timestamp", "sendPID", "sendComm"
-                                     "recvPID", "recvComm", "Size", "Type", "Path", "Payload")";
+            formatHeader = "{:<10} {:<10} {:<35} {:<10} {:<35} {:<10} {:<12} {:<30} {:<60}\n";
+            fmt::print(formatHeader, "Timestamp", "sendPID", "sendComm",
+                       "recvPID", "recvComm", "Size", "Type", "Path", "Payload");
             break;
         }
         case FormatType::kReserve: { /** reserve */
-            formatHeader = "{:<25} {:<15} {:<25} {:<15} {:<25}\n";
-            formatHeaderVars = R"("Timestamp", "sendPID", "sendComm"
-                                     "recvPID", "recvComm")";
+            formatHeader = "{:<10} {:<10} {:<25} {:<10} {:<25}\n";
+            fmt::print(formatHeader, "Timestamp", "sendPID", "sendComm",
+                       "recvPID", "recvComm");
             break;
         }
         default:
@@ -136,7 +137,7 @@ void UdsBpf::poll() {
 //
 //    }
     fmt::print("Tracing UDS send/recv events... Ctrl+C to exit\n");
-    printHeader();
+    setAndPrintHeader(type_);
 // 4. 轮询事件
     while (true) {
         //err = perf_buffer__poll(pb, 100 /* timeout_ms */);
@@ -146,12 +147,15 @@ void UdsBpf::poll() {
             break;
         }
         if (err < 0) {
-            printf("Error polling ring buffer: %d\n", err);
+            SPDLOG_ERROR("Error polling ring buffer: {}", err);
             break;
         }
     }
 }
 
+/*!
+ * \brief 清理释放资源
+ * */
 void UdsBpf::destroy() {
     ring_buffer__free(rb_);
     //perf_buffer__free(pb);
@@ -164,12 +168,64 @@ void UdsBpf::destroy() {
     if (udsBpf->type_ == FormatType::kPrintNormal8) {
         fmt::print(udsBpf->formatHeader,   e->timestamp,
                                            e->send_pid,
-                                           udsBpf->pidToCommand(e->send_pid),
+                                           udsBpf->findCommand(e->send_pid),
                                            e->recv_pid,
-                                           udsBpf->pidToCommand(e->recv_pid),
+                                           udsBpf->findCommand(e->recv_pid),
                                            e->size,
-                                           udsBpf->getUdsType(e->type),
+                                           ipc::ipcWatcher::UdsBpf::getUdsType(e->type),
                                            e->path);
+    }
+    else if (udsBpf->type_ == FormatType::kPrintWithPayload9) {
+        fmt::print("reserve");
+    }
+    else if (udsBpf->type_ == FormatType::kReserve) {
+        fmt::print("reserve");
+    }
+}
+
+/*!
+ * \brief 根据pid查找进程名
+ * \details 为了加速，避免频繁读取，若哈希表中有，则直接从哈希表中获取，若没有，则从文件系统中获取，并存入哈希表
+ * */
+std::string UdsBpf::findCommand(std::uint32_t pid) {
+    auto it = pidCommandHash_->find(pid);
+    if (it != pidCommandHash_->end()) {
+        return it->second;
+    }
+    else {
+        std::string cmd = pidToCommand(pid);
+        handleCommand(cmd);
+        pidCommandHash_->emplace(pid, cmd);
+        return cmd;
+    }
+    /*
+     * 使用 try_emplace:
+            try_emplace 会在插入时直接构造元素，并返回一个 std::pair，指示插入是否成功以及元素的位置。
+            如果元素已经存在，inserted 为 false，it 指向已存在的元素。
+            如果元素不存在，inserted 为 true，it 指向新插入的元素
+      但不合适，还是会每次调用pidToCommand， 不符合加速要求
+    auto [it, inserted] = pidCommandHash_->try_emplace(pid, pidToCommand(pid));
+    if (inserted) {
+        SPDLOG_DEBUG("Inserted new command for PID {}: {}", pid, it->second);
+    }
+    return it->second;
+    */
+}
+
+/*!
+ * \brief 处理command，删除命令后带的一系列参数，便于在终端展示
+ * \details 可以进一步考虑限制输出大小，例如 {：<25} 强制截取前面的命令
+ * */
+void UdsBpf::handleCommand(std::string &command) {
+    /** 找到第一个空格的位置 */
+    size_t spacePos = command.find(' ');
+    /** 如果找到了空格，则截取空格之前的部分 */
+    if (spacePos != std::string::npos) {
+        command = command.substr(0, spacePos);
+    }
+    /** 如果截取后的字符串长度大于30个字符，则截取前30个字符 */
+    if (command.length() > 30) {
+        command = command.substr(0, 30);
     }
 }
 
@@ -235,13 +291,3 @@ switch (enumId) {
     }
     return type;
 }
-
-void UdsBpf::printHeader() {
-    fmt::print(formatHeader, formatHeaderVars);
-}
-
-
-std::string UdsBpf::findCommand(std::uint32_t pid) {
-    return "";
-}
-

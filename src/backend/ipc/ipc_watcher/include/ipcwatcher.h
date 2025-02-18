@@ -27,7 +27,7 @@ typedef unsigned int u32;
 typedef unsigned long long u64;
 
 #define MAX_PAYLOAD_LEN 256
-// 定义通过 ringbuffer 传递到用户态的数据结构
+
 struct uds_event {
     u32 send_pid;                       /** 发送进程 */
     u32 recv_pid;                       /** 接收进程 */
@@ -35,11 +35,11 @@ struct uds_event {
     u32 size;                           /** 发送/接收的数据大小 */
     u16 type;                           /** SOCK_STREAM(1) / SOCK_DGRAM(2) / ... */
     u64 timestamp;                      /** 记录发送的时间戳 */
-    //char payload[MAX_PAYLOAD_LEN];      /** 记录发送/接收的实际数据 */
 };
-
-struct uds_payload {
-    char payload[MAX_PAYLOAD_LEN];
+/** 定义通过 ringbuffer 传递到用户态的数据结构 */
+struct uds_transfer_data {
+    struct uds_event event;
+    char payload[MAX_PAYLOAD_LEN]; /** 记录发送/接收的实际数据 */
 };
 
 

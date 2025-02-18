@@ -71,7 +71,28 @@ static void get_uds_path(struct unix_sock *u, char *path) {
 SEC("kprobe/unix_dgram_sendmsg")
 int BPF_KPROBE(unix_dgram_sendmsg, const struct socket *sock, const struct msghdr *msg,
 			      size_t len) {
-    // TODO
+    u64 current_pid = bpf_get_current_pid_tgid() >> 32;
+    struct sock *sk = BPF_CORE_READ(sock, sk);
+    struct uds_event zero = {0};
+    struct uds_event* event;
+    event = (struct uds_event*)bpf_map_lookup_or_try_init(&uds_data_map, &sk, &zero);
+    if (event == NULL) {
+        return 0;
+    }
+    struct unix_sock *unix_sk = (struct unix_sock*)sk;
+    const struct unix_address *addr = BPF_CORE_READ(unix_sk, addr);
+    /** 存在显性路径 */
+    if (addr) {
+        const char *path = BPF_CORE_READ(addr, name->sun_path);
+        bpf_probe_read_kernel_str(event->path, sizeof(event->path), path);
+    }
+    else {
+        bpf_probe_read_kernel_str(event->path, 7, "<none>");
+    }
+    event->send_pid = current_pid;
+    event->size = (u32)len;
+    event->type = BPF_CORE_READ(sk, sk_type);
+    event->timestamp = bpf_ktime_get_ns() / 1000;
     return 0;
 }
 
@@ -82,7 +103,30 @@ int BPF_KPROBE(unix_dgram_sendmsg, const struct socket *sock, const struct msghd
 SEC("kprobe/unix_dgram_recvmsg")
 int BPF_KPROBE(unix_dgram_recvmsg, const struct socket *sock, const struct msghdr *msg,
 			      size_t size, int flags) {
-    // TODO
+    struct sock* sk = BPF_CORE_READ(sock, sk);
+    struct uds_event* event = bpf_map_lookup_elem(&uds_data_map, &sk);
+    if (!event)
+        return 0;
+    event->recv_pid = bpf_get_current_pid_tgid() >> 32;
+    //event->payload[0] = '\0';
+
+    struct uds_event* trans_rb_event =
+            bpf_ringbuf_reserve(&uds_events, sizeof(struct uds_event), 0);
+    if (trans_rb_event == NULL) {
+        bpf_map_delete_elem(&uds_data_map, &sk);
+        return 0;
+    }
+    trans_rb_event->send_pid = event->send_pid;
+    trans_rb_event->recv_pid = event->recv_pid;
+    bpf_probe_read_kernel_str(trans_rb_event->path, sizeof(event->path), event->path);
+    trans_rb_event->size = event->size;
+    trans_rb_event->type = event->type;
+    trans_rb_event->timestamp = event->timestamp;
+    //trans_rb_event->payload[0] = '\0';
+
+    bpf_map_delete_elem(&uds_data_map, &sk);
+
+    bpf_ringbuf_submit(trans_rb_event, 0);
     return 0;
 }
 
