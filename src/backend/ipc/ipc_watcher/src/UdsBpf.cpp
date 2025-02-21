@@ -19,8 +19,13 @@ UdsBpf::UdsBpf(ConfigArgs& config)
       formatHeader(),
       pidCommandHash_(std::make_unique<std::unordered_map<std::uint32_t, std::string>>()),
       type_(FormatType::kPrintNormal8),
-      printType_(PrintType::kTerminal)
+      printType_(PrintType::kTerminal),
+      pcapGenerator_(nullptr)
 {
+    if (!config_.pcapFile.empty()) {
+        printType_ = PrintType::kPcap;
+        pcapGenerator_ = std::make_unique<PcapGenerator>(config.pcapFile);
+    }
 }
 
 UdsBpf::~UdsBpf() {
@@ -85,30 +90,37 @@ void UdsBpf::setBpfProgsLoadOpt() {
 /*!
  * \brief 根据选项要求，设置并打印头部信息
  */
-void UdsBpf::setAndPrintHeader(FormatType type) {
-    type_ = type;
-    switch (type) {
-        case FormatType::kPrintNormal8: {
-            formatHeader = "{:<14} {:<10} {:<30} {:<10} {:<30} {:<10} {:<12} {:<30}\n";
-            fmt::print(formatHeader, "Timestamp", "sendPID", "sendComm",
-                       "recvPID", "recvComm", "Size", "Type", "Path");
-            break;
+void UdsBpf::setAndPrintHeader() {
+    if (printType_ == PrintType::kTerminal) {
+        fmt::print("Tracing UDS send/recv events... Ctrl+C to exit\n");
+        switch (type_) {
+            case FormatType::kPrintNormal8: {
+                formatHeader = "{:<14} {:<10} {:<30} {:<10} {:<30} {:<10} {:<12} {:<30}\n";
+                fmt::print(formatHeader, "Timestamp", "sendPID", "sendComm",
+                           "recvPID", "recvComm", "Size", "Type", "Path");
+                break;
+            }
+            case FormatType::kPrintWithPayload9: {
+                formatHeader = "{:<10} {:<10} {:<35} {:<10} {:<35} {:<10} {:<12} {:<30} {:<60}\n";
+                fmt::print(formatHeader, "Timestamp", "sendPID", "sendComm",
+                           "recvPID", "recvComm", "Size", "Type", "Path", "Payload");
+                break;
+            }
+            case FormatType::kReserve: { /** reserve */
+                formatHeader = "{:<10} {:<10} {:<25} {:<10} {:<25}\n";
+                fmt::print(formatHeader, "Timestamp", "sendPID", "sendComm",
+                           "recvPID", "recvComm");
+                break;
+            }
+            default:
+                break;
         }
-        case FormatType::kPrintWithPayload9: {
-            formatHeader = "{:<10} {:<10} {:<35} {:<10} {:<35} {:<10} {:<12} {:<30} {:<60}\n";
-            fmt::print(formatHeader, "Timestamp", "sendPID", "sendComm",
-                       "recvPID", "recvComm", "Size", "Type", "Path", "Payload");
-            break;
-        }
-        case FormatType::kReserve: { /** reserve */
-            formatHeader = "{:<10} {:<10} {:<25} {:<10} {:<25}\n";
-            fmt::print(formatHeader, "Timestamp", "sendPID", "sendComm",
-                       "recvPID", "recvComm");
-            break;
-        }
-        default:
-            break;
     }
+    else if (printType_ == PrintType::kPcap) {
+        fmt::print("Capture data and saving in {}, Ctrl+C to exit; "
+                   "\nYou can import pcap file and play the data later in wireshark\n", config_.pcapFile);
+    }
+
 }
 
 /*!
@@ -137,8 +149,7 @@ void UdsBpf::poll() {
 //        destroy();
 //
 //    }
-    fmt::print("Tracing UDS send/recv events... Ctrl+C to exit\n");
-    setAndPrintHeader(type_);
+    setAndPrintHeader();
 // 4. 轮询事件
     while (true) {
         //err = perf_buffer__poll(pb, 100 /* timeout_ms */);
@@ -166,21 +177,30 @@ void UdsBpf::destroy() {
 /** static */ void UdsBpf::handleEvent(void *ctx, void *data, size_t len) {
     auto udsBpf = reinterpret_cast<UdsBpf*>(ctx);
     auto *e = reinterpret_cast<uds_event*>(data);
-    if (udsBpf->type_ == FormatType::kPrintNormal8) {
-        fmt::print(udsBpf->formatHeader,   e->timestamp,
-                                           e->send_pid,
-                                           udsBpf->findCommand(e->send_pid),
-                                           e->recv_pid,
-                                           udsBpf->findCommand(e->recv_pid),
-                                           e->size,
-                                           ipc::ipcWatcher::UdsBpf::getUdsType(e->type),
-                                           e->path);
+
+    if (udsBpf->printType_ == PrintType::kTerminal) {
+        if (udsBpf->type_ == FormatType::kPrintNormal8) {
+            fmt::print(udsBpf->formatHeader,   e->timestamp,
+                       e->send_pid,
+                       udsBpf->findCommand(e->send_pid),
+                       e->recv_pid,
+                       udsBpf->findCommand(e->recv_pid),
+                       e->size,
+                       ipc::ipcWatcher::UdsBpf::getUdsType(e->type),
+                       e->path);
+        }
+        else if (udsBpf->type_ == FormatType::kPrintWithPayload9) {
+            fmt::print("reserve2");
+        }
+        else if (udsBpf->type_ == FormatType::kReserve) {
+            fmt::print("reserve");
+        }
     }
-    else if (udsBpf->type_ == FormatType::kPrintWithPayload9) {
-        fmt::print("reserve");
-    }
-    else if (udsBpf->type_ == FormatType::kReserve) {
-        fmt::print("reserve");
+    else if (udsBpf->printType_ == PrintType::kPcap) {
+        //uds_event event = *e;
+        //udsBpf->pcapGenerator_->WriteToPcap(event);
+        udsBpf->pcapGenerator_->WriteToPcap(e);
+        //fmt::print("tracing");
     }
 }
 

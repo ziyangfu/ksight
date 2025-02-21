@@ -16,6 +16,16 @@ set(TOOL_BELONG_TO_MODULE ipc)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 查找 libpcap 库文件和头文件
+find_library(PCAP_LIBRARY pcap REQUIRED)
+find_path(PCAP_INCLUDE_DIR pcap.h REQUIRED)
+if(NOT PCAP_LIBRARY OR NOT PCAP_INCLUDE_DIR)
+    message(FATAL_ERROR "libpcap not found")
+else ()
+    message(STATUS "\t\t libpcap found")
+endif()
+# include_directories(${PCAP_INCLUDE_DIR})  # 装在系统目录，不用
+
 set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)
 set(FMT_DIR ${CMAKE_SOURCE_DIR}/third_party/fmt/include)
 set(SPDLOG_DIR ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
@@ -54,7 +64,7 @@ endforeach()
 
 
 add_executable(${TOOL_NAME} ${${TOOL_NAME}_SRCS})
-target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} pcap)
+target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} ${PCAP_LIBRARY})
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
     target_link_libraries(${TOOL_NAME} ${app_stem}_skel)

@@ -11,9 +11,12 @@
 #include <optional>
 #include "ConfigArgs.h"
 #include "ipcwatcher.h"
+
 extern "C" {
 #include "ipc/ipcwatcher/uds.skel.h"
 }
+
+#include "PcapGenerator.h"
 
 namespace ipc::ipcWatcher {
 
@@ -44,6 +47,7 @@ private:
     std::unique_ptr<std::unordered_map<std::uint32_t, std::string>> pidCommandHash_;
 
     std::optional<struct uds_transfer_data> udsData_;   /** 只有需要输出到pcap文件中采用 */
+    std::unique_ptr<PcapGenerator> pcapGenerator_;
 
 public:
     explicit UdsBpf(ConfigArgs& config);
@@ -64,7 +68,7 @@ private:
     std::string findCommand(std::uint32_t pid);
     static void handleCommand(std::string& command);
     static std::string getUdsType(int enumId);
-    void setAndPrintHeader(FormatType type);
+    void setAndPrintHeader();
     void saveToPcap();
 };
 
