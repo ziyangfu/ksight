@@ -96,8 +96,8 @@ int cmdParser(argparse::ArgumentParser& parser, ipc::ipcWatcher::ConfigArgs& con
         .default_value(false)
         .implicit_value(true)
         .store_into(config.verbose);
-    parser.add_argument("-v", "--version")
-        .help("Output version information")
+    parser.add_argument("-v", "--version")           /** 使用自定义的版本显示 */
+        .help("Output version information and exit")
         .default_value(false)
         .implicit_value(true)
         .action(
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
     spdlog::set_level(spdlog::level::info);
     //initSignalHandling();
     ipc::ipcWatcher::ConfigArgs config;
-    argparse::ArgumentParser parser("ipc_watcher");
+    argparse::ArgumentParser parser("ipc_watcher", "1.0", argparse::default_arguments::help);
     cmdParser(parser, config);
     try {
         parser.parse_args(argc, argv);
