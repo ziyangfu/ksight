@@ -2,6 +2,12 @@
  * \brief pcap文件生成器，基于libpcap
  * */
 
+/** FIXME: The capture file appears to have been cut short in the middle of a packet
+ * ctrl+c 异常退出问题
+ * https://blog.csdn.net/weixin_43869898/article/details/116056580
+ * https://stackoverflow.com/questions/13563523/the-capture-file-appears-to-have-been-cut-short-in-the-middle-of-a-packet-how
+ * */
+
 #ifndef IPC_IPC_WATCHER_PCAP_GENERATOR_H
 #define IPC_IPC_WATCHER_PCAP_GENERATOR_H
 

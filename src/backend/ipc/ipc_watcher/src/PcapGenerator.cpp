@@ -15,7 +15,7 @@ using namespace ipc::ipcWatcher;
 //template<class DataStruct>
 PcapGenerator::PcapGenerator(std::string& path)
     : path_(path),
-      handler_(pcap_open_dead(0, 65535)),
+      handler_(pcap_open_dead(12, 65535)),
       dumper_(pcap_dump_open(handler_, path_.data()))
 {
     //std::cout << "dumper_: " << dumper_ << std::endl;

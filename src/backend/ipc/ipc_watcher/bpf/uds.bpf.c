@@ -199,4 +199,134 @@ int BPF_KPROBE(unix_stream_recvmsg, const struct socket *sock, const struct msgh
     return 0;
 }
 
+int probe_unix_socket_sendmsg(struct pt_regs *ctx,
+                              struct socket *sock,
+                              struct msghdr *msg,
+                              size_t len)
+{
+    struct packet *packet;
+    struct unix_address *addr;
+    char *buf, *sock_path;
+    unsigned long path[__PATH_LEN_U64__] = {0};
+    unsigned int n, match = 0, offset;
+    struct iov_iter *iter;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,0,0)
+    const struct iovec *iov;
+#else
+    const struct kvec *iov;
+#endif
+    struct pid *peer_pid;
+
+    addr = ((struct unix_sock *)sock->sk)->addr;
+    if (addr->len > 0) {
+        sock_path = (char *)addr + SOCK_PATH_OFFSET;
+        if (*sock_path == 0) {
+            // abstract sockets start with \\0 and the name comes after
+            // (they actually have no @ prefix but some tools use that)
+            bpf_probe_read(&path, __PATH_LEN__ - 1, sock_path + 1);
+        } else {
+            bpf_probe_read(&path, __PATH_LEN__, sock_path);
+        }
+        __PATH_FILTER__
+    }
+
+    addr = ((struct unix_sock *)((struct unix_sock *)sock->sk)->peer)->addr;
+    if (match == 0 && addr->len > 0) {
+        sock_path = (char *)addr + SOCK_PATH_OFFSET;
+        if (*sock_path == 0) {
+            // abstract sockets start with \\0 and the name comes after
+            // (they actually have no @ prefix but some tools use that)
+            bpf_probe_read(&path, __PATH_LEN__ - 1, sock_path + 1);
+        } else {
+            bpf_probe_read(&path, __PATH_LEN__, sock_path);
+        }
+        __PATH_FILTER__
+    }
+
+    if (match == 0)
+        return 0;
+
+    n = bpf_get_smp_processor_id();
+    packet = packet_array.lookup(&n);
+    if (packet == NULL)
+        return 0;
+
+    packet->pid = bpf_get_current_pid_tgid() >> 32;
+    bpf_get_current_comm(&packet->comm, sizeof(packet->comm));
+    bpf_probe_read(&packet->path, UNIX_PATH_MAX, sock_path);
+    packet->peer_pid = sock->sk->sk_peer_pid->numbers->nr;
+
+    __PID_FILTER__
+
+            iter = &msg->msg_iter;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,0,0)
+    if (iter->iter_type == ITER_UBUF) {
+        packet->len = len;
+        packet->flags = 0;
+        buf = iter->ubuf;
+        n = len;
+
+        bpf_probe_read(
+            &packet->data,
+            // check size in args to make compiler/validator happy
+            n > sizeof(packet->data) ? sizeof(packet->data) : n,
+            buf);
+
+        n += offsetof(struct packet, data);
+        events.perf_submit(
+            ctx,
+            packet,
+            // check size in args to make compiler/validator happy
+            n > sizeof(*packet) ? sizeof(*packet) : n);
+
+        return 0;
+    }
+
+    if (iter->iter_type != ITER_IOVEC || iter->iov_offset != 0) {
+#else
+    if (iter->iov_offset != 0) {
+#endif
+        packet->len = len;
+        packet->flags = SS_PACKET_F_ERR;
+        events.perf_submit(ctx, packet, offsetof(struct packet, data));
+        return 0;
+    }
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0)
+    iov = iter->__iov;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6,0,0)
+    iov = iter->iov;
+#else
+    iov = iter->kvec;
+#endif
+
+#pragma unroll
+    for (int i = 0; i < SS_MAX_SEGS_PER_MSG; i++) {
+        if (i >= iter->nr_segs)
+            break;
+
+        packet->len = iov->iov_len;
+        packet->flags = 0;
+
+        buf = iov->iov_base;
+        n = iov->iov_len;
+        bpf_probe_read(
+                &packet->data,
+                // check size in args to make compiler/validator happy
+                n > sizeof(packet->data) ? sizeof(packet->data) : n,
+                buf);
+
+        n += offsetof(struct packet, data);
+        events.perf_submit(
+                ctx,
+                packet,
+                // check size in args to make compiler/validator happy
+                n > sizeof(*packet) ? sizeof(*packet) : n);
+
+        iov++;
+    }
+
+    return 0;
+}
+
 char LICENSE[] SEC("license") = "GPL";
