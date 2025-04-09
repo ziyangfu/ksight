@@ -3,16 +3,15 @@ title: Linux内核内存管理核心问题
 date: 2025-03-13 16:47:35
 tags:
 - 原创
-
 ---
 
 ### Linux内核内存管理核心问题
 
 > 以下是忘记哪位大师提出的核心问题，尝试在AI的帮助下进行解答
 
-1. **<font style="color:rgb(0, 0, 0);">在系统启动时，ARM Linux内核如何知道系统中有多大的内存空间？</font>**
+##### 1. 在系统启动时，ARM Linux内核如何知道系统中有多大的内存空间？
 
-AI 答：内存硬件信息写在设备树文件中，bootloader读取设备树文件，并传递给内核，内核解析设备树文件，动态获取硬件系统内存信息。
+答：内存硬件信息写在设备树文件中，bootloader读取设备树文件，并传递给内核，内核解析设备树文件，动态获取硬件系统内存信息。
 
 ```bash
 +-------------------+       +-------------------+       +-------------------+
@@ -30,15 +29,17 @@ dmesg | grep Memory
 [    0.164957] x86/mm: Memory block size: 128M
 ```
 
+#####  2. 在32bit Linux内核中，用户空间和内核空间的比例通常是3:1，可以修改成2:2吗？
 
+答：可以的，通过menuconfig。`make ARCH=arm menuconfig`
 
-2. **在32bit Linux内核中，用户空间和内核空间的比例通常是3:1，可以修改成2:2吗？**
+Kernel Features -> Memory Split
 
-答：可以的，通过menuconfig。
+![image-20250409145112157](Linux内核内存管理核心问题/image-20250409145112157.png)
 
-1. <font style="color:rgb(64, 64, 64);">进入</font><font style="color:rgb(64, 64, 64);"> </font>**<font style="color:rgb(64, 64, 64);">Processor type and features</font>**<font style="color:rgb(64, 64, 64);"> </font><font style="color:rgb(64, 64, 64);">→</font><font style="color:rgb(64, 64, 64);"> </font>**<font style="color:rgb(64, 64, 64);">Memory split</font>**<font style="color:rgb(64, 64, 64);">。</font>
-2. <font style="color:rgb(64, 64, 64);">选择 </font>**<font style="color:rgb(64, 64, 64);">2G/2G user/kernel split</font>**<font style="color:rgb(64, 64, 64);">（即</font>`<font style="color:rgb(64, 64, 64);">CONFIG_VMSPLIT_2G</font>`<font style="color:rgb(64, 64, 64);">）。</font>
-3. <font style="color:rgb(64, 64, 64);">然后编译新内核</font>
+![image-20250409145145834](Linux内核内存管理核心问题/image-20250409145145834.png)
+
+实际是在kconfig中，如下：
 
 ```bash
 choice
@@ -62,139 +63,74 @@ choice
 		bool "1G/3G user/kernel split"
 endchoice
 ```
+注意：64位（arm64）下，没有Memory Split，也就是无法修改。
 
----
+#####  3. 物理内存页面如何添加到伙伴系统中，是一页一页添加，还是以2的几次幂来加入呢？
 
-4. **<font style="color:rgb(0, 0, 0);">物理内存页面如何添加到伙伴系统中，是一页一页添加，还是以2的几次幂来加入呢？</font>**
+答： 在伙伴系统中，物理内存页面是**以2的幂次方大小的块的形式**添加到系统中的。这种设计使得内存管理更加高效，同时也便于内存块的合并和拆分操作。
+在Linux内核的伙伴系统（Buddy System）中，物理内存页面的分配和回收是以2的幂次方大小的块为单位进行管理的。具体来说，内存页面的添加（回收）到伙伴系统中是以2的幂次方大小的块来加入的，而不是一页一页单独添加的。
 
-<font style="color:rgb(0, 0, 0);">答： </font><font style="color:rgb(6, 6, 7);">在伙伴系统中，物理内存页面是以2的幂次方大小的块的形式添加到系统中的。这种设计使得内存管理更加高效，同时也便于内存块的合并和拆分操作</font>
+![image-20250409150319864](Linux内核内存管理核心问题/image-20250409150319864.png)
 
-> <font style="color:rgb(6, 6, 7);">在Linux内核的伙伴系统（Buddy System）中，物理内存页面的分配和回收是以2的幂次方大小的块为单位进行管理的。具体来说，内存页面的添加（回收）到伙伴系统中是以2的幂次方大小的块来加入的，而不是一页一页单独添加的</font>
+**伙伴系统的基本原理**
+伙伴系统是一种内存分配算法，主要用于管理物理内存页面。它将内存划分为大小为2的幂次方的块（如1页、2页、4页、8页……），每个块称为一个“伙伴”。当需要分配内存时，系统会根据请求的大小找到合适大小的伙伴块；当释放内存时，系统会将释放的内存块重新加入到伙伴系统中。
+**内存页面的添加方式**
+
+1. 内存块的大小：伙伴系统中的内存块大小必须是2的幂次方。例如，1页、2页、4页、8页、16页等。这是因为伙伴系统的合并和拆分操作依赖于这种幂次方的大小，能够高效地进行内存管理。
+2. 内存块的回收：当一个进程释放内存时，它会将释放的内存块以2的幂次方大小的块的形式返回给伙伴系统。例如，如果一个进程释放了一个8页大小的内存块，这个8页的块会被直接添加到伙伴系统中，而不是一页一页地分别添加。
+3. 合并机制：如果释放的内存块与伙伴系统中已有的相邻内存块大小相同，它们可以合并成一个更大的块。例如，如果伙伴系统中已经有一个4页的块，而释放的内存块也是一个4页的块，并且它们在物理内存中是相邻的，那么它们可以合并成一个8页的块。
+
+如果一页一页地添加内存到伙伴系统中，会导致以下问题：
+
+1. 效率低下：一页一页地添加会增加管理开销，因为每次添加都需要更新伙伴系统的状态。
+2. 碎片化问题：一页一页地添加会增加内存碎片化的风险，导致难以找到足够大的连续内存块来满足较大内存分配请求。
+
+通过以2的幂次方大小的块来管理内存，伙伴系统能够高效地进行内存分配和回收，同时减少内存碎片化。
+
+##### 4. 内核的一级页表存放在什么地方？二级页表又存放在什么地方？
+
+答：ARM32架构下，内核的一级页表基址（PGD）存在于页表基地址寄存器`TTBR1`中，记录页表项的一级页表与二级页表存在于物理内存中。
+ARM32架构下，一级页表的基址存在寄存器中，其中`TTBR0`用于用户空间的地址翻译。`TTBR1`用于内核空间的地址翻译。
+页表分为内核与用户进程两种。所有的内核进程地址空间的页表是共用一套的，所以`TTBR1`的值不会改变。用户进程则是每一个进程一个页表，各自独立。`TTBR0`代表了当前用户进程的页表基地址，其值会随着用户进程的切换而改变。
+
+![img](Linux内核内存管理核心问题/33c9fea164d357ce300bc4c314364354.png)
+
+​																					*ARM64架构*
+
+对于一个ARM32四核处理器来说，TTBR0有几个？
+
+页表基地址寄存器存在与MMU中，对于SMP对称多处理多核处理器来说，每个核心均有一个MMU，因此页表基地址寄存器有4个，TTBR1指向物理内存中的同一份页表。当一个核心修改页表项时，会通过缓存一致性协议与BBM（**Break-Before-Make**）机制确保其他核心的TLB失效旧条目，避免使用过时数据。
+
+> [一文搞懂 | ARM MMU](https://cloud.tencent.com/developer/article/1950803)
 >
-> ### <font style="color:rgb(6, 6, 7);">伙伴系统的基本原理</font>
-> <font style="color:rgb(6, 6, 7);">伙伴系统是一种内存分配算法，主要用于管理物理内存页面。它将内存划分为大小为2的幂次方的块（如1页、2页、4页、8页……），每个块称为一个“伙伴”。当需要分配内存时，系统会根据请求的大小找到合适大小的伙伴块；当释放内存时，系统会将释放的内存块重新加入到伙伴系统中。</font>
->
-> ### <font style="color:rgb(6, 6, 7);">内存页面的添加方式</font>
-> 1. **<font style="color:rgb(6, 6, 7);">内存块的大小</font>**<font style="color:rgb(6, 6, 7);">：</font>
->     - <font style="color:rgb(6, 6, 7);">伙伴系统中的内存块大小必须是2的幂次方。例如，1页、2页、4页、8页、16页等。</font>
->     - <font style="color:rgb(6, 6, 7);">这是因为伙伴系统的合并和拆分操作依赖于这种幂次方的大小，能够高效地进行内存管理。</font>
-> 2. **<font style="color:rgb(6, 6, 7);">内存块的回收</font>**<font style="color:rgb(6, 6, 7);">：</font>
->     - <font style="color:rgb(6, 6, 7);">当一个进程释放内存时，它会将释放的内存块以2的幂次方大小的块的形式返回给伙伴系统。</font>
->     - <font style="color:rgb(6, 6, 7);">例如，如果一个进程释放了一个8页大小的内存块，这个8页的块会被直接添加到伙伴系统中，而不是一页一页地分别添加。</font>
-> 3. **<font style="color:rgb(6, 6, 7);">合并机制</font>**<font style="color:rgb(6, 6, 7);">：</font>
->     - <font style="color:rgb(6, 6, 7);">如果释放的内存块与伙伴系统中已有的相邻内存块大小相同，它们可以合并成一个更大的块。</font>
->     - <font style="color:rgb(6, 6, 7);">例如，如果伙伴系统中已经有一个4页的块，而释放的内存块也是一个4页的块，并且它们在物理内存中是相邻的，那么它们可以合并成一个8页的块。</font>
->
-> ### <font style="color:rgb(6, 6, 7);">为什么不是一页一页添加</font>
-> <font style="color:rgb(6, 6, 7);">如果一页一页地添加内存到伙伴系统中，会导致以下问题：</font>
->
-> + **<font style="color:rgb(6, 6, 7);">效率低下</font>**<font style="color:rgb(6, 6, 7);">：一页一页地添加会增加管理开销，因为每次添加都需要更新伙伴系统的状态。</font>
-> + **<font style="color:rgb(6, 6, 7);">碎片化问题</font>**<font style="color:rgb(6, 6, 7);">：一页一页地添加会增加内存碎片化的风险，导致难以找到足够大的连续内存块来满足较大内存分配请求。</font>
->
-> <font style="color:rgb(6, 6, 7);">通过以2的幂次方大小的块来管理内存，伙伴系统能够高效地进行内存分配和回收，同时减少内存碎片化。</font>
->
+> [[TTBR0与TTBR1](https://www.cnblogs.com/DF11G/p/14486558.html)](https://www.cnblogs.com/DF11G/p/14486558.html)
+
+##### 5. 用户进程的一级页表存放在什么地方？二级页表呢？
+
+答：用户进程的一级页表与二级页表均存放在物理内存中。ARM32采用2级页表设计，ARM64采用四级页表设计（PGD-PUD-PMD-PTE）。
+
+用户进程一级页表的地址存放在MMU中的页表基址寄存器中， ARM32为TTBR0， ARM64为TTBR0_EL0
+
+![img](Linux内核内存管理核心问题/bb8083e0e10f7cddce8f6d5f35d0b28e.png)
+
+> | **特权级** | **名称**     | **用途**                          | **典型代码示例**             |
+> | :--------- | :----------- | :-------------------------------- | :--------------------------- |
+> | **EL0**    | 用户态       | 运行普通应用程序                  | 用户程序、动态库             |
+> | **EL1**    | 内核态       | 操作系统内核和驱动                | Linux 内核、设备驱动         |
+> | **EL2**    | 虚拟机监控级 | 虚拟化管理（Hypervisor）          | KVM、Xen                     |
+> | **EL3**    | 安全监控级   | 安全与非安全世界切换（TrustZone） | Secure Monitor、安全启动固件 |
 
 
+#####  6. 在ARM32系统中，页表是如何映射的？在ARM64系统中，页表又是如何映射的？
 
-1. <font style="color:rgb(0, 0, 0);">内核的一级页表存放在什么地方？二级页表又存放在什么地方？</font>
-
-> [需确认] 一级页表与二级页表存在物理内存中，<font style="color:rgb(6, 6, 7);">一级页表的基地址存放在TTBRx寄存器中</font>
->
-
-2. <font style="color:rgb(0, 0, 0);">用户进程的一级页表存放在什么地方？二级页表呢？</font>
-
-:::info
-<font style="color:rgb(64, 64, 64);">用户进程的一级页表和二级页表的存储位置及管理方式如下：</font>
-
-### **<font style="color:rgb(64, 64, 64);">一级页表（如页目录）</font>**
-1. **<font style="color:rgb(64, 64, 64);">物理内存中</font>**<font style="color:rgb(64, 64, 64);">  
-</font><font style="color:rgb(64, 64, 64);">一级页表（例如x86架构中的页目录）存储在物理内存中，由操作系统内核负责分配和管理。每个进程在创建时，内核会为其分配一个独立的页目录，用于记录该进程的虚拟地址到物理地址的映射关系。</font>
-2. **<font style="color:rgb(64, 64, 64);">通过CR3寄存器定位</font>**<font style="color:rgb(64, 64, 64);">  
-</font><font style="color:rgb(64, 64, 64);">进程切换时，CPU的CR3寄存器会更新为当前进程页目录的物理地址。通过CR3，MMU（内存管理单元）在地址转换时找到一级页表的位置。</font>
-3. **<font style="color:rgb(64, 64, 64);">内核空间管理</font>**<font style="color:rgb(64, 64, 64);">  
-</font><font style="color:rgb(64, 64, 64);">页目录属于内核数据结构，用户进程无法直接访问或修改。内核通过特权指令（如修改CR3）和内存管理算法维护这些页表。</font>
-
-### **<font style="color:rgb(64, 64, 64);">二级页表（如页表项）</font>**
-1. **<font style="color:rgb(64, 64, 64);">物理内存中</font>**<font style="color:rgb(64, 64, 64);">  
-</font><font style="color:rgb(64, 64, 64);">二级页表（由一级页表条目指向的具体页表）同样存储在物理内存中。每个一级页表项（Page Directory Entry, PDE）指向一个二级页表的物理地址。</font>
-2. **<font style="color:rgb(64, 64, 64);">动态分配与释放</font>**<font style="color:rgb(64, 64, 64);">  
-</font><font style="color:rgb(64, 64, 64);">二级页表按需分配。当进程申请新内存时，内核可能动态创建对应的二级页表；当内存释放时，若页表不再被使用，内核会回收其物理内存。</font>
-3. **<font style="color:rgb(64, 64, 64);">常驻内存优化</font>**<font style="color:rgb(64, 64, 64);">  
-</font><font style="color:rgb(64, 64, 64);">页表通常常驻物理内存，避免因换页（swap）导致性能下降。但在极端内存压力下，某些系统可能将部分页表换出到磁盘，这种情况较为罕见。</font>
-
-### **<font style="color:rgb(64, 64, 64);">关键点总结</font>**
-+ **<font style="color:rgb(64, 64, 64);">存储位置</font>**<font style="color:rgb(64, 64, 64);">：一级和二级页表均位于物理内存，由内核直接管理。</font>
-+ **<font style="color:rgb(64, 64, 64);">进程隔离性</font>**<font style="color:rgb(64, 64, 64);">：每个进程有独立的一级页表（页目录），通过CR3实现切换。</font>
-+ **<font style="color:rgb(64, 64, 64);">用户无权限访问</font>**<font style="color:rgb(64, 64, 64);">：用户进程无法直接读写页表，必须通过内核的系统调用（如</font>`<font style="color:rgb(64, 64, 64);">mmap</font>`<font style="color:rgb(64, 64, 64);">、</font>`<font style="color:rgb(64, 64, 64);">brk</font>`<font style="color:rgb(64, 64, 64);">）间接修改映射关系。</font>
-+ **<font style="color:rgb(64, 64, 64);">硬件依赖</font>**<font style="color:rgb(64, 64, 64);">：具体层级结构（如二级、三级甚至四级页表）因CPU架构而异（如x86、ARM）。</font>
-
-### **<font style="color:rgb(64, 64, 64);">示例流程（x86两级分页）</font>**
-1. <font style="color:rgb(64, 64, 64);">进程A运行时，CR3指向其页目录的物理地址。</font>
-2. <font style="color:rgb(64, 64, 64);">MMU将虚拟地址拆解为页目录索引（一级）和页表索引（二级）。</font>
-3. <font style="color:rgb(64, 64, 64);">通过页目录找到二级页表的物理地址，再通过页表找到最终物理页框。</font>
-4. <font style="color:rgb(64, 64, 64);">若页表不存在，触发缺页异常，内核分配物理内存并更新页表。</font>
-
-<font style="color:rgb(64, 64, 64);">总之，页表是内核维护的关键元数据，其物理存储和访问完全由操作系统控制，用户进程无感知</font>
-
-:::
-
-3. <font style="color:rgb(0, 0, 0);">在ARM32系统中，页表是如何映射的？在ARM64系统中，页表又是如何映射的？</font>
-
-:::info
-<font style="color:rgb(64, 64, 64);">在ARM32和ARM64系统中，页表映射机制存在显著差异，主要体现在地址空间划分、页表层级结构以及支持的物理地址扩展等方面。以下是两者的详细对比：</font>
-
-:::
-
----
-
-### **<font style="color:rgb(64, 64, 64);">ARM32系统的页表映射</font>**
-1. **<font style="color:rgb(64, 64, 64);">基本结构</font>**
-    - **<font style="color:rgb(64, 64, 64);">地址空间</font>**<font style="color:rgb(64, 64, 64);">：32位虚拟地址，物理地址通常为32位（LPAE扩展后支持40位）。</font>
-    - **<font style="color:rgb(64, 64, 64);">页表层级</font>**<font style="color:rgb(64, 64, 64);">：</font>
-        - [ ] **<font style="color:rgb(64, 64, 64);">普通模式（非LPAE）</font>**<font style="color:rgb(64, 64, 64);">：两级页表（页目录 + 页表项），支持段映射（1MB）和4KB小页。</font>
-        * **<font style="color:rgb(64, 64, 64);">LPAE模式</font>**<font style="color:rgb(64, 64, 64);">：三级页表，支持物理地址扩展至40位，页大小可为4KB、2MB或1GB。</font>
-2. **<font style="color:rgb(64, 64, 64);">地址划分（以LPAE为例）</font>**
-    - <font style="color:rgb(64, 64, 64);">虚拟地址分为三级索引（每级9位）和页内偏移：</font>
-        * **<font style="color:rgb(64, 64, 64);">Level 1索引</font>**<font style="color:rgb(64, 64, 64);">（9位）→</font><font style="color:rgb(64, 64, 64);"> </font>**<font style="color:rgb(64, 64, 64);">Level 2索引</font>**<font style="color:rgb(64, 64, 64);">（9位）→</font><font style="color:rgb(64, 64, 64);"> </font>**<font style="color:rgb(64, 64, 64);">Level 3索引</font>**<font style="color:rgb(64, 64, 64);">（9位）→</font><font style="color:rgb(64, 64, 64);"> </font>**<font style="color:rgb(64, 64, 64);">偏移量</font>**<font style="color:rgb(64, 64, 64);">（12位，4KB页）。</font>
-    - <font style="color:rgb(64, 64, 64);">1GB大页通过Level 2表项直接映射，跳过Level 3。</font>
-3. **<font style="color:rgb(64, 64, 64);">关键寄存器</font>**
-    - `<font style="color:rgb(64, 64, 64);">TTBR0/TTBR1</font>`<font style="color:rgb(64, 64, 64);">：分别存储用户/内核空间页表基址（LPAE模式下使用</font>`<font style="color:rgb(64, 64, 64);">TTBR0</font>`<font style="color:rgb(64, 64, 64);">）。</font>
-4. **<font style="color:rgb(64, 64, 64);">表项属性</font>**
-    - <font style="color:rgb(64, 64, 64);">包含权限位（读/写）、缓存策略（如WB/WT）、安全域（NS位）和执行权限（XN位）。</font>
-
----
-
-### **<font style="color:rgb(64, 64, 64);">ARM64系统的页表映射</font>**
-1. **<font style="color:rgb(64, 64, 64);">基本结构</font>**
-    - **<font style="color:rgb(64, 64, 64);">地址空间</font>**<font style="color:rgb(64, 64, 64);">：通常采用48位虚拟地址（可扩展至52位），物理地址支持48位。</font>
-    - **<font style="color:rgb(64, 64, 64);">页表层级</font>**<font style="color:rgb(64, 64, 64);">：四级页表（4KB页时），支持灵活的页大小（4KB、16KB、64KB等）和大页（2MB、1GB）。</font>
-2. **<font style="color:rgb(64, 64, 64);">地址划分（48位虚拟地址，4KB页）</font>**
-    - <font style="color:rgb(64, 64, 64);">虚拟地址分为四级索引（每级9位）和页内偏移：</font>
-        * **<font style="color:rgb(64, 64, 64);">Level 0索引</font>**<font style="color:rgb(64, 64, 64);">（9位）→</font><font style="color:rgb(64, 64, 64);"> </font>**<font style="color:rgb(64, 64, 64);">Level 1索引</font>**<font style="color:rgb(64, 64, 64);">（9位）→</font><font style="color:rgb(64, 64, 64);"> </font>**<font style="color:rgb(64, 64, 64);">Level 2索引</font>**<font style="color:rgb(64, 64, 64);">（9位）→</font><font style="color:rgb(64, 64, 64);"> </font>**<font style="color:rgb(64, 64, 64);">Level 3索引</font>**<font style="color:rgb(64, 64, 64);">（9位）→</font><font style="color:rgb(64, 64, 64);"> </font>**<font style="color:rgb(64, 64, 64);">偏移量</font>**<font style="color:rgb(64, 64, 64);">（12位）。</font>
-    - <font style="color:rgb(64, 64, 64);">大页通过中间层级表项直接映射（如1GB大页由Level 1表项映射）。</font>
-3. **<font style="color:rgb(64, 64, 64);">关键寄存器</font>**
-    - `<font style="color:rgb(64, 64, 64);">TTBR0_EL1/TTBR1_EL1</font>`<font style="color:rgb(64, 64, 64);">：分别管理用户空间和内核空间的页表基址。</font>
-4. **<font style="color:rgb(64, 64, 64);">表项属性</font>**
-    - <font style="color:rgb(64, 64, 64);">64位表项，支持更多控制位，如权限（AP[2:0]）、内存类型（MAIR配置）、标记位（Contiguous/DBM）及执行权限（UXN/PXN）。</font>
-
-:::info
-### **<font style="color:rgb(64, 64, 64);">核心差异总结</font>**
-:::
-
-| **特性** | **ARM32** | **ARM64** |
-| --- | --- | --- |
-| **<font style="color:rgb(64, 64, 64);">地址空间</font>** | <font style="color:rgb(64, 64, 64);">32位虚拟，32/40位物理</font> | <font style="color:rgb(64, 64, 64);">48/52位虚拟，48位物理</font> |
-| **<font style="color:rgb(64, 64, 64);">页表层级</font>** | <font style="color:rgb(64, 64, 64);">2级（普通模式）/3级（LPAE）</font> | <font style="color:rgb(64, 64, 64);">4级（默认）</font> |
-| **<font style="color:rgb(64, 64, 64);">页大小支持</font>** | <font style="color:rgb(64, 64, 64);">4KB、64KB、1MB（段）</font> | <font style="color:rgb(64, 64, 64);">4KB、16KB、64KB、2MB、1GB</font> |
-| **<font style="color:rgb(64, 64, 64);">表项大小</font>** | <font style="color:rgb(64, 64, 64);">4字节（非LPAE）/8字节（LPAE）</font> | <font style="color:rgb(64, 64, 64);">8字节</font> |
-| **<font style="color:rgb(64, 64, 64);">物理扩展</font>** | <font style="color:rgb(64, 64, 64);">LPAE支持40位</font> | <font style="color:rgb(64, 64, 64);">原生支持48位</font> |
-| **<font style="color:rgb(64, 64, 64);">权限控制</font>** | <font style="color:rgb(64, 64, 64);">较简单（XN位等）</font> | <font style="color:rgb(64, 64, 64);">更精细（UXN/PXN、AP[2:0]等）</font> |
+答：ARM32为2级页表，ARM64为4级页表。
 
 
 
 
 
-4. <font style="color:rgb(0, 0, 0);">请简述Linux内核在理想情况下页面分配器(page allocator)是如何分配出连续物理页面的</font><font style="color:rgb(0, 0, 0);">。</font>
+
+#####  7. 请简述Linux内核在理想情况下页面分配器(page allocator)是如何分配出连续物理页面的
 
 在理想情况下，Linux内核的页面分配器（也称为**伙伴系统**，Buddy Allocator）分配连续物理页面的过程可以简述为以下几点：
 
@@ -213,393 +149,462 @@ endchoice
 
 
 
-5. <font style="color:rgb(0, 0, 0);">在页面分配器中，如何从分配掩码(gfp_mask)中确定可以从哪些zone中分配内存？</font>
-
-在 Linux 内核的页面分配器中，通过 gfp_mask（Get Free Page Mask）中的 区域修饰符（Zone Modifier）来确定允许从哪些内存区域（Zone）分配内存。具体流程如下：
-
-1. <font style="color:rgb(0, 0, 0);">理解内存区域（Zone）划分  
-</font><font style="color:rgb(0, 0, 0);">Linux 内核将物理内存划分为多个 zone，常见的 Zone 类型包括：</font>
-
-<font style="color:rgb(0, 0, 0);">ZONE_DMA：供老式 DMA 设备使用的低地址内存（通常 < 16MB）。  
-</font><font style="color:rgb(0, 0, 0);">ZONE_DMA32：供 64 位系统 DMA 设备使用的内存（通常 < 4GB）。  
-</font><font style="color:rgb(0, 0, 0);">ZONE_NORMAL：直接映射到内核虚拟地址空间的常规内存（物理地址范围因架构而异）。  
-</font><font style="color:rgb(0, 0, 0);">ZONE_HIGHMEM：高端内存（仅在 32 位系统中存在，用于映射超出内核虚拟地址空间的物理内存）。  
-</font><font style="color:rgb(0, 0, 0);">2. 从 gfp_mask 提取 Zone 修饰符  
-</font><font style="color:rgb(0, 0, 0);">gfp_mask 中通过以下标志位指定允许分配的内存区域：</font>
-
-<font style="color:rgb(0, 0, 0);">__GFP_DMA：强制从 ZONE_DMA 分配。  
-</font><font style="color:rgb(0, 0, 0);">__GFP_DMA32：强制从 ZONE_DMA32 分配。  
-</font><font style="color:rgb(0, 0, 0);">__GFP_HIGHMEM：允许从 ZONE_HIGHMEM 分配（若存在）。  
-</font><font style="color:rgb(0, 0, 0);">默认（无修饰符）：从 ZONE_NORMAL 或更低 Zone 分配。  
-</font><font style="color:rgb(0, 0, 0);">3. 确定候选 Zone 列表  
-</font><font style="color:rgb(0, 0, 0);">分配器根据 gfp_mask 的修饰符生成候选 Zone 列表，规则如下：</font>
-
-<font style="color:rgb(0, 0, 0);">显式指定：若设置了 __GFP_DMA/__GFP_DMA32，则直接限定在对应 Zone。  
-</font><font style="color:rgb(0, 0, 0);">隐式回退：若未指定修饰符，分配器按 Zone 优先级顺序（如 ZONE_NORMAL → ZONE_DMA32 → ZONE_DMA）尝试分配，优先选择更高地址的 Zone。  
-</font><font style="color:rgb(0, 0, 0);">HIGHMEM 处理：仅在 __GFP_HIGHMEM 存在时允许使用 ZONE_HIGHMEM，但需内核支持。  
-</font><font style="color:rgb(0, 0, 0);">4. 结合 Zone 水位检查  
-</font><font style="color:rgb(0, 0, 0);">候选 Zone 还需满足 水位（Watermark）条件（如 min/low/high 阈值），分配器会：</font>
-
-<font style="color:rgb(0, 0, 0);">检查候选 Zone 的空闲页面是否足够。  
-</font><font style="color:rgb(0, 0, 0);">若当前 Zone 空闲页面不足，触发内存回收（如 kswapd）或尝试下一个候选 Zone。  
-</font><font style="color:rgb(0, 0, 0);">5. 示例场景  
-</font><font style="color:rgb(0, 0, 0);">GFP_KERNEL（默认修饰符）：  
-</font><font style="color:rgb(0, 0, 0);">从 ZONE_NORMAL 开始分配，若失败则回退到 ZONE_DMA32 或 ZONE_DMA。  
-</font><font style="color:rgb(0, 0, 0);">GFP_DMA：  
-</font><font style="color:rgb(0, 0, 0);">强制从 ZONE_DMA 分配，仅用于需要低地址内存的设备驱动。  
-</font><font style="color:rgb(0, 0, 0);">总结  
-</font><font style="color:rgb(0, 0, 0);">通过解析 gfp_mask 中的 Zone 修饰符，页面分配器确定候选 Zone 列表，并按照优先级顺序尝试分配，同时结合水位检查确保内存分配的可行性。这一机制平衡了不同硬件需求（如 DMA）和内存使用效率。</font>
+#####  8. 在页面分配器中，如何从分配掩码(gfp_mask)中确定可以从哪些zone中分配内存？
 
 
 
-6. <font style="color:rgb(0, 0, 0);">页面分配器是按照什么方向来扫描zone的？</font>
-+ 扫描方向：从高优先级 Zone 到低优先级 Zone（Fallback 顺序）。
-+ 核心规则：
-    - 默认按架构预设的 `zonelist` 顺序扫描。
-    - `gfp_mask` 可显式限定允许的 Zone。
-    - NUMA 系统优先本地节点内存。
-+ 设计目标：在满足请求的前提下，尽可能保护低端 Zone（如 DMA 区域）不被过度消耗。
 
-<font style="color:rgb(0, 0, 0);"></font>
-
-<font style="color:rgb(0, 0, 0);"></font>
-
-7. <font style="color:rgb(0, 0, 0);">为用户进程分配物理内存，分配掩码应该选用GFP_KERNEL，还是GFP_HIGHUSER_MOVABLE呢？</font>
-
-在 Linux 内核中，为用户进程分配物理内存时，通常应选择 `GFP_HIGHUSER_MOVABLE` 而非 `GFP_KERNEL`。以下是详细分析和选择依据：
-
----
-
-### 1. 分配掩码的核心区别
-| 标志 | 适用场景 | 内存类型 | 可迁移性 | 潜在行为 |
-| --- | --- | --- | --- | --- |
-| `GFP_KERNEL` | 内核内部数据结构（如 slab 缓存） | 内核空间不可移动内存 | 不可迁移（`!__GFP_MOVABLE`<br/>） | 允许阻塞、触发直接内存回收 |
-| `GFP_HIGHUSER_MOVABLE` | 用户进程内存（如堆、匿名页） | 用户空间可移动内存 | 可迁移（`__GFP_MOVABLE`<br/>） | 允许阻塞，但优先使用高端内存 |
+#####  9. 页面分配器是按照什么方向来扫描zone的？
+#####  10. 为用户进程分配物理内存，分配掩码应该选用GFP_KERNEL，还是GFP_HIGHUSER_MOVABLE呢？
+#####  11. slab分配器是如何分配和释放小块内存的？
 
 
----
 
-### 2. 选择 `GFP_HIGHUSER_MOVABLE` 的原因
-#### （1）用户内存与内核内存的隔离
-+ 用户进程内存属于用户空间，应通过 `GFP_USER` 系列标志分配，以明确区分内存用途。
-+ `GFP_KERNEL` 专用于内核内部内存（如驱动、文件系统缓存），若错误用于用户进程内存，可能导致：
-    - 内核内存被用户空间占用，影响系统稳定性。
-    - 内存回收时优先牺牲用户内存，违反预期行为。
+##### 12. slab分配器中有一个着色的概念(cache color)，着色有什么作用？
 
-#### （2）可迁移性优化
-+ `GFP_HIGHUSER_MOVABLE` 包含 `__GFP_MOVABLE` 标志，允许内存管理子系统迁移物理页面以减少碎片。
-+ 用户进程的堆、栈、匿名映射（如 `malloc` 分配的内存）通常无需固定物理地址，可迁移性提升内存利用率。
 
-#### （3）NUMA 和高端内存适配
-+ NUMA 优化：`GFP_HIGHUSER_MOVABLE` 隐含 `__GFP_THISNODE` 的 NUMA 本地性策略（取决于配置），优先从当前节点的内存分配。
-+ 高端内存支持：在 32 位系统中，用户进程可能使用高端内存（`ZONE_HIGHMEM`），而 `GFP_HIGHUSER_MOVABLE` 允许从该区域分配。
 
----
+##### 13. slab分配其中的slab对象有没有根据Per-CPU做一些优化？
 
-### 3. 典型应用场景
-#### （1）用户进程匿名页分配
-用户进程通过 `mmap` 或 `malloc` 申请内存时，内核最终调用 `alloc_pages`，掩码应为：
 
-```plain
-c
 
-gfp_t gfp_mask = GFP_HIGHUSER_MOVABLE | __GFP_ZERO;  // 可选清零内存
-struct page *page = alloc_pages(gfp_mask, order);
-```
+##### 14. slab增长并导致大量不用的空闲对象，该如何解决？
 
-#### （2）共享内存或文件映射
-对于共享内存（`shmget`）或文件映射（`mmap` with file），掩码可能略有不同，但仍属于用户内存范畴：
 
-```plain
-c
 
-gfp_t gfp_mask = GFP_HIGHUSER_MOVABLE | __GFP_WRITE; // 允许写入回写
-```
+##### 15. 请问kmalloc、vmalloc和malloc之间有什么区别以及实现上的差异？
 
----
 
-### 4. `GFP_KERNEL` 的错误使用风险
-若误用 `GFP_KERNEL` 分配用户进程内存：
 
-+ 内存不可迁移：增加内存碎片，降低大块连续内存分配成功率。
-+ 优先级倒置：内核内存回收可能优先压缩用户进程内存，导致性能下降。
-+ 安全边界模糊：破坏用户空间与内核空间的内存隔离设计。
+##### 16. 使用用户态的API函数malloc()分配内存时，会马上为其分配物理内存吗？
 
----
 
-### 5. 例外情况
-在以下特殊场景中，可能需要调整分配策略：
 
-+ 硬件 DMA 内存：若用户进程内存需要用于 DMA 操作且设备不支持散射-聚集（Scatter-Gather），需使用 `GFP_DMA` 或 `GFP_DMA32`。
-+ 内存锁定（mlock）：用户进程调用 `mlock` 锁定内存时，内核需分配不可移动内存（掩码中移除 `__GFP_MOVABLE`）。
+
+
+##### 17. 假设不考虑libc的因素，malloc分配100Byte，那么实际上内核是为其分配100Byte吗？
+
+
+
+##### 18. 假设两个用户进程打印的malloc()分配的虚拟地址是一样的，那么在内核中这两块虚拟内存是否打架了呢？
+
+
+
+##### 19. vm_normal_page()函数返回的是什么样页面的struct page数据结构？为什么内存管理代码中需要这个函数？
+
+
+
+##### 20. 请简述get_user_page()函数的作用和实现流程？
+
+
+
+##### 18. 请简述follow_page()函数的作用和实现流程？
+
+
+
+##### 19. 请简述私有映射和共享映射的区别。
+
+
+
+##### 20. 为什么第二次调用mmap时，Linux内核没有捕捉到地址重叠并返回失败呢？
+
+
+
+##### 21. struct page数据结构中的_count和_mapcount有什么区别？
+
+
+
+##### 22. 匿名页面和page cache页面有什么区别？
+
+
+
+##### 23. struct page数据结构中有一个锁，请问trylock_page()和lock_page()有什么区别？
+
+
+
+##### 24. 在Linux 2.4.x内核中，如何从一个page找到所有映射该页面的VMA？反响映射可以带来哪些便利？
+
+
+
+##### 25. 阅读Linux 4.0内核RMAP机制的代码，画出父子进程之间VMA、AVC、anon_vma和page等数据结构之间的关系图。
+
+
+
+##### 26. 在Linux 2.6.34中，RMAP机制采用了新的实现，在Linux 2.6.33和之前的版本中称为旧版本RMAP机制。那么在旧版本RMAP机制中，如果父进程有1000个子进程，每个子进程都有一个VMA，这个VMA里面有1000个匿名页面，当所有的子进程的VMA同时发生写复制时会是什么情况呢？
+
+
+
+##### 27. 当page加入lru链表中，被其他线程释放了这个page，那么lru链表如何知道这个page已经被释放了。
+##### 28. kswapd内核线程何时会被唤醒？
+##### 29. LRU链表如何知道page的活动频繁程度？
+##### 30. kswapd按照什么原则来换出页面？
+##### 31. kswapd按照什么方向来扫描zone？
+##### 32. kswapd以什么标准来退出扫描LRU？
+##### 33. 手持设备例如Android系统，没有swap分区或者swap文件，kswapd会扫描匿名页面LRU吗？
+##### 34. swappiness的含义是什么？kswapd如何计算匿名页面和page cache之间的扫描比重？
+##### 35. 当系统充斥着大量只访问一次的文件访问(use-one streaming IO)时，kswapd如何来规避这种风暴？
+##### 36. 在回收page cache时，对于dirty的page cache，kswapd会马上回写吗？
+##### 37. 内核有哪些页面会被kswapd写回交换分区？
+##### 38. ARM32 Linux如何模拟这个Linux版本的L_PTE_YOUNG比特位呢？
+##### 39. 如何理解Refault Distance算法？
+##### 40. 请简述匿名页面的生命周期。在什么情况下会产生匿名页面？在什么条件下会释放匿名页面？
+##### 41. KSM是基于什么原理来合并页面的？
+##### 42. 在KSM机制里，合并过程中把page设置成写保护的函数write_protect_page()有这样一个判断：。这个判断的依据是什么？
+##### 43. 如果多个VMA的虚拟页面同时映射了同一个匿名页面，那么此时page->index应该等于多少？
+##### 44. 为什么Dirty COW小程序可以修改一个只读文件的内容？
+##### 45. 在Dirty COW内存漏洞中，如果Diryt COW程序没有madviseThread线程，即只有procselfmemThread线程，能否修改foo文件的内容呢？
+##### 46. 假设在内核空间获取了某个文件对应的page cache页面的struct page数据结构，而对应的VMA属性是只读，那么内核空间是否可以成功修改该文件呢？
+##### 47. 如果用户进程使用只读属性(PROT_READ)来mmap映射一个文件到用户空间，然后使用memcpy来写这段内存空间，会是什么样的情况？
+##### 48. 请画出内存管理中常用的数据结构的关系图，如mm_struct、vma、vaddr、page、pfn、pte、zone、paddr和pg_data等，并思考如下转换关系
+##### 49. 请画出在最糟糕的情况下分配若干个连续物理页面的流程图。
+##### 50. 在Android中新添加了LMK(Low Memory Killer)，请描述LMK和OOM Killer之间的关系。
+##### 51. 请描述一致性DMA映射dma_alloc_coherent()函数在AEM中是如何管理cache一致性的？
+##### 52. 请描述流式DMA映射dma_map_single()函数在ARM中是如何管理cache一致性的？
+##### 53. 为什么在Linux 4.8内核中要把基于zone的LRU链表机制迁移到基于Node呢？
+
+
+
+
 
 ---
 
-### 6. 总结
-+ 常规用户进程内存分配：始终优先使用 `GFP_HIGHUSER_MOVABLE`。
-+ 内核内部内存分配：使用 `GFP_KERNEL`。
-+ 特殊需求：根据硬件约束（如 DMA）或 API 要求（如 `mlock`）调整掩码
+> 其他的有价值问题
 
-<font style="color:rgb(0, 0, 0);"></font>
+##### 现代CPU的每个core都有自己的MMU吗？
 
-<font style="color:rgb(0, 0, 0);"></font>
+答：每个核心都有自己的MMU。
 
-8. <font style="color:rgb(0, 0, 0);">slab分配器是如何分配和释放小块内存的？</font>
+![img](Linux内核内存管理核心问题/v2-2ea1154522eec0987334c34d64aa0a2f_1440w.webp)
 
-Slab分配器是Linux内核中用于高效管理小块内存的机制，特别适合频繁分配和释放的内核对象（如`task_struct`、`inode`等）。其核心思想是通过预分配和缓存对象来减少内存碎片及分配开销。以下是其分配和释放过程的详细说明：
+在[SMP](https://zhida.zhihu.com/search?content_id=544295883&content_type=Answer&match_order=1&q=SMP&zhida_source=entity)（Symmetric Multi Process，对称多处理器）系统中，每个处理器内置了MMU模块，MMU模块包含了[TLB](https://zhida.zhihu.com/search?content_id=544295883&content_type=Answer&match_order=1&q=TLB&zhida_source=entity)和[TWU](https://zhida.zhihu.com/search?content_id=544295883&content_type=Answer&match_order=1&q=TWU&zhida_source=entity)两个子模块。TLB是一个高速缓存，用于缓存虚拟地址到物理地址的转换结果。页表的查询过程是由TWU硬件自动完成的，但是页表的维护是需要操作系统实现的，页表存放在主存中。
 
----
+> [现代CPU的每个core都有自己的MMU吗](https://www.zhihu.com/question/38064979/answer/2828157858)
 
-### 一、Slab分配器的核心组件
-1. 缓存（Cache）  
-   每个缓存对应一种特定类型的内核对象（如`kmem_cache`结构），管理相同大小的内存块。缓存分为：
-    - 专用缓存：为特定对象类型创建（如`task_struct`）。
-    - 通用缓存：用于一般的小内存请求（如`kmalloc-32`、`kmalloc-64`等）。
-2. Slab  
-   每个Slab是连续的一页或多页内存（从伙伴系统分配），被划分为多个相同大小的对象。Slab有三种状态：
-    - 满（Full）：所有对象已被分配。
-    - 部分满（Partial）：部分对象空闲。
-    - 空（Empty）：所有对象均未使用。
-3. 空闲列表（Free List）  
-每个Slab维护一个链表，记录可用的空闲对象。
 
----
 
-### 二、内存分配流程
-1. 请求分配对象  
-当内核需要分配一个对象时（如`kmem_cache_alloc()`），Slab分配器执行以下步骤：
-2. 查找空闲对象
-    - 优先从Per-CPU缓存分配：  
-    每个CPU有一个本地缓存（`kmem_cache_cpu`），直接从中获取对象，避免锁竞争。
-    - Per-CPU缓存为空时：  
-    从共享的Slab列表（部分满或空Slab）中批量迁移对象到Per-CPU缓存。
-3. 分配新Slab（若必要）
-    - 如果所有Slab均满，从伙伴系统申请新的内存页，创建新Slab并初始化对象。
-    - 新Slab被标记为部分满，并添加到缓存链表中。
-4. 返回对象地址  
-最终从选中的Slab中取出一个空闲对象，更新空闲列表，并返回其虚拟地址。
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ---
 
-### 三、内存释放流程
-1. 请求释放对象  
-调用`kmem_cache_free()`释放对象。
-2. 对象返回到Per-CPU缓存
-    - 优先将对象放回当前CPU的本地缓存，减少全局锁的使用。
-    - 若Per-CPU缓存已满，批量将对象迁移到全局Slab的空闲列表。
-3. Slab状态更新
-    - 当某个Slab的所有对象均被释放时，标记为“空Slab”。
-    - 内存回收策略：  
-    若系统内存紧张，空Slab会被释放回伙伴系统（调用`__free_pages()`）。
-4. 延迟释放优化  
-Slab分配器可能延迟释放完全空闲的Slab，避免频繁申请/释放内存页的开销。
+> 以下摘抄自：[CPU--进阶知识](https://blog.csdn.net/yaoming168/article/details/131256286)
 
----
+CPU实战知识
+1．ARM64处理器中有两个页表基地址寄存器TTBR0和TTBR1，处理器如何使用它们？
+2．请简述ARM64处理器的4级页表的映射过程，假设页面粒度为4KB，地址宽度为48位。
+3．在L0～L2页表项描述符中，如何判断一个页表项是块类型还是页表类型？
+4．在ARM64 Linux内核中，用户空间和内核空间是如何划分的？
+5．在ARM64 Linux内核中，PAGE_OFFSET表示什么意思？
+6．KIMAGE_VADDR表示什么意思？
+7．TEXT_OFFSET表示什么意思？
+8．内核映像文件包含哪些段？这些段的作用是什么？在Sysmtem.map文件中它们分别使用哪些符号来表示段的开始和结束？
+9．请画出ARM64 Linux内核的内存布局。
+10．pasymbol()宏和\_pa()宏有什么区别？
+11．在物理内存还没有线性映射到内核空间时，内核映像文件映射到什么地方？
+12．在ARM Linux内核中，kimage_voffset代表什么意思呢？
+13．在ARMv8架构中，高速缓存管理的PoC和PoU有什么区别？
+14．在ARMv8架构中，ASID是什么意思？有什么作用？
+15．在ARMv8架构中支持哪几种内存属性？它们都有哪些特点？
+16．在ARMv8架构中，高速缓存共享属性有内部共享（inner shareable）和外部共享（outer shareable），它们有什么区别？
+17．在ARMv8架构中，支持哪几条内存屏障指令？它们都有什么区别？
+18．加载-获取屏障原语与存储-释放屏障原语有什么区别？分别有什么作用？
+19．什么是一个段的加载地址和运行地址？
+20．从U-boot跳转到内核时，为什么指令高速缓存可以打开而数据高速缓存必须关闭？
+21．在Linux内核启动汇编代码中，为什么要建立恒等映射？
+22．在ARMv8架构中，在L0～L2页表项中包含了指向下一级页表的基地址，那么这个下一级页表基地址是物理地址还是虚拟地址？
+23．MMU可以遍历页表，Linux内核也提供了软件遍历页表的函数，如walk_pgd()、create_pgd_mapping()、follow_page()等。从软件的视角，Linux内核的pgd_t、pud_t、pmd_t以及pte_t数据结构中并没有存储一个指向下一级页表的指针（即从CPU角度来看，CPU访问这些数据结构时是以虚拟地址来访问的），它们是如何遍历的呢？pgd_t、pud_t、pmd_t以及pte_t数据结构是u64类型的变量。
 
-### 四、关键优化机制
-1. Per-CPU缓存  
-每个CPU维护本地对象缓存，减少多核竞争，提升分配速度。
-2. Slab着色（Slab Coloring）  
-通过调整Slab内部对象的偏移量，优化CPU缓存的利用率，减少缓存行冲突。
-3. NUMA感知  
-在NUMA架构中，优先从本地节点的内存分配Slab，降低远程访问延迟。
-4. 调试与统计  
-通过`/proc/slabinfo`查看各缓存的详细信息（如对象数量、内存使用等），支持内存泄漏检测。
 
----
 
-### 五、Slab分配器的变种
-1. SLUB（Unqueued Slab Allocator）
-    - 简化了Slab的管理结构，减少元数据开销。
-    - 默认用于现代Linux内核。
-2. SLOB（Simple List Of Blocks）
-    - 适用于嵌入式系统等内存受限环境。
-    - 通过链表管理内存块，牺牲性能换取极低的内存开销。
+1．ARM64处理器中有两个页表基地址寄存器TTBR0和TTBR1，处理器如何使用它们？
+答：
 
-<font style="color:rgb(0, 0, 0);"></font>
 
-<font style="color:rgb(0, 0, 0);"></font>
+TTBR0寄存器：TTBR0寄存器用于存储用户空间的页表基地址。当ARM64处理器执行用户空间的代码时，它会使用TTBR0寄存器中存储的页表基地址进行虚拟地址到物理地址的转换。
 
-9. <font style="color:rgb(0, 0, 0);">slab分配器中有一个着色的概念(cache color)，着色有什么作用？</font>
+TTBR1寄存器：TTBR1寄存器用于存储内核空间的页表基地址。当ARM64处理器执行内核空间的代码时，它会使用TTBR1寄存器中存储的页表基地址进行虚拟地址到物理地址的转换。
 
-<font style="color:rgb(0, 0, 0);"></font>
+通过使用两个不同的页表基地址寄存器，ARM64处理器能够实现用户空间和内核空间之间的地址隔离。这样，用户空间和内核空间可以拥有各自独立的页表，从而实现虚拟地址的隔离和保护。
 
-<font style="color:rgb(0, 0, 0);"></font>
+需要注意的是，具体的页表结构和页表项的格式可能会因操作系统和配置而有所不同。ARM64处理器提供了灵活的页表机制，可以根据需求进行配置和扩展。
 
-<font style="color:rgb(0, 0, 0);"></font>
+2．请简述ARM64处理器的4级页表的映射过程，假设页面粒度为4KB，地址宽度为48位。
+答：
+    ARM64处理器的4级页表是用于虚拟地址到物理地址的映射的一种机制。假设页面粒度为4KB，地址宽度为48位，下面是4级页表的映射过程：
 
-10. <font style="color:rgb(0, 0, 0);">slab分配其中的slab对象有没有根据Per-CPU做一些优化？</font>
+虚拟地址划分：根据48位的虚拟地址，将其划分为四个部分：
 
-<font style="color:rgb(0, 0, 0);"></font>
+16位的L0索引：用于在第一级页表中选择一个L1页表。
+16位的L1索引：用于在第二级页表中选择一个L2页表。
+16位的L2索引：用于在第三级页表中选择一个L3页表。
+12位的L3偏移：用于在第四级页表中选择一个物理页帧。
+第一级页表（L0）：根据L0索引，在第一级页表中找到对应的L1页表的基地址。
 
-<font style="color:rgb(0, 0, 0);"></font>
+第二级页表（L1）：根据L1索引，在第二级页表中找到对应的L2页表的基地址。
 
-<font style="color:rgb(0, 0, 0);"></font>
+第三级页表（L2）：根据L2索引，在第三级页表中找到对应的L3页表的基地址。
 
-11. <font style="color:rgb(0, 0, 0);">slab增长并导致大量不用的空闲对象，该如何解决？</font>
+第四级页表（L3）：根据L3偏移，在第四级页表中找到对应的物理页帧的基地址。
 
-<font style="color:rgb(0, 0, 0);"></font>
+物理地址计算：将找到的物理页帧的基地址与L3偏移相加，得到最终的物理地址。
 
-<font style="color:rgb(0, 0, 0);"></font>
+通过这个过程，ARM64处理器能够将48位的虚拟地址映射到对应的物理地址。这种4级页表的映射机制能够提供灵活的地址空间管理，支持大内存容量和多级映射的需求。
 
-12. <font style="color:rgb(0, 0, 0);">请问kmalloc、vmalloc和malloc之间有什么区别以及实现上的差异？</font>
+3．在L0～L2页表项描述符中，如何判断一个页表项是块类型还是页表类型？
+答：
+    在L0～L2页表项描述符中，可以通过判断其中的一个特定标志位来确定一个页表项是块类型还是页表类型。这个特定标志位称为"Table"位。
 
-<font style="color:rgb(0, 0, 0);"></font>
+如果"Table"位为0，表示该页表项是块类型。块类型的页表项用于描述一个大的连续物理内存块的映射，例如用于描述1GB或2MB的大页。
 
-<font style="color:rgb(0, 0, 0);"></font>
+如果"Table"位为1，表示该页表项是页表类型。页表类型的页表项用于描述下一级页表的地址，从而实现多级页表的层级结构。
 
-<font style="color:rgb(0, 0, 0);"></font>
+通过检查"Table"位的值，可以确定一个页表项是块类型还是页表类型，进而确定如何解释该页表项的其他字段。这样，ARM64处理器能够根据不同类型的页表项来实现不同层级的地址映射，以满足不同的内存管理需求。
 
-13. <font style="color:rgb(0, 0, 0);">使用用户态的API函数malloc()分配内存时，会马上为其分配物理内存吗？</font>
+4．在ARM64 Linux内核中，用户空间和内核空间是如何划分的？
+答：
+    在ARM64架构的Linux内核中，用户空间和内核空间是通过虚拟地址空间的划分来实现的。
 
-<font style="color:rgb(6, 6, 7);">在使用用户态的API函数 </font>`malloc()`<font style="color:rgb(6, 6, 7);"> 分配内存时，并不会立即为其分配物理内存。</font>`malloc()`<font style="color:rgb(6, 6, 7);"> 是一个标准的C库函数，它主要负责在堆上分配逻辑内存空间，并返回一个指向该空间的指针。这个过程主要涉及以下几个阶段：</font>
+ARM64架构使用了48位的虚拟地址空间，将整个地址空间划分为两个部分：用户空间和内核空间。
 
-### <font style="color:rgb(6, 6, 7);">1.</font><font style="color:rgb(6, 6, 7);"> </font>**<font style="color:rgb(6, 6, 7);">分配虚拟内存空间</font>**
-<font style="color:rgb(6, 6, 7);">当调用 </font>`malloc()`<font style="color:rgb(6, 6, 7);"> 时，它会通过底层的内存分配器（如 glibc 的 ptmalloc 或其他内存分配器）请求一块虚拟内存空间。这个空间在虚拟内存中被分配，但并不一定立即分配物理内存。</font>
+用户空间（User Space）：用户空间是用于执行用户应用程序的区域。它包含了用户进程的代码、数据和堆栈等。用户空间的虚拟地址范围通常是从0x0000000000000000到0x00007FFFFFFFFFFF。
 
-### <font style="color:rgb(6, 6, 7);">2.</font><font style="color:rgb(6, 6, 7);"> </font>**<font style="color:rgb(6, 6, 7);">延迟分配物理内存</font>**
-<font style="color:rgb(6, 6, 7);">在现代操作系统中，物理内存的分配通常是延迟的（Lazy Allocation）。这意味着当 </font>`malloc()`<font style="color:rgb(6, 6, 7);"> 分配虚拟内存后，操作系统并不会立即为其分配物理内存。只有当程序首次访问分配的内存（如读取或写入）时，才会触发一个页面错误（Page Fault），操作系统才会真正分配物理内存页，并将其映射到虚拟内存空间。</font>
+内核空间（Kernel Space）：内核空间是用于运行操作系统内核的区域。它包含了内核的代码、数据结构、设备驱动程序等。内核空间的虚拟地址范围通常是从0xFFFF800000000000到0xFFFFFFFFFFFFFFFF。
 
-<font style="color:rgb(6, 6, 7);">这种机制称为 </font>**<font style="color:rgb(6, 6, 7);">“按需分页”（Demand Paging）</font>**<font style="color:rgb(6, 6, 7);">，它允许操作系统更高效地管理物理内存，避免为未使用的内存分配物理资源。</font>
+用户空间和内核空间之间通过一组页表进行映射和隔离。通过页表的设置，用户空间和内核空间的虚拟地址可以映射到不同的物理地址，实现了对用户空间和内核空间的隔离和保护。
 
-### <font style="color:rgb(6, 6, 7);">3.</font><font style="color:rgb(6, 6, 7);"> </font>**<font style="color:rgb(6, 6, 7);">特殊情况</font>**
-<font style="color:rgb(6, 6, 7);">虽然物理内存的分配通常是延迟的，但有些情况下可能会立即分配物理内存：</font>
+用户空间和内核空间的划分是为了保护内核的安全性和稳定性。用户空间的应用程序只能访问用户空间的资源，而不能直接访问内核空间的资源。通过系统调用和中断等机制，用户空间可以与内核空间进行通信和交互，从而实现对系统资源的访问和管理。
 
-+ **<font style="color:rgb(6, 6, 7);">使用特定的分配策略</font>**<font style="color:rgb(6, 6, 7);">：某些内存分配器或操作系统可能会提供选项，强制立即分配物理内存。例如，Linux 中的 </font>`mlock()`<font style="color:rgb(6, 6, 7);"> 函数可以锁定内存，确保分配的内存立即分配物理页。</font>
-+ **<font style="color:rgb(6, 6, 7);">内存初始化</font>**<font style="color:rgb(6, 6, 7);">：如果 </font>`malloc()`<font style="color:rgb(6, 6, 7);"> 返回的内存被初始化为特定值（如 </font>`calloc()`<font style="color:rgb(6, 6, 7);">），操作系统可能会立即分配物理内存以完成初始化。</font>
+5．在ARM64 Linux内核中，PAGE_OFFSET表示什么意思？
+答：
+    在ARM64 Linux内核中，PAGE_OFFSET是一个宏定义，用于表示内核空间的偏移量。
 
-### <font style="color:rgb(6, 6, 7);">总结</font>
-<font style="color:rgb(6, 6, 7);">在大多数情况下，</font>`malloc()`<font style="color:rgb(6, 6, 7);"> 分配内存时不会立即分配物理内存，而是分配虚拟内存空间。物理内存的分配通常是在首次访问分配的内存时按需进行的。这种机制有助于提高内存使用效率，避免浪费物理资源。</font>
+在ARM64架构中，内核空间的起始地址是固定的，通常是0xFFFF800000000000。而用户空间的起始地址是可变的，取决于具体的进程。
 
-<font style="color:rgb(6, 6, 7);"></font>
+PAGE_OFFSET的值就是内核空间起始地址的低32位部分，即0x00000000FFFFFFFF。通过将PAGE_OFFSET与虚拟地址的高32位相或，可以将虚拟地址转换为对应的物理地址。
 
-<font style="color:rgb(6, 6, 7);"></font>
+在内核中，PAGE_OFFSET常常用于进行虚拟地址和物理地址的转换，以及进行内核空间和用户空间的判断和操作。
 
-<font style="color:rgb(6, 6, 7);"></font>
+6．KIMAGE_VADDR表示什么意思？
+答：
+    KIMAGE_VADDR是一个在ARM64 Linux内核中使用的宏定义，用于表示内核镜像在虚拟地址空间中的起始地址。
 
-14. <font style="color:rgb(0, 0, 0);">假设不考虑libc的因素，malloc分配100Byte，那么实际上内核是为其分配100Byte吗？</font>
+在ARM64架构中，内核镜像通常被加载到虚拟地址空间的固定位置。KIMAGE_VADDR的值就是内核镜像在虚拟地址空间中的起始地址，通常是一个固定的地址。
 
-<font style="color:rgb(0, 0, 0);"></font>
+通过使用KIMAGE_VADDR宏定义，可以方便地在内核中引用内核镜像的起始地址，进行一些与内核镜像相关的操作，如符号查找、地址计算等。
 
-<font style="color:rgb(0, 0, 0);"></font>
+7．TEXT_OFFSET表示什么意思？
+答：
+    TEXT_OFFSET是一个在操作系统中使用的术语，用于表示程序代码在内存中的偏移量。
 
-<font style="color:rgb(0, 0, 0);"></font>
+在计算机系统中，程序代码通常存储在内存中的某个特定位置。TEXT_OFFSET就是指代码段在内存中相对于整个进程空间起始地址的偏移量。它表示了代码段相对于进程内存空间起始地址的位置。
 
-15. <font style="color:rgb(0, 0, 0);">假设两个用户进程打印的malloc()分配的虚拟地址是一样的，那么在内核中这两块虚拟内存是否打架了呢？</font>
+通过使用TEXT_OFFSET，可以方便地在程序中引用代码段的地址，进行一些与代码段相关的操作，如跳转、函数调用等。它在程序的执行过程中起到了定位代码的作用。
 
-<font style="color:rgb(0, 0, 0);"></font>
+8．内核映像文件包含哪些段？这些段的作用是什么？在Sysmtem.map文件中它们分别使用哪些符号来表示段的开始和结束？
+答：
+    内核映像文件通常包含以下几个段：
 
-<font style="color:rgb(0, 0, 0);"></font>
+.text段：这是代码段，包含了内核的执行代码。它是内核的核心部分，包括系统调用、中断处理程序、驱动程序等。
 
-<font style="color:rgb(0, 0, 0);"></font>
+.data段：这是数据段，包含了内核的全局变量和静态变量。它存储了内核运行时需要的数据。
 
-16. <font style="color:rgb(0, 0, 0);">vm_normal_page()函数返回的是什么样页面的struct page数据结构？为什么内存管理代码中需要这个函数？</font>
+.rodata段：这是只读数据段，包含了内核中的只读数据，如字符串常量、只读的全局变量等。
 
-<font style="color:rgb(0, 0, 0);"></font>
+.bss段：这是未初始化数据段，包含了内核中的全局未初始化变量。在内核加载时，这些变量会被初始化为0或空值。
 
-<font style="color:rgb(0, 0, 0);"></font>
+这些段在System.map文件中使用以下符号来表示它们的开始和结束：
 
-17. <font style="color:rgb(0, 0, 0);">请简述get_user_page()函数的作用和实现流程？</font>
+_text表示.text段的开始地址。
+_etext表示.text段的结束地址。
+_data表示.data段的开始地址。
+_edata表示.data段的结束地址。
+__start_rodata表示.rodata段的开始地址。
+__end_rodata表示.rodata段的结束地址。
+__bss_start表示.bss段的开始地址。
+__bss_stop表示.bss段的结束地址。
+System.map文件是一个符号表文件，用于映射内核中的符号（如变量、函数等）与其在内存中的地址之间的关系。通过查看System.map文件，可以了解到这些段在内存中的起始和结束地址，以及其他符号的信息。
 
-<font style="color:rgb(0, 0, 0);"></font>
+9．请画出ARM64 Linux内核的内存布局。
+答：
 
-<font style="color:rgb(0, 0, 0);"></font>
 
-<font style="color:rgb(0, 0, 0);"></font>
+10．__pasymbol()宏和_pa()宏有什么区别？
+答：
+    __pasymbol()宏和_pa()宏在功能上是相似的，都用于获取一个符号（symbol）的物理地址。它们的主要区别在于使用的上下文和调用方式。
 
-18. <font style="color:rgb(0, 0, 0);">请简述follow_page()函数的作用和实现流程？</font>
+__pasymbol()宏是用于内核代码中的，用于获取某个符号的物理地址。它的定义如下：
 
-<font style="color:rgb(0, 0, 0);"></font>
+#define __pasymbol(sym) ((unsigned long)(__pa_symbol(sym)))
+1
+其中，__pa_symbol(sym)是一个内部宏，用于获取符号sym的物理地址。
 
-<font style="color:rgb(0, 0, 0);"></font>
+_pa()宏则是用于内核以外的代码中的，用于获取某个内核符号的物理地址。它的定义如下：
 
-19. <font style="color:rgb(0, 0, 0);">请简述私有映射和共享映射的区别。</font>
+#define _pa(x) ((unsigned long)(x) - PAGE_OFFSET)
+1
+其中，x是一个内核符号（如变量、函数等），PAGE_OFFSET是一个宏定义，表示内核的偏移地址。
 
-<font style="color:rgb(0, 0, 0);"></font>
+总的来说，__pasymbol()宏和_pa()宏都是用于获取符号的物理地址，但使用的上下文和调用方式有所不同。__pasymbol()宏主要用于内核代码中，而_pa()宏主要用于内核以外的代码中。
 
-<font style="color:rgb(0, 0, 0);"></font>
+11．在物理内存还没有线性映射到内核空间时，内核映像文件映射到什么地方？
+答：
+    在物理内存还没有线性映射到内核空间之前，内核映像文件会被加载到一个临时的虚拟地址空间中。这个虚拟地址空间被称为"临时内核空间"或"早期映射空间"。
 
-<font style="color:rgb(0, 0, 0);"></font>
+在Linux内核启动的早期阶段，内核会将自身的映像文件加载到这个临时内核空间中。这个临时内核空间的大小通常是一个固定的值，例如在x86架构中，通常是从虚拟地址0xC0000000开始的一段连续地址空间。
 
-20. <font style="color:rgb(0, 0, 0);">为什么第二次调用mmap时，Linux内核没有捕捉到地址重叠并返回失败呢？</font>
+一旦内核映像文件被加载到临时内核空间中，内核就可以执行自己的代码，并通过临时内核空间中的虚拟地址访问内核的数据结构和函数。随后，在内核初始化的过程中，物理内存会被线性映射到内核空间中，临时内核空间会被废弃，内核映像文件会被重新映射到新的线性地址空间中。
 
-<font style="color:rgb(0, 0, 0);"></font>
+12．在ARM Linux内核中，kimage_voffset代表什么意思呢？
+答：
+    在ARM Linux内核中，kimage_voffset代表内核映像（Kernel Image）的垂直偏移。它是一个变量，用于表示内核映像在物理内存中的偏移量。
 
-<font style="color:rgb(0, 0, 0);"></font>
+在ARM架构中，内核映像在物理内存中的位置是由引导加载程序（Bootloader）决定的。引导加载程序负责将内核映像从存储设备加载到内存中，并告诉内核映像的加载地址。
 
-<font style="color:rgb(0, 0, 0);"></font>
+kimage_voffset的值是在内核启动过程中由引导加载程序传递给内核的。内核使用这个值来计算内核映像在物理内存中的实际地址。通过将加载地址和kimage_voffset相加，内核可以得到内核映像在物理内存中的正确位置。
 
-21. <font style="color:rgb(0, 0, 0);">struct page数据结构中的_count和_mapcount有什么区别？</font>
+总结起来，kimage_voffset是ARM Linux内核中用于表示内核映像在物理内存中的垂直偏移的变量。它的值由引导加载程序传递给内核，用于计算内核映像的实际加载地址。
 
-<font style="color:rgb(0, 0, 0);"></font>
+13．在ARMv8架构中，高速缓存管理的PoC和PoU有什么区别？
+答：
+    在ARMv8架构中，高速缓存管理的PoC（Point of Coherency）和PoU（Point of Unification）是两个不同的概念，用于确保数据的一致性和同步。
 
-<font style="color:rgb(0, 0, 0);"></font>
+PoC（Point of Coherency）：PoC是指在数据从处理器核心写入到内存之前，需要确保高速缓存中的数据与内存中的数据保持一致。它主要用于确保处理器核心之间的数据共享的一致性。在使用PoC时，写操作会在到达内存之前刷新高速缓存，以确保其他处理器核心访问相同内存地址时能够获取到最新的数据。
 
-<font style="color:rgb(0, 0, 0);"></font>
+PoU（Point of Unification）：PoU是指在数据从内存加载到处理器核心之前，需要确保高速缓存中的数据与内存中的数据保持一致。它主要用于确保处理器核心与内存之间的数据一致性。在使用PoU时，读操作会在从内存加载数据到处理器核心之前，无效化高速缓存中的数据，以确保从内存加载最新的数据。
 
-22. <font style="color:rgb(0, 0, 0);">匿名页面和page cache页面有什么区别？</font>
+总的来说，PoC和PoU都是用于确保数据的一致性和同步的机制。PoC用于处理器核心之间的数据共享的一致性，而PoU用于处理器核心与内存之间的数据一致性。它们在高速缓存管理中起到了不同的作用。
 
-<font style="color:rgb(0, 0, 0);"></font>
+14．在ARMv8架构中，ASID是什么意思？有什么作用？
+答：
+    在ARMv8架构中，ASID（Address Space Identifier）是一种用于标识进程地址空间的机制。每个进程都被分配一个唯一的ASID，用于区分不同的地址空间。
 
-<font style="color:rgb(0, 0, 0);"></font>
+ASID的作用是提高地址转换的效率。在传统的ARM架构中，每次进行地址转换时，需要访问页表以获取正确的映射关系。而在ARMv8架构中，通过使用ASID，可以将最近使用的页表项缓存在TLB（Translation Lookaside Buffer）中，以加快地址转换的速度。当进程切换时，只需要切换ASID，无需刷新整个TLB。
 
-<font style="color:rgb(0, 0, 0);"></font>
+ASID的范围是从0到2^16-1， 因此ARMv8架构最多支持2^16 个唯一的地址空间。这使得ARMv8处理器能够高效地支持多任务操作系统，同时保持较低的地址转换开销。
 
-23. <font style="color:rgb(0, 0, 0);">struct page数据结构中有一个锁，请问trylock_page()和lock_page()有什么区别？</font>
+总结来说，ASID在ARMv8架构中用于标识不同的进程地址空间，并提供了一种高效的地址转换机制，以提高系统的性能和效率。
 
-<font style="color:rgb(0, 0, 0);"></font>
+15．在ARMv8架构中支持哪几种内存属性？它们都有哪些特点？
+答：
+    在ARMv8架构中，支持以下几种内存属性：
 
-<font style="color:rgb(0, 0, 0);"></font>
+Normal内存属性：Normal内存属性用于大多数通用内存区域，包括代码、数据和堆栈等。Normal内存属性可以进一步细分为以下几种特点：
 
-<font style="color:rgb(0, 0, 0);"></font>
+Normal memory non-cacheable（nGnRnE）：这种属性表示内存区域不被缓存，并且不具备乱序执行和早期写入策略。适用于设备寄存器、DMA缓冲区等。
+Normal memory non-cacheable, shareable（nGnRnE）：与上述属性类似，但可共享给其他处理器。
+Normal memory write-back cacheable（nGnRE）：这种属性表示内存区域被缓存，并且支持写回策略。适用于大多数通用内存区域。
+Normal memory write-back cacheable, shareable（nGnRE）：与上述属性类似，但可共享给其他处理器。
+Device内存属性：Device内存属性用于设备寄存器、I/O缓冲区等外设相关的内存区域。Device内存属性的特点是不被缓存，并且不进行乱序执行和早期写入策略。
 
-24. <font style="color:rgb(0, 0, 0);">在Linux 2.4.x内核中，如何从一个page找到所有映射该页面的VMA？反响映射可以带来哪些便利？</font>
+Strongly-ordered内存属性：Strongly-ordered内存属性表示对内存访问的顺序要求非常严格，不进行缓存、乱序执行和早期写入。适用于对内存访问顺序要求非常严格的特殊情况。
 
-<font style="color:rgb(0, 0, 0);"></font>
+Shareable内存属性：Shareable内存属性指示内存区域可与其他处理器共享，并且对缓存一致性有特殊要求。
 
-<font style="color:rgb(0, 0, 0);"></font>
+这些内存属性在ARMv8架构中用于描述内存区域的特性和访问行为，以便处理器和系统在访问内存时能够正确地进行操作和优化。不同的内存属性适用于不同的内存区域和使用场景，确保系统的性能、安全性和一致性。
 
-<font style="color:rgb(0, 0, 0);"></font>
+16．在ARMv8架构中，高速缓存共享属性有内部共享（inner shareable）和外部共享（outer shareable），它们有什么区别？
+答：
+    在ARMv8架构中，高速缓存共享属性有内部共享（inner shareable）和外部共享（outer shareable），它们的区别如下：
 
-25. <font style="color:rgb(0, 0, 0);">阅读Linux 4.0内核RMAP机制的代码，画出父子进程之间VMA、AVC、anon_vma和page等数据结构之间的关系图。</font>
+内部共享（inner shareable）：内部共享表示高速缓存中的数据可以在同一个处理器核心的不同级别的缓存之间共享。这意味着在同一个处理器核心中，不同级别的缓存（如L1缓存、L2缓存等）可以共享缓存行中的数据。内部共享适用于多级缓存之间的数据共享，可以提高缓存的利用率和性能。
 
-<font style="color:rgb(0, 0, 0);"></font>
+外部共享（outer shareable）：外部共享表示高速缓存中的数据可以在不同处理器核心之间共享。这意味着在多个处理器核心之间，缓存中的数据可以进行共享。外部共享适用于多个处理器核心之间的数据共享，可以实现多核处理器的协同工作和数据一致性。
 
-<font style="color:rgb(0, 0, 0);"></font>
+在ARMv8架构中，可以通过在内存区域的描述符中设置相应的共享属性来指定内部共享或外部共享。这样，处理器和系统可以根据缓存共享属性来进行高速缓存的管理和数据共享，以提高系统性能和一致性。
 
-<font style="color:rgb(0, 0, 0);"></font>
+17．在ARMv8架构中，支持哪几条内存屏障指令？它们都有什么区别？
+答：
+    在ARMv8架构中，支持以下几条内存屏障指令：
 
-26. <font style="color:rgb(0, 0, 0);">在Linux 2.6.34中，RMAP机制采用了新的实现，在Linux 2.6.33和之前的版本中称为旧版本RMAP机制。那么在旧版本RMAP机制中，如果父进程有1000个子进程，每个子进程都有一个VMA，这个VMA里面有1000个匿名页面，当所有的子进程的VMA同时发生写复制时会是什么情况呢？</font>
+DMB（Data Memory Barrier）：该指令用于确保数据操作的顺序性和一致性。它会阻止在屏障之后的数据访问指令重排序，并确保在屏障之前的数据访问指令完成后再执行屏障之后的指令。
 
-<font style="color:rgb(0, 0, 0);"></font>
+DSB（Data Synchronization Barrier）：该指令用于确保数据操作的顺序性和一致性，并且还会等待所有先前的数据访问指令完成。它会阻止在屏障之后的数据访问指令重排序，并等待在屏障之前的数据访问指令完成后再执行屏障之后的指令。
 
-<font style="color:rgb(0, 0, 0);"></font>
+ISB（Instruction Synchronization Barrier）：该指令用于确保指令的顺序性和一致性。它会刷新处理器的指令流水线，并确保在屏障之前的指令执行完成后再执行屏障之后的指令。
 
-27. <font style="color:rgb(0, 0, 0);">当page加入lru链表中，被其他线程释放了这个page，那么lru链表如何知道这个page已经被释放了。</font>
-28. <font style="color:rgb(0, 0, 0);">kswapd内核线程何时会被唤醒？</font>
-29. <font style="color:rgb(0, 0, 0);">LRU链表如何知道page的活动频繁程度？</font>
-30. <font style="color:rgb(0, 0, 0);">kswapd按照什么原则来换出页面？</font>
-31. <font style="color:rgb(0, 0, 0);">kswapd按照什么方向来扫描zone？</font>
-32. <font style="color:rgb(0, 0, 0);">kswapd以什么标准来退出扫描LRU？</font>
-33. <font style="color:rgb(0, 0, 0);">手持设备例如Android系统，没有swap分区或者swap文件，kswapd会扫描匿名页面LRU吗？</font>
-34. <font style="color:rgb(0, 0, 0);">swappiness的含义是什么？kswapd如何计算匿名页面和page cache之间的扫描比重？</font>
-35. <font style="color:rgb(0, 0, 0);">当系统充斥着大量只访问一次的文件访问(use-one streaming IO)时，kswapd如何来规避这种风暴？</font>
-36. <font style="color:rgb(0, 0, 0);">在回收page cache时，对于dirty的page cache，kswapd会马上回写吗？</font>
-37. <font style="color:rgb(0, 0, 0);">内核有哪些页面会被kswapd写回交换分区？</font>
-38. <font style="color:rgb(0, 0, 0);">ARM32 Linux如何模拟这个Linux版本的L_PTE_YOUNG比特位呢？</font>
-39. <font style="color:rgb(0, 0, 0);">如何理解Refault Distance算法？</font>
-40. <font style="color:rgb(0, 0, 0);">请简述匿名页面的生命周期。在什么情况下会产生匿名页面？在什么条件下会释放匿名页面？</font>
-41. <font style="color:rgb(0, 0, 0);">KSM是基于什么原理来合并页面的？</font>
-42. <font style="color:rgb(0, 0, 0);">在KSM机制里，合并过程中把page设置成写保护的函数write_protect_page()有这样一个判断：。这个判断的依据是什么？</font>
-43. <font style="color:rgb(0, 0, 0);">如果多个VMA的虚拟页面同时映射了同一个匿名页面，那么此时page->index应该等于多少？</font>
-44. <font style="color:rgb(0, 0, 0);">为什么Dirty COW小程序可以修改一个只读文件的内容？</font>
-45. <font style="color:rgb(0, 0, 0);">在Dirty COW内存漏洞中，如果Diryt COW程序没有madviseThread线程，即只有procselfmemThread线程，能否修改foo文件的内容呢？</font>
-46. <font style="color:rgb(0, 0, 0);">假设在内核空间获取了某个文件对应的page cache页面的struct page数据结构，而对应的VMA属性是只读，那么内核空间是否可以成功修改该文件呢？</font>
-47. <font style="color:rgb(0, 0, 0);">如果用户进程使用只读属性(PROT_READ)来mmap映射一个文件到用户空间，然后使用memcpy来写这段内存空间，会是什么样的情况？</font>
-48. <font style="color:rgb(0, 0, 0);">请画出内存管理中常用的数据结构的关系图，如mm_struct、vma、vaddr、page、pfn、pte、zone、paddr和pg_data等，并思考如下转换关系。</font>
-49. <font style="color:rgb(0, 0, 0);">请画出在最糟糕的情况下分配若干个连续物理页面的流程图。</font>
-50. 在Android中新添加了LMK(Low Memory Killer)，请描述LMK和OOM Killer之间的关系。
-51. <font style="color:rgb(0, 0, 0);">请描述一致性DMA映射dma_alloc_coherent()函数在AEM中是如何管理cache一致性的？</font>
-52. <font style="color:rgb(0, 0, 0);">请描述流式DMA映射dma_map_single()函数在ARM中是如何管理cache一致性的？</font>
-53. <font style="color:rgb(0, 0, 0);">为什么在Linux 4.8内核中要把基于zone的LRU链表机制迁移到基于Node呢？</font>
+这些内存屏障指令的区别如下：
+
+DMB主要用于数据操作的顺序性和一致性，防止数据访问指令重排序，并确保先前的数据访问指令完成后再执行后续指令。
+DSB除了具有DMB的功能外，还会等待所有先前的数据访问指令完成，即它会确保在屏障之前的数据访问指令完成后再执行后续指令。
+ISB主要用于指令的顺序性和一致性，它会刷新处理器的指令流水线，并确保在屏障之前的指令执行完成后再执行后续指令。
+这些内存屏障指令在多核处理器系统中尤为重要，可以确保数据和指令的一致性，并提供正确的同步机制，以避免数据访问和指令执行的异常情况。
+
+18．加载-获取屏障原语与存储-释放屏障原语有什么区别？分别有什么作用？
+答：
+    加载-获取屏障原语（Load-Acquire Barrier）和存储-释放屏障原语（Store-Release Barrier）是内存屏障的两种类型，它们在多线程编程中起着不同的作用。
+
+加载-获取屏障原语（Load-Acquire Barrier）：
+
+作用：加载-获取屏障用于确保在屏障之前的加载操作完成后，后续的读取操作不会读取到过期的数据。
+功能：加载-获取屏障会阻止在屏障之后的读取指令重排序，并确保在屏障之前的加载指令完成后再执行后续指令。
+存储-释放屏障原语（Store-Release Barrier）：
+
+作用：存储-释放屏障用于确保在屏障之前的存储操作完成后，后续的写入操作对其他线程可见。
+功能：存储-释放屏障会阻止在屏障之前的写入指令重排序，并确保在屏障之前的存储指令完成后再执行后续指令。
+这两种屏障原语的区别在于它们对读取和写入操作的影响。加载-获取屏障主要关注读取操作，确保读取操作不会读取到过期的数据。而存储-释放屏障主要关注写入操作，确保写入操作对其他线程可见。
+
+在多线程编程中，加载-获取屏障和存储-释放屏障的正确使用可以确保内存操作的顺序性和一致性，避免数据竞争和并发访问的问题。这些屏障原语在同步和通信的场景中非常有用，例如线程间的共享变量同步、锁的获取和释放等。
+
+19．什么是一个段的加载地址和运行地址？
+答：
+    段的加载地址（Load Address）和运行地址（Runtime Address）是与内存中的段（Segment）相关的概念。
+
+在计算机系统中，段是内存分配的基本单位，用于存储程序的指令、数据和堆栈等信息。每个段都有一个加载地址和一个运行地址。
+
+加载地址是指段在物理内存中的起始地址，也称为物理地址。当程序被加载到内存中时，段会被放置在指定的物理内存地址上。
+
+运行地址是指段在程序执行过程中在虚拟内存中的地址，也称为虚拟地址。在程序执行时，操作系统会将物理内存中的段映射到进程的虚拟地址空间中，并为每个进程创建独立的地址空间。
+
+加载地址和运行地址的区别在于它们所描述的地址空间的不同。加载地址是指段在物理内存中的位置，而运行地址是指段在虚拟内存中的位置。
+
+加载地址和运行地址的概念在内存管理和程序执行过程中非常重要。它们的使用可以实现地址空间的隔离和保护，确保程序的正确加载和执行。
+
+20．从U-boot跳转到内核时，为什么指令高速缓存可以打开而数据高速缓存必须关闭？
+答：
+    从U-boot跳转到内核时，指令高速缓存（Instruction Cache）可以打开而数据高速缓存（Data Cache）必须关闭，是因为在这个阶段的执行环境和需求不同。
+
+U-boot是一个引导加载程序，它在系统启动时负责初始化硬件、加载内核镜像等操作。在这个阶段，U-boot需要频繁地读取指令来执行引导过程，因此打开指令高速缓存可以提高指令的访问速度和执行效率。
+
+而数据高速缓存则需要在内核初始化之后才能安全地启用。内核初始化时，会进行一系列复杂的操作，包括内存管理、设备初始化、中断处理等。在这个阶段，数据高速缓存可能会导致缓存一致性的问题，因为内核对内存的读写操作是频繁且复杂的，可能会出现数据不一致的情况。因此，为了保证正确性，U-boot在跳转到内核之前需要关闭数据高速缓存。
+
+一旦内核初始化完成，数据高速缓存就可以安全地启用了。在内核中，数据高速缓存的打开可以提高内存访问的速度和效率，从而提升系统的整体性能。
+
+21．在Linux内核启动汇编代码中，为什么要建立恒等映射？
+答：
+    在Linux内核启动汇编代码中，建立恒等映射的目的是为了确保在启动过程中可以正确访问物理地址空间。
+
+恒等映射是指将物理地址与相同的虚拟地址进行一一映射的过程。在Linux内核启动的早期阶段，尚未建立页表和虚拟内存管理，因此需要通过恒等映射来直接访问物理地址。
+
+建立恒等映射的主要原因有两个：
+
+早期启动：在启动过程中，内核需要进行一些基本的初始化操作，如设置页表、建立内存映射等。为了执行这些操作，需要通过恒等映射来访问物理地址空间。
+
+早期打印：在启动过程中，内核需要输出一些调试信息和错误信息，以便进行故障排除。为了能够将这些信息输出到控制台或串口，需要通过恒等映射来访问物理地址空间中的相关设备。
+
+通过建立恒等映射，内核可以在启动过程中正确地访问物理地址空间，执行必要的初始化和输出操作。一旦建立了页表和虚拟内存管理，就可以使用更高级的内存管理机制来管理和访问内存。
+
+22．在ARMv8架构中，在L0～L2页表项中包含了指向下一级页表的基地址，那么这个下一级页表基地址是物理地址还是虚拟地址？
+答：
+    在ARMv8架构中，L0～L2页表项中包含的下一级页表的基地址是物理地址。这是因为ARMv8架构使用了虚拟地址转换机制，通过页表将虚拟地址映射到物理地址。在这个过程中，每个页表项都包含了下一级页表的物理地址，用于构建页表的层级结构。通过这种方式，ARMv8架构能够实现虚拟地址到物理地址的转换和映射。
+
+23．MMU可以遍历页表，Linux内核也提供了软件遍历页表的函数，如walk_pgd()、__create_pgd_mapping()、follow_page()等。从软件的视角，Linux内核的pgd_t、pud_t、pmd_t以及pte_t数据结构中并没有存储一个指向下一级页表的指针（即从CPU角度来看，CPU访问这些数据结构时是以虚拟地址来访问的），它们是如何遍历的呢？pgd_t、pud_t、pmd_t以及pte_t数据结构是u64类型的变量。
+答：
+    在Linux内核中，MMU（内存管理单元）可以遍历页表，而Linux内核提供了一些函数来实现软件遍历页表的功能，如walk_pgd()、__create_pgd_mapping()、follow_page()等。
+
+从软件的视角来看，Linux内核中的pgd_t、pud_t、pmd_t和pte_t数据结构并没有直接存储指向下一级页表的指针。这是因为在ARMv8架构中，页表的层级结构是通过页表项中存储的物理地址来建立的，而不是通过指针。
+
+在ARMv8架构中，pgd_t、pud_t、pmd_t和pte_t数据结构是u64类型的变量。它们的值实际上是一个物理地址，用于指向下一级页表或页表项。当CPU访问这些数据结构时，实际上是通过虚拟地址来访问的，而MMU会根据页表的映射关系将虚拟地址转换为对应的物理地址。
+
+因此，通过软件遍历页表时，Linux内核会根据页表项中存储的物理地址来逐级遍历页表，而不是通过指针。这样，Linux内核能够根据页表项中的物理地址来获取下一级页表的位置，并进行遍历和访问。
 
