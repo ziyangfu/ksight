@@ -4,14 +4,15 @@ date: 2025-03-13 16:47:35
 tags:
 - 原创
 ---
-
 ### Linux内核内存管理核心问题
 
 ##### 写在回答之前
 
 以下这些问题，一部分是忘记哪位大师提出的核心问题，是奔跑吧Linux内核？还有一个部分是网上搜集的或者自己想的问题。
 
-以下的回答，主要是自己看Linux5.10的源码、bin技术小屋的内存管理文章、网上搜集的知识以及AI的辅助下回答的，可能会存在很多的错误，希望可以后续更正。
+以下的回答，主要是自己看Linux5.10的源码、bin的技术小屋的内存管理文章、网上搜集的知识以及AI的辅助下回答的，可能会存在很多的错误，希望可以后续更正。
+
+[toc]
 
 ##### 1. 在系统启动时，ARM Linux内核如何知道系统中有多大的内存空间？
 
@@ -33,7 +34,7 @@ dmesg | grep Memory
 [    0.164957] x86/mm: Memory block size: 128M
 ```
 
-#####  2. 在32bit Linux内核中，用户空间和内核空间的比例通常是3:1，可以修改成2:2吗？
+##### 2. 在32bit Linux内核中，用户空间和内核空间的比例通常是3:1，可以修改成2:2吗？
 
 答：可以的，通过menuconfig。`make ARCH=arm menuconfig`
 
@@ -67,9 +68,10 @@ choice
 		bool "1G/3G user/kernel split"
 endchoice
 ```
+
 注意：64位（arm64）下，没有Memory Split，也就是无法修改。
 
-#####  3. 物理内存页面如何添加到伙伴系统中，是一页一页添加，还是以2的几次幂来加入呢？
+##### 3. 物理内存页面如何添加到伙伴系统中，是一页一页添加，还是以2的几次幂来加入呢？
 
 答： 在伙伴系统中，物理内存页面是**以2的幂次方大小的块的形式**添加到系统中的。这种设计使得内存管理更加高效，同时也便于内存块的合并和拆分操作。
 在Linux内核的伙伴系统（Buddy System）中，物理内存页面的分配和回收是以2的幂次方大小的块为单位进行管理的。具体来说，内存页面的添加（回收）到伙伴系统中是以2的幂次方大小的块来加入的，而不是一页一页单独添加的。
@@ -93,13 +95,13 @@ endchoice
 
 ##### 4. 内核的一级页表存放在什么地方？二级页表又存放在什么地方？
 
-答：ARM32架构下，内核的一级页表基址（PGD）存在于页表基地址寄存器`TTBR1`中，记录页表项的一级页表与二级页表存在于物理内存中。
-ARM32架构下，一级页表的基址存在寄存器中，其中`TTBR0`用于用户空间的地址翻译。`TTBR1`用于内核空间的地址翻译。
-页表分为内核与用户进程两种。所有的内核进程地址空间的页表是共用一套的，所以`TTBR1`的值不会改变。用户进程则是每一个进程一个页表，各自独立。`TTBR0`代表了当前用户进程的页表基地址，其值会随着用户进程的切换而改变。
+答：ARM32架构下，内核的一级页表基址（PGD）存在于页表基地址寄存器 `TTBR1`中，记录页表项的一级页表与二级页表存在于物理内存中。
+ARM32架构下，一级页表的基址存在寄存器中，其中 `TTBR0`用于用户空间的地址翻译。`TTBR1`用于内核空间的地址翻译。
+页表分为内核与用户进程两种。所有的内核进程地址空间的页表是共用一套的，所以 `TTBR1`的值不会改变。用户进程则是每一个进程一个页表，各自独立。`TTBR0`代表了当前用户进程的页表基地址，其值会随着用户进程的切换而改变。
 
 ![img](Linux内核内存管理核心问题/33c9fea164d357ce300bc4c314364354.png)
 
-​																					*ARM64架构*
+    *ARM64架构*
 
 对于一个ARM32四核处理器来说，TTBR0有几个？
 
@@ -117,19 +119,18 @@ ARM32架构下，一级页表的基址存在寄存器中，其中`TTBR0`用于�
 
 ![img](Linux内核内存管理核心问题/bb8083e0e10f7cddce8f6d5f35d0b28e.png)
 
-> | **特权级** | **名称**     | **用途**                          | **典型代码示例**             |
-> | :--------- | :----------- | :-------------------------------- | :--------------------------- |
-> | **EL0**    | 用户态       | 运行普通应用程序                  | 用户程序、动态库             |
-> | **EL1**    | 内核态       | 操作系统内核和驱动                | Linux 内核、设备驱动         |
-> | **EL2**    | 虚拟机监控级 | 虚拟化管理（Hypervisor）          | KVM、Xen                     |
-> | **EL3**    | 安全监控级   | 安全与非安全世界切换（TrustZone） | Secure Monitor、安全启动固件 |
+> | **特权级** | **名称** | **用途**                    | **典型代码示例**       |
+> | :--------------- | :------------- | :-------------------------------- | :--------------------------- |
+> | **EL0**    | 用户态         | 运行普通应用程序                  | 用户程序、动态库             |
+> | **EL1**    | 内核态         | 操作系统内核和驱动                | Linux 内核、设备驱动         |
+> | **EL2**    | 虚拟机监控级   | 虚拟化管理（Hypervisor）          | KVM、Xen                     |
+> | **EL3**    | 安全监控级     | 安全与非安全世界切换（TrustZone） | Secure Monitor、安全启动固件 |
 
-
-#####  6. 在ARM32系统中，页表是如何映射的？在ARM64系统中，页表又是如何映射的？
+##### 6. 在ARM32系统中，页表是如何映射的？在ARM64系统中，页表又是如何映射的？
 
 答：ARM32为2级页表，PGD为一级页表。假设页大小为4KB， 则页表项需要12位来表示，PGD12位，二级页表PTE 8位。
 
- PGD索引 (12 bits)  PTE索引 (8 bits)  页内偏移 (12 bits) 
+ PGD索引 (12 bits)  PTE索引 (8 bits)  页内偏移 (12 bits)
 
 通过TTBR寄存器指向PGD基地址，PGD项指向PTE基地址，PTE项指向虚拟内存页表项，虚拟内存页表项通过MMU映射物理内存地址。
 
@@ -137,8 +138,7 @@ ARM64为4级页表，一般来说，ARM64采用48位地址划分（可修改）�
 
 ![image-20250410142728308](Linux内核内存管理核心问题/image-20250410142728308.png)
 
-
-#####  7. 请简述Linux内核在理想情况下页面分配器(page allocator)是如何分配出连续物理页面的
+##### 7. 请简述Linux内核在理想情况下页面分配器(page allocator)是如何分配出连续物理页面的
 
 答：Linux的物理内存管理与物理页面分配，是通过伙伴系统来处理的。首先，伙伴系统在系统启动时，将所有可用的物理内存页按照2的幂次方分组，形成不同大小的块。
 
@@ -148,7 +148,7 @@ ARM64为4级页表，一般来说，ARM64采用48位地址划分（可修改）�
 
 在get_page_from_freelist函数，循环遍历zonelist，找到符合内存分配条件的物理内存区域zone，然后再在rmqueue中，进入到该物理内存区域zone对应的伙伴系统中实际分配物理内存。
 
-#####  8. 在页面分配器中，如何从分配掩码(gfp_mask)中确定可以从哪些zone中分配内存？
+##### 8. 在页面分配器中，如何从分配掩码(gfp_mask)中确定可以从哪些zone中分配内存？
 
 答：简单的说，就是从gfp_mask中提取出zone修饰符，并且生成zone优先级列表zonelist，并且还单独存储最高优先级的内存区域zone，后续分配器会编译zone优先级类别，并从中分配内存。每个gfp_mask还有相关的降级顺序，例如HIGHMEM还可以从ZONE_HIGHMEM降级为ZONE_NORMAL。
 
@@ -174,22 +174,22 @@ struct alloc_context {
 };
 ```
 
-在`prepare_alloc_pages(...)`中，通过`ac->highest_zoneidx = gfp_zone(gfp_mask)`获得内存分配最高优先级的内存区域zone。然后通过`ac->zonelist = node_zonelist(preferred_nid, gfp_mask)`一次性获取允许进行内存分配的内存区域。这其中还涉及到页面迁移属性的问题，绑定CPU核心问题等。最后通过`ac->preferred_zoneref = first_zones_zonelist(ac->zonelist,ac->highest_zoneidx, ac->nodemask)`获得首先分配的zone。
+在 `prepare_alloc_pages(...)`中，通过 `ac->highest_zoneidx = gfp_zone(gfp_mask)`获得内存分配最高优先级的内存区域zone。然后通过 `ac->zonelist = node_zonelist(preferred_nid, gfp_mask)`一次性获取允许进行内存分配的内存区域。这其中还涉及到页面迁移属性的问题，绑定CPU核心问题等。最后通过 `ac->preferred_zoneref = first_zones_zonelist(ac->zonelist,ac->highest_zoneidx, ac->nodemask)`获得首先分配的zone。
 
 > highest_zoneidx 表示允许分配的最高内存区域类型（如ZONE_DMA、ZONE_NORMAL等）的索引
 > 这个值在初始化不可以变，并由gfp_mask直接决定
 > preferred_zoneref 指向当前NUMA节点中首选内存区域的引用（包含zone指针和zone索引信息）
 > 这个值在后续是可以改变的，可能会被慢速路径调整
 
-分配器在遍历zonelist时，会依次检查每个zone的水位线（通过`zone_watermark_fast`）、NUMA亲和性（通过`__cpuset_zone_allowed`）以及内存碎片限制（`ALLOC_NOFRAGMENT`标志）
+分配器在遍历zonelist时，会依次检查每个zone的水位线（通过 `zone_watermark_fast`）、NUMA亲和性（通过 `__cpuset_zone_allowed`）以及内存碎片限制（`ALLOC_NOFRAGMENT`标志）
 
-#####  9. 页面分配器是按照什么方向来扫描zone的？
+##### 9. 页面分配器是按照什么方向来扫描zone的？
 
 答： 从ZONE_HIGHMEM(仅32位系统) -> ZONE_NORMAL -> ZONE_DMA32 -> ZONE_DMA的方向来扫描zone的。
 
 如果有多个NUMA节点，那么本地节点优先。
 
-#####  10. 为用户进程分配物理内存，分配掩码应该选用GFP_KERNEL，还是GFP_HIGHUSER_MOVABLE呢？
+##### 10. 为用户进程分配物理内存，分配掩码应该选用GFP_KERNEL，还是GFP_HIGHUSER_MOVABLE呢？
 
 ```c
 // file: include/linux/gfp.h
@@ -201,17 +201,88 @@ struct alloc_context {
 
 答：应该选用GFP_HIGHUSER_MOVABLE，GFP_KERNEL是为内核分配内存用的?
 
-#####  11. slab分配器是如何分配和释放小块内存的？
+##### 11. slab分配器是如何分配和释放小块内存的？
 
-slab分配器有三个变种，slab，slub，slob 统称为slab分配器，Linux5.10默认使用slub分配器。
+slab分配器有三个变种，slab，slub，slob 统称为slab分配器。slab是初始版本，slub是优化简化版本，slob是专门针对极小内存的嵌入式场景的分配器，Linux5.10默认使用slub分配器。slab的API接口，都是以slab命名的，以上三种分配器可以通过配置切换。
 
-slab主要是针对小块内存分配服务的，从伙伴系统中申请物理内存页。
+slab主要是针对小块内存分配服务的。
 
+从原理上讲，slab首先会向伙伴系统一次性申请一个或多个物理页面，组成slab内存池，随后slab会将这些连续的物理内存划分成多个大小相同的小内存块出来，同一种slab内存池下，划分出来的小内存块尺寸是一样的，因此，**内核会针对不同尺寸的小内存分配需求，创建多个slab内存池**。
 
+内核经常使用的，需要频繁申请释放一些核心数据结构对象的，都有slab内存池，例如 task_struct、mm_struct、struct page、struct file、socket、epoll等。
+
+slab的本质，就是一个或多个连续的物理页。
+
+slab cache是对象池，下有多个slab，每个slab有多个object。每个slab的内存都从伙伴系统来。
+
+![image-20250414104202551](Linux内核内存管理核心问题/image-20250414104202551.png)
+
+其他还涉及到slab对象池的处理，例如对象池内存对齐，在对象池内存内存中存有链表以及对象的状态。
+
+以上都是预备知识，接下来正式说明slab分配器的内存分配与释放。
+
+slab分配器的内存分配存在4种情况：
+
+- kmem_cache_cpu中的slab还有空位置（超市货架里还有商品）
+  - 走快速路径，当内核向该slab cache申请对象时，首先会进入快速分配路径，内核会优先从CPU本地缓存中获取对象，即 `kmem_cache_cpu->freelist`，直接查看本地CPU缓存 ` kmem_cache_cpu->page`中是否有空闲对象可供分配。如果有，则从 `kmem_cache_cpu->freelist`指向的第一个空闲对象拿出来分配，然后调整 `kmem_cache_cpu->freelist`，将其指向下一个空闲对象。
+- kmem_cache_cpu中的slab满了，但partial列表中还有空的slab（货架空了，但货架下面的小柜子里还有）
+  - 当slab cache本地cpu缓存的slab，即 `kmem_cache_cpu->page` 中没有任何空闲的对象时，此时slab上所有对象都分配出去了，因此后续会进入到慢速路径Slowpath。慢速路径下，内核会到本地CPU缓存的partial列表中查看是否有一个slab可以分配对象，这里内核会从partial列表中的头节点开始遍历，直到找到一个可以满足分配的slab出来，随后内核会将该slab从partial列表中摘下来，直接提升为新的本地CPU缓存。
+- kmem_cache_cpu的slab满了，partial列表中也没有空闲的slab了，那得找NUMA节点了（只有仓库有了）
+  - 先填充货架：此时需要从 `kmem_cache_node`中partial链表中拿。此时最重要的是kmem_cache_cpu的slab没了，因此先从 `kmem_cache_node`中的partial链表中摘取一个空的slab，给 `kmem_cache_cpu->page`。然后也需要把kmem_cache_cpu的partial列表也填上一部分，不会全部填上，策略是填一半。
+  - 再分配：然后将 `kmem_cache_cpu->page`中的第一个空闲对象分配出去，调整freelist指针。
+- kmem_cache_cpu的page满了，partial没货了，连NUMA node中的partial链表中都没有slab了，最后只能找伙伴系统了（仓库也没了，找供应商进货）
+  - 这种情况下，内核需要到伙伴系统中重新申请内存页，申请多少页是由kmem_cache中的kmem_cache_order_objects(oo)决定的。当然，当系统内存也很紧张的时候，给不了oo那么多，那就给min指定的内存页个数。
+  - 逐级填好了，就可以分配 `kmem_cache_cpu->page`中的空闲对象了
+
+```c
+// mm/slub.c
+// 慢速路径
+static void *___slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
+			  unsigned long addr, struct kmem_cache_cpu *c) {
+}
+```
+
+slab分配器的内存释放与分配过程正好相反。也存在4种情况
+
+- 放回kmem_cache_cpu的slab
+  - 这是快速路径，调整freelist指针指向刚刚释放的对象
+- 放回kmem_cache_cpu partial的slab
+  - 直接将对象释放回partial中的slab中，修改slab的freelist指针指向刚刚被释放的对象
+- 释放对象所属的slab原来的full的，释放回后，就变成了partial slab，同时该slab不在kmem_cache_cpu中
+  - 首先，将对象释放回所属slab
+  - 然后，内核会利用局部性的优势，将该slab插入到kmem_cache_cpu->partial链表中，因为slab是full的说明这个slab非常的“热”，所以将频繁访问的这个slab放在CPU缓存中，加快下次分配对象的速度。
+- 释放对象所属的slab从partial slab变成了empty slab
+  - 说明这个slab已经不活跃了，因此释放回后，将该slab放回到了NUMA node中的partial中备用
+  - 如果node中的slab数量超限了，就会将slab直接放回到伙伴系统中
+
+注意，kmem_cache_cpu中的slab，是同一种对象的slab。对于不同对象的slab，例如task_struct、mm_struct、socket等，由不同的kmem_cache管理。内核会为每⼀个核⼼数据结构创建⼀个专属的 slab 内存池（kmem_cache）
+
+> 查看slab信息
+>
+> - `sudo cat /proc/slabinfo`
+> - `cat /proc/meminfo`中的slab一行
+> - `sudo slabtop`， 也是读的slabinfo
+
+> **有了伙伴系统，为什么还要有slab分配器？**
+>
+> 伙伴系统所分配的物理内存页全部都是物理连续的，并且只能分配2的整数次幂页
+>
+> 伙伴系统管理物理内存的**最小单位是物理内存页page**，而实际运行中，无论是内核态还是用户态，对于内存的需求，往往都是以字节为单位，通常几十到几百字节，远远小于一个页面的大小，专门分配一个页面，会造成内存的巨大浪费，因此就需要一个专门应对小内存频繁分配与释放场景的分配器，这就是slab内存池。这样一来，当内核需要频繁分配和释放内核对象时，就可以直接从相应的slab分配器中申请与释放内核对象，避免了链路比较长的内存分配与释放对象，极大的提高了性能。这实际上，就是一种池化思想的应用
+>
+> 除此之外，slab分配器还有如下的好处：
+>
+> - 利用CPU高速缓存提高访问速度。当对象直接释放回slab对象池时，对象还会驻留在CPU高速缓存中，因此再申请时，slab内存池，会优先将这个“热的”对象分配给内核使用。
+> - 伙伴系统分配粒度太大，会占用大量的高速缓存与TLB空间，造成频繁置换，slab则不会
+> - 调用伙伴系统的操作会对CPU高速缓存L1 cache中的icache与dcache造成污染，相关指令与数据必然会填充到icache与dcache中
+> - 充分利用CPU高速缓存，避免多个对象对用一个cache line的争用。这个涉及到slab中一种名叫着色的一种优化技术，不过后来的slub已经不用着色了
 
 ##### 12. slab分配器中有一个着色的概念(cache color)，着色有什么作用？
 
 答: Slab着色是Linux内核中一种优化技术，用于减少**缓存行伪共享（Cache Line False Sharing）**的影响。它通过在分配对象时调整对象的内存地址偏移量，确保不同CPU或线程访问的对象尽可能分布在不同的缓存行上，从而提高缓存利用率和性能。
+
+实际上， 目前Linux主要使用的slub分配器，保留slab基本思想，摒弃了slab中众多管理队列的概念，并针对多处理器、NUMA架构进行优化，放弃了实际效果不太明显的slab着色机制。
+
+slub通过本地内存访问模式，而非强制着色来降低缓存行的争用。
 
 > 缓存行伪共享问题
 >
@@ -220,67 +291,83 @@ slab主要是针对小块内存分配服务的，从伙伴系统中申请物理�
 >
 > 例如：
 >
-> - 假设有两个对象`obj1`和`obj2`位于同一缓存行中，分别被两个CPU访问。
-> - 如果一个CPU修改了`obj1`，另一个CPU的缓存行会被标记为无效，即使它只关心`obj2`
+> - 假设有两个对象 `obj1`和 `obj2`位于同一缓存行中，分别被两个CPU访问。
+> - 如果一个CPU修改了 `obj1`，另一个CPU的缓存行会被标记为无效，即使它只关心 `obj2`
 
 通过着色，可以减少缓存行伪共享，避免多个CPU访问同一缓存行。
 
 ##### 13. slab分配其中的slab对象有没有根据Per-CPU做一些优化？
 
+答：在Linux目前主流使用的slub分配器中，kmem_cache结构体中，有一个kmem_cache_cpu结构体，这个是per-CPU的，里面的内存分配与释放都是无锁的。
+
+在kmem_cache_cpu中还有一个值tid，保证进程在 slab cache 中获取到的 cpu 本地缓存 kmem_cache_cpu 与当前执⾏进程的 cpu 是⼀致的，因为进程可能会被更高优先级的进程抢占，随后进程可能会被内核重新调度到别的核上
+
 > [多核心Linux内核路径优化的不二法门之-slab与伙伴系统](https://github.com/0voice/linux_kernel_wiki/blob/main/%E6%96%87%E7%AB%A0/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/%E5%A4%9A%E6%A0%B8%E5%BF%83Linux%E5%86%85%E6%A0%B8%E8%B7%AF%E5%BE%84%E4%BC%98%E5%8C%96%E7%9A%84%E4%B8%8D%E4%BA%8C%E6%B3%95%E9%97%A8%E4%B9%8B-slab%E4%B8%8E%E4%BC%99%E4%BC%B4%E7%B3%BB%E7%BB%9F.md)
-
-
 
 ![127662257-9c2ec8e1-7989-40f7-8413-a8016b86394c](Linux内核内存管理核心问题/127869263-b574e7ef-21ba-4633-a048-926e8489b11a.png)
 
-
-
 ##### 14. slab增长并导致大量不用的空闲对象，该如何解决？
 
+答：slab有三种状态，一种是full slab，表示slab满的，第二种是partial， 表示不满不空， 第三种为empty，表示全空状态。当slab满时，会从伙伴系统再申请一些页组成新的slab，当slab空的数量达到一个slab cache设定的阈值时，会触发回收机制，会将空闲的slab内存回收到伙伴系统中。slab cache（kmem_cache）会控制管理链表汇总slab的个数及链表中所缓存的空闲对象个数，防止他们无限制增长。
 
+```c
+// include/linux/slub_def.h
+// slub小内存分配器
+// slab cache在内核中的数据结构，即slab对象池
+struct kmem_cache { 
+    ......
+    // slab cache 在 numa node 中缓存的 slab 个数上限，slab 个数超过该值，
+	// 空闲的 empty slab 则会被回收到伙伴系统
+	unsigned long min_partial;
+    ......
+}
+```
+
+所有的slab是由slab cache对象池管理的。
 
 ##### 15. 请问kmalloc、vmalloc和malloc之间有什么区别以及实现上的差异？
 
 答: kmalloc与vmalloc是内核中内存分配的函数，malloc是libc中为应用软件准备的内存分配函数。kmalloc分配的内存在物理上是连续的，vmalloc分配的物理内存不一定是连续的。
 
-| 特性             | `kmalloc`                           | `vmalloc`                                  | `malloc`                        |
-| :--------------- | :---------------------------------- | :----------------------------------------- | :------------------------------ |
-| **作用域**       | 内核空间                            | 内核空间                                   | 用户空间                        |
-| **内存连续性**   | **物理地址连续**                    | **虚拟地址连续**（物理地址可能不连续）     | 虚拟地址连续（具体实现依赖C库） |
-| **分配大小限制** | 较小（通常 ≤ 4MB）                  | 较大（理论上可分配数GB）                   | 受进程虚拟地址空间限制          |
-| **适用场景**     | 需要物理连续内存的场景（如DMA操作） | 大块内存需求（如模块加载、内核临时缓冲区） | 用户态程序常规内存分配          |
-| **性能**         | 高（直接操作物理内存）              | 较低（需处理页表映射）                     | 中等（依赖C库实现）             |
-| **内存来源**     | Slab分配器（伙伴系统）              | 非连续物理页 + 虚拟映射                    | 堆内存（`brk`/`mmap`系统调用）  |
+| 特性                   | `kmalloc`                         | `vmalloc`                                  | `malloc`                         |
+| :--------------------- | :---------------------------------- | :------------------------------------------- | :--------------------------------- |
+| **作用域**       | 内核空间                            | 内核空间                                     | 用户空间                           |
+| **内存连续性**   | **物理地址连续**              | **虚拟地址连续**（物理地址可能不连续） | 虚拟地址连续（具体实现依赖C库）    |
+| **分配大小限制** | 较小（通常 ≤ 4MB）                 | 较大（理论上可分配数GB）                     | 受进程虚拟地址空间限制             |
+| **适用场景**     | 需要物理连续内存的场景（如DMA操作） | 大块内存需求（如模块加载、内核临时缓冲区）   | 用户态程序常规内存分配             |
+| **性能**         | 高（直接操作物理内存）              | 较低（需处理页表映射）                       | 中等（依赖C库实现）                |
+| **内存来源**     | Slab分配器（伙伴系统）              | 非连续物理页 + 虚拟映射                      | 堆内存（`brk`/`mmap`系统调用） |
 
 **实现机制差异**
 
 1. **`kmalloc`（内核空间）**
 
+- 目的：为内核中那些非专有的，通用的小内存分配需求服务
 - **底层机制**：基于 **Slab分配器**（或SLUB/SLOB变体），从伙伴系统申请物理连续的内存页。
-
 - 关键特点
 
   - 分配的内存物理连续，可直接用于硬件交互（如DMA）。
-  - 支持 `GFP_*` 标志（如 `GFP_KERNEL`、`GFP_ATOMIC`）控制分配行为。
+  - 支持 `GFP_*` 标志（如 `GFP_DMA`、`GFP_RECLAIMABLE`）控制分配行为。
   - 通过缓存预分配对象（如 `struct task_struct`）提升效率。
-  
+- 内存释放
+
+  - kfree(const void* x)，注意x是虚拟内存地址，会通过virt_to_head_page由虚拟内存地址x找到其所在的物理内存地址
+  - 若page->flag没有设置为 PG_slab标识，说明物理内存页没有被slab cache管理，说明当初kmalloc直接走的是伙伴系统，并没有从kmalloc内存池中分配，这种情况下可以直接调用 `__free_pages`将物理页释放回伙伴系统。如果设置PG_slab，说明走的是kmalloc内存池，此时需要将内存块释放回kmalloc内存池的对应slab cache中
 - 代码示例
 
   ```c
-  void *ptr = kmalloc(size, GFP_KERNEL);  // 分配物理连续内存
+  void *ptr = kmalloc(size, GFP_DMA);  // 在ZONE_DMA上分配物理连续内存
   kfree(ptr);                             // 释放内存
   ```
 
 2. **`vmalloc`（内核空间）**
 
 - **底层机制**：分配多个**非连续物理页**，通过页表映射为**连续的虚拟地址**。
-
 - 关键特点
 
   - 虚拟地址连续，但物理地址可能分散（需更新页表，性能较低）。
   - 适用于大块内存（如内核模块加载、临时缓冲区）。
   - 不支持直接用于DMA（需通过 `dma_alloc_coherent` 获取物理连续内存）。
-  
 - 代码示例
 
   ```c
@@ -291,13 +378,11 @@ slab主要是针对小块内存分配服务的，从伙伴系统中申请物理�
 3. **`malloc`（用户空间）**
 
 - **底层机制**：依赖C库（如glibc的 `ptmalloc`），通过 `brk` 或 `mmap` 系统调用扩展堆内存。
-
 - 关键特点：
 
   - 分配虚拟地址连续的内存（物理连续性由内核保证，但用户无感知）。
   - 管理机制复杂（如空闲链表、内存池），可能产生碎片。
   - 线程安全（通过锁或线程本地缓存）。
-  
 - 代码示例：
 
   ```c
@@ -307,22 +392,23 @@ slab主要是针对小块内存分配服务的，从伙伴系统中申请物理�
 
 **典型场景对比**
 
-| **场景**                        | **推荐使用** | **原因**                                                     |
-| :------------------------------ | :----------- | :----------------------------------------------------------- |
-| 内核驱动需要DMA缓冲区           | `kmalloc`    | 物理连续内存是DMA的必要条件                                  |
-| 内核模块加载大量数据            | `vmalloc`    | 大块内存需求，物理连续性不重要                               |
-| 用户程序分配动态内存            | `malloc`     | 用户态标准接口，透明处理内存管理                             |
-| 高频小对象分配（如task_struct） | `kmem_cache` | 通过Slab缓存预分配对象，避免重复初始化开销（比 `kmalloc` 更高效） |
+| **场景**                  | **推荐使用** | **原因**                                                      |
+| :------------------------------ | :----------------- | :------------------------------------------------------------------ |
+| 内核驱动需要DMA缓冲区           | `kmalloc`        | 物理连续内存是DMA的必要条件                                         |
+| 内核模块加载大量数据            | `vmalloc`        | 大块内存需求，物理连续性不重要                                      |
+| 用户程序分配动态内存            | `malloc`         | 用户态标准接口，透明处理内存管理                                    |
+| 高频小对象分配（如task_struct） | `kmem_cache`     | 通过Slab缓存预分配对象，避免重复初始化开销（比 `kmalloc` 更高效） |
 
-------
+---
 
 **性能与限制**
 
 - `kmalloc` vs `vmalloc`：
 - `kmalloc` 无页表操作，性能更高，但分配大小受限。
-  - `vmalloc` 需要修改页表，且TLB刷新可能引入额外开销。
 
+  - `vmalloc` 需要修改页表，且TLB刷新可能引入额外开销。
 - `malloc` 的隐藏成本：
+
   - 可能触发缺页异常或系统调用（`brk`/`mmap`）。
   - 内存碎片问题（尤其是长时间运行的程序）。
 
@@ -332,11 +418,74 @@ slab主要是针对小块内存分配服务的，从伙伴系统中申请物理�
 - **作用域隔离**：`kmalloc`/`vmalloc` 用于内核，`malloc` 用于用户态。
 - **实现复杂度**：`kmalloc` 依赖Slab优化小对象，`vmalloc` 处理非连续映射，`malloc` 依赖C库的复杂内存管理。
 
+> slab是为那些专有的数据结构在内存中的对象分配而设计的，如task_struct、mm_strcuct等，然而，在内核中，还有很多的通用的小内存分配需求需要满足，因此需要一个内存分配接口，这就是kmalloc。
+>
+> 在内核启动初始化时，通过kmem_cache_create接口函数预先创建多个特定尺寸的slab cache出来，以应对不用尺寸的通用内存块的申请，因此kmalloc的本质，就是各种不同尺寸的通用slab cache。
+>
+> ```bash
+> # /proc/slabinfo
+> ......
+> kmalloc-rcl-8k         0      0   8192    4    8 : tunables    0    0    0 : slabdata      0      0      0
+> kmalloc-rcl-4k         0      0   4096    8    8 : tunables    0    0    0 : slabdata      0      0      0
+> kmalloc-rcl-2k         0      0   2048   16    8 : tunables    0    0    0 : slabdata      0      0      0
+> kmalloc-rcl-1k         0      0   1024   32    8 : tunables    0    0    0 : slabdata      0      0      0
+> kmalloc-rcl-512       64     64    512   32    4 : tunables    0    0    0 : slabdata      2      2      0
+> kmalloc-rcl-256        0      0    256   32    2 : tunables    0    0    0 : slabdata      0      0      0
+> kmalloc-rcl-192      126    126    192   21    1 : tunables    0    0    0 : slabdata      6      6      0
+> kmalloc-rcl-128     2560   2560    128   32    1 : tunables    0    0    0 : slabdata     80     80      0
+> kmalloc-rcl-96      1764   1764     96   42    1 : tunables    0    0    0 : slabdata     42     42      0
+> kmalloc-rcl-64      8224   9408     64   64    1 : tunables    0    0    0 : slabdata    147    147      0
+> kmalloc-rcl-32         0      0     32  128    1 : tunables    0    0    0 : slabdata      0      0      0
+> kmalloc-rcl-16         0      0     16  256    1 : tunables    0    0    0 : slabdata      0      0      0
+> kmalloc-rcl-8          0      0      8  512    1 : tunables    0    0    0 : slabdata      0      0      0
+> kmalloc-cg-8k         32     32   8192    4    8 : tunables    0    0    0 : slabdata      8      8      0
+> kmalloc-cg-4k        148    184   4096    8    8 : tunables    0    0    0 : slabdata     23     23      0
+> kmalloc-cg-2k        386    432   2048   16    8 : tunables    0    0    0 : slabdata     27     27      0
+> kmalloc-cg-1k       1032   1184   1024   32    8 : tunables    0    0    0 : slabdata     37     37      0
+> kmalloc-cg-512      1357   1536    512   32    4 : tunables    0    0    0 : slabdata     48     48      0
+> kmalloc-cg-256       256    256    256   32    2 : tunables    0    0    0 : slabdata      8      8      0
+> kmalloc-cg-192       420    420    192   21    1 : tunables    0    0    0 : slabdata     20     20      0
+> kmalloc-cg-128       256    256    128   32    1 : tunables    0    0    0 : slabdata      8      8      0
+> kmalloc-cg-96        336    336     96   42    1 : tunables    0    0    0 : slabdata      8      8      0
+> kmalloc-cg-64       5568   5568     64   64    1 : tunables    0    0    0 : slabdata     87     87      0
+> kmalloc-cg-32       1024   1024     32  128    1 : tunables    0    0    0 : slabdata      8      8      0
+> kmalloc-cg-16       4608   4608     16  256    1 : tunables    0    0    0 : slabdata     18     18      0
+> kmalloc-cg-8        4096   4096      8  512    1 : tunables    0    0    0 : slabdata      8      8      0
+> kmalloc-8k           297    304   8192    4    8 : tunables    0    0    0 : slabdata     76     76      0
+> kmalloc-4k          2399   2488   4096    8    8 : tunables    0    0    0 : slabdata    311    311      0
+> kmalloc-2k          2130   2224   2048   16    8 : tunables    0    0    0 : slabdata    139    139      0
+> kmalloc-1k          2309   2368   1024   32    8 : tunables    0    0    0 : slabdata     74     74      0
+> kmalloc-512        12706  14080    512   32    4 : tunables    0    0    0 : slabdata    440    440      0
+> kmalloc-256        13527  14176    256   32    2 : tunables    0    0    0 : slabdata    443    443      0
+> kmalloc-192         9826  12915    192   21    1 : tunables    0    0    0 : slabdata    615    615      0
+> kmalloc-128         1938   2368    128   32    1 : tunables    0    0    0 : slabdata     74     74      0
+> kmalloc-96          4471   4788     96   42    1 : tunables    0    0    0 : slabdata    114    114      0
+> kmalloc-64         22383  24960     64   64    1 : tunables    0    0    0 : slabdata    390    390      0
+> kmalloc-32         47652  48640     32  128    1 : tunables    0    0    0 : slabdata    380    380      0
+> kmalloc-16         27136  27136     16  256    1 : tunables    0    0    0 : slabdata    106    106      0
+> kmalloc-8          11264  11264      8  512    1 : tunables    0    0    0 : slabdata     22     22      0
+> kmem_cache_node      512    512     64   64    1 : tunables    0    0    0 : slabdata      8      8      0
+> kmem_cache           320    320    256   32    2 : tunables    0    0    0 : slabdata     10     10      0
+> ......
+> ```
+>
+> kmalloc内存池中的内存，来自于ZONE_DMA与ZONE_NORMAL物理内存区域，也就是内核虚拟内存空间中的直接映射区域。
+>
+> kmalloc-*：来自KMALLOC_NORMAL，表示从ZONE_NORMAL物理内存中分配内存
+>
+> kmalloc-rcl-*：来自KMALLOC_RECLAIM，表示需要分配可回收的内存，RECLAIM的页面，不可移动，但可直接回收，例如文件缓存页
+>
+> dma-kmalloc-*：来自ZONE_DMA
+>
+> kmalloc-cg-*：这个是用于cgroup的
+
+![image-20250415161959308](Linux内核内存管理核心问题/image-20250415161959308.png)
+
 ##### 16. 使用用户态的API函数malloc()分配内存时，会马上为其分配物理内存吗？
 
 不会，用户调用malloc分配内存时，实际会调用brk系统调用，系统会为其分配虚拟内存，然后即返回，当该内存要使用时，内核发现虚拟内存没有映射物理内存，因此触发缺页异常，为其分配物理内存，并可能将其加入到TLB快表中
 
-
+而且，这还涉及到malloc的实现，例如glibc的malloc，底层是ptmalloc算法实现的内存池，一般来说是128KB，大于128K的内存，会直接用mmap映射，小于这个的使用sbrk与ptmalloc内存池。
 
 ##### 17. 假设不考虑libc的因素，malloc分配100Byte，那么实际上内核是为其分配100Byte吗？
 
@@ -348,37 +497,159 @@ slab主要是针对小块内存分配服务的，从伙伴系统中申请物理�
 
 ##### 19. vm_normal_page()函数返回的是什么样页面的struct page数据结构？为什么内存管理代码中需要这个函数？
 
-
-
 ##### 20. 请简述get_user_page()函数的作用和实现流程？
 
+##### 21. 请简述follow_page()函数的作用和实现流程？
 
-
-##### 18. 请简述follow_page()函数的作用和实现流程？
-
-
-
-##### 19. 请简述私有映射和共享映射的区别。
+##### 22. 请简述私有映射和共享映射的区别。
 
 答： mmap有两种映射方式，从是否有文件的参与上来说，分为匿名映射与文件映射，从权限上来说，有私有映射与共享映射两种。
 
-共享映射意味着两块虚拟内存同时指向同一块物理内存，因此可以通过共享映射，两个进程直接进行数据通信，私有映射则是仅进程内的映射，别的进程无法访问该块地址区域。
+共享映射意味着两块虚拟内存同时指向同一块物理内存，因此可以通过共享映射，两个进程直接进行数据通信，私有映射则是仅进程内的映射，修改对其他进程不可见。
 
-##### 20. 为什么第二次调用mmap时，Linux内核没有捕捉到地址重叠并返回失败呢？
+私有映射的典型场景有：可执行文件与动态库的加载
 
-答： mmap是在用户态虚拟内存的共享库及映射区域开辟内存，不懂......
+共享映射的典型场景有：IPC如mmap共享内存，高性能文件读写（通过共享映射减少 `read()`/`write()` 的系统调用开销）
 
-##### 21. struct page数据结构中的_count和_mapcount有什么区别？
+| **特性**           | **私有映射（MAP_PRIVATE）**                             | **共享映射（MAP_SHARED）**                 |
+| :----------------------- | :------------------------------------------------------------ | :----------------------------------------------- |
+| **写入行为**       | 使用**写时复制（Copy-on-Write）**，修改仅对当前进程可见 | 直接修改共享内存，其他进程可见，且可能同步到文件 |
+| **内存共享性**     | 进程私有，修改对其他进程不可见                                | 多进程共享同一物理内存，修改对其他进程可见       |
+| **对原文件的影响** | 修改**不会** 自动写回文件                               | 修改**可能** 同步到文件（取决于同步策略）  |
+| **典型应用场景**   | 加载可执行文件、动态库、进程私有内存分配                      | 进程间通信（IPC）、内存数据库、文件持久化        |
 
+相关知识点：什么是写时复制（写入时触发缺页异常）
 
+##### 23. 为什么第二次调用mmap时，Linux内核没有捕捉到地址重叠并返回失败呢？
 
-##### 22. 匿名页面和page cache页面有什么区别？
+答： 首先说明下，第二次调用mmap时，Linux内核没有捕捉到地址重叠并返回失败是什么意思，给出以下程序：
 
+```c
+/**
+file: mmap_test.c
+compile: gcc ./mmap_test.c -o mmap_test
+run: ./mmap_test
+result：
+    // 让内核自己选择地址,两次地址是不同的
+    First mmap successful at address: 0x7fae340c3000
+    Second mmap successful at address: 0x7fae34094000
+    // 自己给出地址0x20000000，第一次内核确实用了用户给出的地址
+    // 第二次丢弃了用户的地址，注意，这里没有捕捉到地址重叠而返回失败
+    // 这就是问题所描述的
+    Third mmap successful with address: 0x20000000  
+    fourth mmap successful at address: 0x7fae34093000
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
+#define MAP_SIZE 4096
+
+void *map_memory(int fd, off_t offset, int flags, void *addr) {
+    void *mapped_addr = mmap(addr, MAP_SIZE, PROT_READ | PROT_WRITE, flags, fd, offset);
+    if (mapped_addr == MAP_FAILED) {
+        perror("mmap");
+        return NULL;
+    }
+    return mapped_addr;
+}
+
+void unmap_memory(void *addr) {
+    if (munmap(addr, MAP_SIZE) == -1) {
+        perror("munmap");
+    }
+}
+
+int main() {
+    int fd = open("/dev/zero", O_RDWR);
+    if (fd == -1) {
+        perror("open");
+        return EXIT_FAILURE;
+    }
+
+    // 第一次调用 mmap，未指定地址（内核自动选择）
+    void *addr1 = map_memory(fd, 0, MAP_PRIVATE, NULL);
+    if (addr1 == NULL) {
+        close(fd);
+        return EXIT_FAILURE;
+    }
+    printf("First mmap successful at address: %p\n", addr1);
+
+    // 第二次调用 mmap，未指定地址（内核自动选择）
+    void *addr2 = map_memory(fd, 0, MAP_PRIVATE, NULL);
+    if (addr2 == NULL) {
+        close(fd);
+        unmap_memory(addr1);
+        return EXIT_FAILURE;
+    }
+    printf("Second mmap successful at address: %p\n", addr2);
+
+    // 第一次调用 mmap，指定地址 0x20000000
+    void *addr3 = map_memory(fd, 0, MAP_PRIVATE, 0x20000000);
+    if (addr3 == NULL) {
+        close(fd);
+        unmap_memory(addr1);
+        unmap_memory(addr2);
+        return EXIT_FAILURE;
+    }
+    printf("Third mmap successful with address: %p\n", addr3);
+    // 第二次调用 mmap，指定地址 0x20000000
+    void *addr4 = map_memory(fd, 0, MAP_PRIVATE, 0x20000000);
+    if (addr4 == NULL) {
+        close(fd);
+        unmap_memory(addr1);
+        unmap_memory(addr2);
+        unmap_memory(addr3);
+        return EXIT_FAILURE;
+    }
+    printf("fourth mmap successful at address: %p\n", addr4);
+    // 清理
+    unmap_memory(addr1);
+    unmap_memory(addr2);
+    unmap_memory(addr3);
+    unmap_memory(addr4);
+    close(fd);
+
+    return EXIT_SUCCESS;
+}
+```
+
+OK，现在去内核看看为什么内核在捕捉到用户给的地址相同时，会丢弃用户的地址，而不会报错。
+
+##### 24. struct page数据结构中的_count和_mapcount有什么区别？
+
+答：
+
+##### 25. 匿名页面和page cache页面有什么区别？
+
+答：先理清匿名页、文件页、页高速缓存page cache的概念与与区别。
+
+- 匿名页是指没有文件背景的页面，来源于无持久化存储关联的数据，例如进程堆栈、匿名内存映射等，它会随着进程的结束或者内存的回收而消失。典型的场景有进程堆、栈、匿名mmap分配的内存
+- 文件页来源于文件系统或者物理内存的文件映射（mmap文件映射），关联磁盘文件，如文件缓存、内存映射文件，它可以从磁盘中重新加载，例如通过mmap映射的文件，或者通过read读取的缓存数据。文件页通常是page cache的一部分。
+- page cache是内核用于缓存文件数据，避免重复磁盘I/O，加速文件访问的一种机制。包含了文件页
+
+> page cache与文件页完全等同吗？
+>
+> **文件页是 Page Cache 的具体内容，而 Page Cache 是管理文件页的机制。**
+> 两者是 **“内容”与“容器”** 的关系，类似书籍与书架的关系
+>
+> Page Cache像一个仓库，而文件页是仓库中的货物。仓库（Page Cache）负责存储和管理货物（文件页），但仓库本身并不是货物
+
+| **维度**     | **匿名页**                        | **文件页**                                           | **Page Cache**                             |
+| :----------------- | :-------------------------------------- | :--------------------------------------------------------- | :----------------------------------------------- |
+| **数据来源** | 进程动态分配，无磁盘文件对应。          | 直接关联磁盘文件（如 `/etc/passwd`）。                   | 文件页的集合，本质是文件页的管理机制。           |
+| **内存回收** | 必须通过 Swap 机制换出到磁盘。          | 干净页可直接释放，脏页需写回磁盘。                         | 通过释放文件页实现回收（属于文件页的管理策略）。 |
+| **性能影响** | 换入/换出操作引入延迟，依赖 Swap 性能。 | 脏页写回可能阻塞 I/O，干净页释放无开销。                   | 提升文件访问速度，但占用内存可能挤压匿名页空间。 |
+| **统计指标** | `/proc/meminfo` 中的 `AnonPages`。  | `/proc/meminfo` 中的 `Cached`（大部分）、`Buffers`。 | `Cached` 字段反映 Page Cache 总大小。          |
+| **内核管理** | 通过 Swap Cache 和 LRU 链表管理。       | 通过 Page Cache 的 Radix Tree 和 LRU 链表管理。            | 由文件系统（如 ext4）和 VFS 层协同管理。         |
+
+相关知识：脏页（已修改的缓存文件页，内存回收时需写回再释放）、写回机制、缓存一致性
 
 ##### 23. struct page数据结构中有一个锁，请问trylock_page()和lock_page()有什么区别？
-
-
 
 ##### 24. 在Linux 2.4.x内核中，如何从一个page找到所有映射该页面的VMA？反响映射可以带来哪些便利？
 
@@ -386,11 +657,7 @@ slab主要是针对小块内存分配服务的，从伙伴系统中申请物理�
 
 ##### 25. 阅读Linux 4.0内核RMAP机制的代码，画出父子进程之间VMA、AVC、anon_vma和page等数据结构之间的关系图。
 
-
-
 ##### 26. 在Linux 2.6.34中，RMAP机制采用了新的实现，在Linux 2.6.33和之前的版本中称为旧版本RMAP机制。那么在旧版本RMAP机制中，如果父进程有1000个子进程，每个子进程都有一个VMA，这个VMA里面有1000个匿名页面，当所有的子进程的VMA同时发生写复制时会是什么情况呢？
-
-
 
 ##### 27. 当page加入lru链表中，被其他线程释放了这个page，那么lru链表如何知道这个page已经被释放了。
 
@@ -398,45 +665,99 @@ slab主要是针对小块内存分配服务的，从伙伴系统中申请物理�
 
 ##### 28. kswapd内核线程何时会被唤醒？
 
-答：kswapd内核线程是用于当内存比较慢时，将闲置内存置换的交换空间上。 kswapd每个核心一个。
+答：kswapd内核线程是用于当内存比较慢时，将闲置内存置换的交换空间上。
 
 ##### 29. LRU链表如何知道page的活动频繁程度？
+
 ##### 30. kswapd按照什么原则来换出页面？
+
 ##### 31. kswapd按照什么方向来扫描zone？
+
 ##### 32. kswapd以什么标准来退出扫描LRU？
+
 ##### 33. 手持设备例如Android系统，没有swap分区或者swap文件，kswapd会扫描匿名页面LRU吗？
+
 ##### 34. swappiness的含义是什么？kswapd如何计算匿名页面和page cache之间的扫描比重？
 
-答： swappiness表示系统内存置换到交换空间的积极度，数值越大，内存置换到交换空间越积极。
+答：swappiness可以从两个方面理解：
 
-`cat /proc/sys/vm/swappiness`或者`sysctl vm.swappiness`可以查看当前swappiness值，ubuntu上设置为60，嵌入式平台处于速度方面的考虑，建议禁止交换空间。
+- 表示系统使用交换空间的积极程度，数值越大，内存置换到交换空间越积极。
+- 表示内存置换时，匿名页与文件页的优先程度。swapiness值越高，越倾向于换出匿名页，数值越低，越倾向于换出文件页。
+
+关于kswapd计算匿名页与文件页的扫描比重，在 `mm/vmscan.c`中有一个函数 `get_scan_count`，根据swappiness、当前内存压力（内存水位线判断）、匿名页与文件页的活跃/非活跃状态来进行权重计算。
+
+```c
+// mm/vmscan.c
+// 计算匿名页与文件页的扫描比例
+static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+			   unsigned long *nr)
+{}
+```
+
+`cat /proc/sys/vm/swappiness`或者 `sysctl vm.swappiness`可以查看当前swappiness值，ubuntu上设置为60，嵌入式平台出于速度方面的考虑，建议禁止交换空间。
+
+关闭交换空间并不意味着swapd消失，swapd守护进程依然存在。
+
+swapd是Linux内核的内存管理守护进程，核心任务是平衡内存使用，通过回收内存页来维持系统的空闲内存水位。关闭swap后，匿名页如进程堆栈无法被换出到磁盘，只能通过释放进程内存来回收，这在低内存时会触发OOM Killer。
+
+> [swappiness参数的含义和设置](https://www.cnblogs.com/linhaifeng/articles/13960093.html)
+>
+> swappiness=0究竟意味着什么？
+>
+> 我们都知道，Linux的进程使用的内存分为2种：
+>
+> 1. file-backed pages（有文件背景的页面，比如代码段、比如read/write方法读写的文件、比如mmap读写的文件，它们有对应的硬盘文件，因此如果要交换，可以直接和硬盘对应的文件进行交换；比如读取一个文件，没有关闭，也没有修改，交换时，就可以将这个文件直接放回硬盘，代码处理其实就是删除这部分内容，只保留一个索引，让系统知道这个文件还处于打开状态，只是它的内容不在内存，还在硬盘上），此部分页面叫做page cache；
+> 2. anonymous pages（匿名页，如stack，heap，CoW后的数据段等；他们没有对应的硬盘文件，因此如果要交换，只能交换到swap分区），此部分页面，如果系统内存不充分，可以被swap到swapfile或者硬盘的swap分区。
+>
+> 因此，Linux在进行内存回收（memory reclaim）的时候，实际上可以从1类和2类这两种页面里面进行回收，而swappiness值就决定了回收这2类页面的优先级。**swappiness越大，越倾向于回收匿名页**；swappiness越小，越倾向于回收file-backed的页面。当然，它们的回收方法都是一样的LRU算法。
 
 ##### 35. 当系统充斥着大量只访问一次的文件访问(use-one streaming IO)时，kswapd如何来规避这种风暴？
+
 ##### 36. 在回收page cache时，对于dirty的page cache，kswapd会马上回写吗？
+
 ##### 37. 内核有哪些页面会被kswapd写回交换分区？
+
+答：匿名页或者文件页，内核分配的可移动用户内存页，带**GFP_HIGHUSER_MOVABLE**属性
+
+临时文件系统如tmpfs中的数据驻留在内存，可以被视为可交换的匿名页
+
+可移动的页面 MOVEABLE
+
 ##### 38. ARM32 Linux如何模拟这个Linux版本的L_PTE_YOUNG比特位呢？
+
 ##### 39. 如何理解Refault Distance算法？
+
 ##### 40. 请简述匿名页面的生命周期。在什么情况下会产生匿名页面？在什么条件下会释放匿名页面？
+
+答： 什么是匿名页面
+
 ##### 41. KSM是基于什么原理来合并页面的？
+
 ##### 42. 在KSM机制里，合并过程中把page设置成写保护的函数write_protect_page()有这样一个判断：。这个判断的依据是什么？
+
 ##### 43. 如果多个VMA的虚拟页面同时映射了同一个匿名页面，那么此时page->index应该等于多少？
+
 ##### 44. 为什么Dirty COW小程序可以修改一个只读文件的内容？
+
 ##### 45. 在Dirty COW内存漏洞中，如果Diryt COW程序没有madviseThread线程，即只有procselfmemThread线程，能否修改foo文件的内容呢？
+
 ##### 46. 假设在内核空间获取了某个文件对应的page cache页面的struct page数据结构，而对应的VMA属性是只读，那么内核空间是否可以成功修改该文件呢？
 
 答：【???】可以，内核具有超级权限
 
 ##### 47. 如果用户进程使用只读属性(PROT_READ)来mmap映射一个文件到用户空间，然后使用memcpy来写这段内存空间，会是什么样的情况？
+
 ##### 48. 请画出内存管理中常用的数据结构的关系图，如mm_struct、vma、vaddr、page、pfn、pte、zone、paddr和pg_data等，并思考如下转换关系
+
 ##### 49. 请画出在最糟糕的情况下分配若干个连续物理页面的流程图。
+
 ##### 50. 在Android中新添加了LMK(Low Memory Killer)，请描述LMK和OOM Killer之间的关系。
+
 ##### 51. 请描述一致性DMA映射dma_alloc_coherent()函数在AEM中是如何管理cache一致性的？
+
 ##### 52. 请描述流式DMA映射dma_map_single()函数在ARM中是如何管理cache一致性的？
+
 ##### 53. 为什么在Linux 4.8内核中要把基于zone的LRU链表机制迁移到基于Node呢？
-
-
-
-
 
 ---
 
@@ -450,23 +771,216 @@ slab主要是针对小块内存分配服务的，从伙伴系统中申请物理�
 
 在[SMP](https://zhida.zhihu.com/search?content_id=544295883&content_type=Answer&match_order=1&q=SMP&zhida_source=entity)（Symmetric Multi Process，对称多处理器）系统中，每个处理器内置了MMU模块，MMU模块包含了[TLB](https://zhida.zhihu.com/search?content_id=544295883&content_type=Answer&match_order=1&q=TLB&zhida_source=entity)和[TWU](https://zhida.zhihu.com/search?content_id=544295883&content_type=Answer&match_order=1&q=TWU&zhida_source=entity)两个子模块。TLB是一个高速缓存，用于缓存虚拟地址到物理地址的转换结果。页表的查询过程是由TWU硬件自动完成的，但是页表的维护是需要操作系统实现的，页表存放在主存中。
 
+Cache的同步有cache一致性协议与BBM等机制来处理
+
 > [现代CPU的每个core都有自己的MMU吗](https://www.zhihu.com/question/38064979/answer/2828157858)
 
+##### 从宏观的角度讲讲，Linux内核是如何管理内存的？
 
+答：相关：
 
+- 虚拟内存布局，物理内存伙伴系统，slab分配器，TLB旁路转换缓冲，缺页异常
+- 内核的内存分配，kmalloc，vmalloc， 应用malloc
+- 应用的内存分配路线，mmap映射
 
+演进：
 
+- swap交换空间，换页
+- 针对文件系统的页高速缓存，文件页，匿名页
 
+##### 为什么要内存对齐？
 
+答：这涉及到CPU的访存机制，例如64位的CPU，一次访存是8个字节，如果CPU访问一个word size对齐的内存地址，会经历两次访存操作。
 
+内存对齐还有一些其他的好处，例如CPU访问对齐的内存都是原子性的，对齐内存中的数据会独占cache line，不会与其他数据共享cache line，避免false sharing。
 
+##### 讲讲缺页异常？
 
+答：当malloc分配内存时，内核并未真正映射物理内存，当真正用到分配的变量时，内核发现该段虚拟内存找不到物理内存，因此触发缺页异常。缺页异常的结果就是通过MMU映射虚拟内存到物理内存，然后就可以用这段内存了，后续内核可以还会将该段映射加入到TLB快表中。
 
+##### 用户态内存如何分配？需要用到slab分配器吗？
 
+答：不需要用到slab分配器，slab分配器主要是给内核的小内存对象分配使用的，用户态内存直接用过malloc与mmap分配内存，当用户态内存池不足时，调用brk或mmap系统调用向内核申请内存块，然后内核通过伙伴系统分配物理页， 同时，像glibc还会有像ptmalloc算法来管理内存池。（也就是说，malloc分配内存并不一定会直接从内核分配，也不一定释放时，直接释放会内核**？**）
 
+##### 如何测试malloc与free的内存分配与释放延迟，需要用到ebpf技术吗
 
+在 Linux 环境下测试 `malloc` 和 `free` 的内存分配与释放延迟时，是否需要使用 eBPF 技术取决于测试的**粒度**和**目标场景**。以下是多种方法的对比与实现建议：
 
+一、基础测试方法（无需 eBPF）
 
+1. **直接时间戳记录**
+
+通过 C 语言代码在 `malloc` 和 `free` 调用前后插入时间戳，计算差值获取单次操作的延迟。
+**示例代码**：
+
+```c
+#include <stdlib.h>
+#include <time.h>
+#include <stdio.h>
+
+int main() {
+    const int N = 1000000;
+    void *ptr[N];
+    struct timespec start, end;
+  
+    // 测试 malloc 延迟
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    for (int i = 0; i < N; i++) {
+        ptr[i] = malloc(1024);
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    printf("Malloc latency: %ld ns\n", (end.tv_sec - start.tv_sec)*1e9 + (end.tv_nsec - start.tv_nsec));
+  
+    // 测试 free 延迟
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    for (int i = 0; i < N; i++) {
+        free(ptr[i]);
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    printf("Free latency: %ld ns\n", (end.tv_sec - start.tv_sec)*1e9 + (end.tv_nsec - start.tv_nsec));
+  
+    return 0;
+}
+```
+
+**特点**：
+
+- **优点**：简单直接，无需额外工具。
+- 缺点：仅能测量用户态调用时间，无法反映内核态操作（如brk/mmap系统调用）的延迟
+
+2. **性能分析工具**
+
+使用专用工具（如 `perf`、`Valgrind Massif`）分析内存分配的整体性能。
+**示例命令**：
+
+```bash
+# 使用 perf 统计系统调用耗时
+perf record -e syscalls:sys_enter_mmap,syscalls:sys_exit_mmap ./test_malloc_free
+perf script | grep mmap
+
+# 使用 Massif 分析内存分配模式
+valgrind --tool=massif ./test_malloc_free
+```
+
+**特点**：
+
+- **优点**：可捕获内核态操作（如 `mmap`）的延迟，提供调用栈信息。
+- 缺点：工具本身可能引入额外开销，不适合高频调用场景
+
+二、进阶测试方法（需 eBPF）
+
+当需要**内核态与用户态联合分析**或**高精度追踪**时，eBPF 是更优选择。例如：
+
+1. **追踪系统调用（`brk`/`mmap`）**
+
+通过 eBPF 追踪 `malloc` 底层调用的系统调用（如 `brk` 或 `mmap`），记录其执行时间。
+**eBPF 程序示例**：
+
+```c
+#include <linux/bpf.h>
+#include <bpf/bpf_helpers.h>
+
+SEC("kprobe/brk")
+int trace_brk(struct pt_regs *ctx) {
+    u64 start = bpf_ktime_get_ns();
+    bpf_map_update_elem(&syscall_times, &0, &start, BPF_ANY);
+    return 0;
+}
+
+SEC("kretprobe/brk")
+int trace_brk_ret(struct pt_regs *ctx) {
+    u64 *start = bpf_map_lookup_elem(&syscall_times, &0);
+    if (start) {
+        u64 duration = bpf_ktime_get_ns() - *start;
+        bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &duration, sizeof(duration));
+        bpf_map_delete_elem(&syscall_times, &0);
+    }
+    return 0;
+}
+```
+
+**用户态程序**：收集并统计 `brk` 系统调用的延迟分布。
+
+**特点**：
+
+- **优点**：精确到内核态操作，支持高频采样。
+- 缺点：需编写 eBPF 程序，对开发环境有一定要求
+
+2. **追踪 glibc 内部函数**
+
+通过 eBPF 追踪 glibc 的 `malloc` 和 `free` 实现（如 `ptmalloc` 的内部函数 `malloc_consolidate` 或 `free_chunk`），分析内存池操作的开销。
+**示例**：
+
+```c
+SEC("kprobe/malloc_consolidate")
+int trace_malloc_consolidate(struct pt_regs *ctx) {
+    // 记录合并操作的时间戳
+    return 0;
+}
+
+SEC("kprobe/free_chunk")
+int trace_free_chunk(struct pt_regs *ctx) {
+    // 记录释放操作的时间戳
+    return 0;
+}
+```
+
+**特点**：
+
+- **优点**：深入分析内存池管理机制（如碎片整理、Arena 切换）。
+- 缺点：依赖 glibc 版本，函数符号可能变化
+
+三、方法对比与选型建议
+
+|   **方法**   |        **适用场景**        | **精度** | **开销** | **实现复杂度** |
+| :-----------------: | :------------------------------: | :------------: | :-------------: | :------------------: |
+|  用户态时间戳记录  |        快速验证、简单场景        |  低（用户态）  |       低       |          低          |
+| `perf`/`Massif` | 系统调用级分析、内存分配模式分析 | 中（含内核态） | 中（工具开销） |          低          |
+|  eBPF 系统调用追踪  |     内核态操作延迟、高频采样     |  高（纳秒级）  | 高（eBPF 程序） |          高          |
+| eBPF glibc 函数追踪 |          内存池机制分析          |  高（函数级）  |       高       |          高          |
+
+**选型建议**：
+
+1. **基础性能验证**：使用用户态时间戳或 `perf`
+2. **内核态瓶颈分析**：使用 eBPF 追踪系统调用或 glibc 内部函数
+3. **生产环境监控**：结合 eBPF 实现低开销的长期延迟统计
+
+eBPF 的必要性
+
+- 需要 eBPF 的场景：
+  - 需精确测量内核态操作（如 `mmap`/`munmap`）的延迟
+  - 需追踪内存池内部机制（如 `ptmalloc` 的 Arena 切换、碎片整理）。
+  - 需要实时监控高频分配/释放（如每秒数百万次操作）
+- 无需 eBPF 的场景：
+  - 仅需验证用户态调用时间
+  - 测试简单的小对象分配性能
+
+##### 什么是CMA（Contiguous Memory Allocator）连续内存分配？
+
+答：CMA是Linux内核中用于分配连续物理内存的一种机制。在现代系统中，许多硬件设备（如 GPU、DMA 设备）需要连续的物理内存块来执行操作。CMA 通过预先保留一部分内存，确保在需要时能够快速分配到连续的内存块，从而提高系统性能和可靠性。
+
+```bash
+XX:~$ dmesg | grep cma
+[    0.081936] Memory: 7712180K/8134900K available (16393K kernel code, 4396K rwdata, 10888K rodata, 3372K init, 18700K bss, 422460K reserved, 0K cma-reserved)
+# 因为Linux PC ubuntu上没有配置CMA
+# 可以通过 menuconfig 配置 CONFIG_CMA=y启用
+XX:~$ cat /boot/config-5.15.0-134-generic | grep CMA
+# CONFIG_CMA is not set
+CONFIG_NETWORK_SECMARK=y
+CONFIG_NF_CONNTRACK_SECMARK=y
+CONFIG_NETFILTER_XT_TARGET_CONNSECMARK=m
+CONFIG_NETFILTER_XT_TARGET_SECMARK=m
+
+```
+
+##### mmap的四种映射分别对应什么场景?
+
+答：mmap具有四种映射方式，分别是私有匿名映射，私有文件映射、共享匿名映射、共享文件映射。
+
+- 私有匿名映射：内存分配
+- 私有文件映射：加载动态链接库
+- 共享匿名映射：进程间通信，即共享内存
+- 共享文件映射：进程间通信，内存映射I/O
 
 ---
 
@@ -497,11 +1011,8 @@ CPU实战知识
 22．在ARMv8架构中，在L0～L2页表项中包含了指向下一级页表的基地址，那么这个下一级页表基地址是物理地址还是虚拟地址？
 23．MMU可以遍历页表，Linux内核也提供了软件遍历页表的函数，如walk_pgd()、create_pgd_mapping()、follow_page()等。从软件的视角，Linux内核的pgd_t、pud_t、pmd_t以及pte_t数据结构中并没有存储一个指向下一级页表的指针（即从CPU角度来看，CPU访问这些数据结构时是以虚拟地址来访问的），它们是如何遍历的呢？pgd_t、pud_t、pmd_t以及pte_t数据结构是u64类型的变量。
 
-
-
 1．ARM64处理器中有两个页表基地址寄存器TTBR0和TTBR1，处理器如何使用它们？
 答：
-
 
 TTBR0寄存器：TTBR0寄存器用于存储用户空间的页表基地址。当ARM64处理器执行用户空间的代码时，它会使用TTBR0寄存器中存储的页表基地址进行虚拟地址到物理地址的转换。
 
@@ -609,7 +1120,6 @@ System.map文件是一个符号表文件，用于映射内核中的符号（如�
 
 9．请画出ARM64 Linux内核的内存布局。
 答：
-
 
 10．__pasymbol()宏和_pa()宏有什么区别？
 答：
@@ -780,3 +1290,6 @@ U-boot是一个引导加载程序，它在系统启动时负责初始化硬件�
 
 因此，通过软件遍历页表时，Linux内核会根据页表项中存储的物理地址来逐级遍历页表，而不是通过指针。这样，Linux内核能够根据页表项中的物理地址来获取下一级页表的位置，并进行遍历和访问。
 
+经典必读：
+
+bin的技术小屋-内存管理部分
