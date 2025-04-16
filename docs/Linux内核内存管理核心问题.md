@@ -8,9 +8,11 @@ tags:
 
 ##### 写在回答之前
 
-以下这些问题，一部分是忘记哪位大师提出的核心问题，是奔跑吧Linux内核？还有一个部分是网上搜集的或者自己想的问题。
+以下这些问题，分为三个部分，第一部分是忘记哪位大师提出的核心问题，是奔跑吧Linux内核？第二部分是自己想的问题，第三部分是网上搜集的其他问题。
 
 以下的回答，主要是自己看Linux5.10的源码、bin的技术小屋的内存管理文章、网上搜集的知识以及AI的辅助下回答的，可能会存在很多的错误，希望可以后续更正。
+
+在文章后面，给出了一些个人觉得很推荐的资料文章，供参考。
 
 [toc]
 
@@ -213,7 +215,7 @@ slab主要是针对小块内存分配服务的。
 
 slab的本质，就是一个或多个连续的物理页。
 
-slab cache是对象池，下有多个slab，每个slab有多个object。每个slab的内存都从伙伴系统来。
+slab cache是对象池，在内核中描述为kmem_cache结构体，下有多个slab，每个slab有多个object。每个slab的内存都从伙伴系统来。
 
 ![image-20250414104202551](Linux内核内存管理核心问题/image-20250414104202551.png)
 
@@ -323,7 +325,7 @@ struct kmem_cache {
 }
 ```
 
-所有的slab是由slab cache对象池管理的。
+所有的slab是由slab cache对象池（kmem_cache）管理的。
 
 ##### 15. 请问kmalloc、vmalloc和malloc之间有什么区别以及实现上的差异？
 
@@ -483,19 +485,48 @@ struct kmem_cache {
 
 ##### 16. 使用用户态的API函数malloc()分配内存时，会马上为其分配物理内存吗？
 
-不会，用户调用malloc分配内存时，实际会调用brk系统调用，系统会为其分配虚拟内存，然后即返回，当该内存要使用时，内核发现虚拟内存没有映射物理内存，因此触发缺页异常，为其分配物理内存，并可能将其加入到TLB快表中
+答：不会，用户调用malloc分配内存时，实际会调用brk系统调用，系统会为其分配虚拟内存，然后即返回，当该内存要使用时，内核发现虚拟内存页表没有映射物理内存，因此触发缺页异常，为其分配物理内存，并可能将其加入到TLB快表中
 
 而且，这还涉及到malloc的实现，例如glibc的malloc，底层是ptmalloc算法实现的内存池，一般来说是128KB，大于128K的内存，会直接用mmap映射，小于这个的使用sbrk与ptmalloc内存池。
 
+注意，通过malloc调用的mmap分配内存，在free时，是会直接还给内核的。而通过brk分配的内存，则会回到内存池中。
+
+关于整个malloc的过程(ptmalloc)：
+
+![img](Linux内核内存管理核心问题/typora20220904184034.png)
+
 ##### 17. 假设不考虑libc的因素，malloc分配100Byte，那么实际上内核是为其分配100Byte吗？
 
-答： malloc在分配内存时，只是操作brk指针向上移动100Byte，并未实际分配内存
+答： 不是，malloc在设计时是以4K页大小为粒度的，即使是分配100Bytes，也要进行页面对齐，至少是分配4K。
+
+这是否会造成内存的浪费？
+
+首先，这是虚拟内存，还没有真正的映射物理内存，内核对于虚拟内存，是随便用的，只有涉及到物理内存，才会“锱铢必较”，搞出一堆的机制，像水位线、可迁移可移动、内存规整、oomkiller等等。然后，问题说的是不考虑libc的因素，而在实际中，glibc的内存分配是有内存池的，一般叫ptmalloc，所以malloc分配的内存，有可能就直接从内存池中分配了。
 
 ##### 18. 假设两个用户进程打印的malloc()分配的虚拟地址是一样的，那么在内核中这两块虚拟内存是否打架了呢？
 
-答：不会，对于用户进程来说，每个进程有一个单独的虚拟内存， 内核通过mmu映射物理内存，因此虚拟内存地址一致，但是物理内存地址是不一致的。
+答：不会，对于用户进程来说，每个进程有一个单独的虚拟内存页表， A进程的页表与B进程的页表是完全无关的（用户空间），页表是在task_struct中的mm_struct中描述的。内核通过缺页异常触发MMU映射物理内存，因此虚拟内存地址一致，但是实际物理内存地址是不一致的。
 
 ##### 19. vm_normal_page()函数返回的是什么样页面的struct page数据结构？为什么内存管理代码中需要这个函数？
+
+答：
+
+```c
+// mm/memory.c
+struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+			    pte_t pte){}
+```
+
+如果PTE映射的是一个物理帧号(PFN)，并且该PFN对应的页面在内存中存在且有效，则返回该页面的struct page。如果映射是特殊的，例如直接地址映射或者设备私有内存等，则返回NULL，因为这些页面有可能没有有效的struct page或者内核不希望对其进行引用计数。
+
+内存管理代码需要这个函数的原因是：
+
+- 区分正常页面与特殊页面
+  - 如前所述，正常的则返回该页面的page，其他的返回NULL
+- 支持写时复制机制（COW）
+  - 当多个进程共享同一个物理页面时，vm_normal_page可以帮助内核判断是否需要创建一个新的页面副本
+- 维护内存一致性
+  - 在处理页面错误(page fault）、交换（swap）、内存回收（memory reclaim）等场景时，内核需要知道某个虚拟地址是否映射到一个有效的物理页面。
 
 ##### 20. 请简述get_user_page()函数的作用和实现流程？
 
@@ -518,27 +549,13 @@ struct kmem_cache {
 | **对原文件的影响** | 修改**不会** 自动写回文件                               | 修改**可能** 同步到文件（取决于同步策略）  |
 | **典型应用场景**   | 加载可执行文件、动态库、进程私有内存分配                      | 进程间通信（IPC）、内存数据库、文件持久化        |
 
-相关知识点：什么是写时复制（写入时触发缺页异常）
+相关知识点：什么是写时复制（优化策略，将复制操作推迟到第一次写入）
 
 ##### 23. 为什么第二次调用mmap时，Linux内核没有捕捉到地址重叠并返回失败呢？
 
 答： 首先说明下，第二次调用mmap时，Linux内核没有捕捉到地址重叠并返回失败是什么意思，给出以下程序：
 
 ```c
-/**
-file: mmap_test.c
-compile: gcc ./mmap_test.c -o mmap_test
-run: ./mmap_test
-result：
-    // 让内核自己选择地址,两次地址是不同的
-    First mmap successful at address: 0x7fae340c3000
-    Second mmap successful at address: 0x7fae34094000
-    // 自己给出地址0x20000000，第一次内核确实用了用户给出的地址
-    // 第二次丢弃了用户的地址，注意，这里没有捕捉到地址重叠而返回失败
-    // 这就是问题所描述的
-    Third mmap successful with address: 0x20000000  
-    fourth mmap successful at address: 0x7fae34093000
-*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -546,6 +563,20 @@ result：
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+
+/**
+compile: gcc ./mmap.c -o mmap_test
+run: ./mmap_test
+result：
+// 让内核自己选择地址
+First mmap successful at address: 0x7fae340c3000
+Second mmap successful at address: 0x7fae34094000
+// 自己给出地址0x20000000，第一次内核确实用了自己的地址，第二次丢弃了用户的地址
+Third mmap successful with address: 0x20000000  
+fourth mmap successful at address: 0x20000000	    使用 MAP_FIXED 强制使用用户地址，两个地址重叠，确实不报错
+fourth mmap successful at address: 0x7fae34093000  不使用 MAP_FIXED
+
+*/
 
 #define MAP_SIZE 4096
 
@@ -597,9 +628,11 @@ int main() {
         return EXIT_FAILURE;
     }
     printf("Third mmap successful with address: %p\n", addr3);
-    // 第二次调用 mmap，指定地址 0x20000000
-    void *addr4 = map_memory(fd, 0, MAP_PRIVATE, 0x20000000);
+    // 第二次调用 mmap，指定地址 0x20000000, 加入MAP_FIXED强制使用用户给出的地址
+    // void *addr4 = map_memory(fd, 0, MAP_PRIVATE, 0x20000000);
+    void *addr4 = map_memory(fd, 0, MAP_PRIVATE | MAP_FIXED, 0x20000000);
     if (addr4 == NULL) {
+    	printf("fourth mmap with MAP_FIXED failed as expected at address: %p\n", (void *)0x2000000);
         close(fd);
         unmap_memory(addr1);
         unmap_memory(addr2);
@@ -618,11 +651,43 @@ int main() {
 }
 ```
 
-OK，现在去内核看看为什么内核在捕捉到用户给的地址相同时，会丢弃用户的地址，而不会报错。
+这实际上有两种情况，我们知道，mmap的参数addr，实际上只是给内核的一个推荐值。
+
+```c
+#include <sys/mman.h>
+void* mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset);
+
+// 内核文件：/arch/x86/kernel/sys_x86_64.c
+SYSCALL_DEFINE6(mmap, unsignedlong, addr, unsignedlong, len,
+		unsignedlong, prot, unsignedlong, flags,
+		unsignedlong, fd, unsignedlong, off)
+```
+
+* addr ： 表示我们要映射的这段虚拟内存区域在进程虚拟内存空间中的起始地址（虚拟内存地址），但是这个参数只是给内核的一个暗示，**内核并非一定得从我们指定的 addr 虚拟内存地址上划分虚拟内存区域**，内核只不过在划分虚拟内存区域的时候会优先考虑我们指定的 addr，如果这个虚拟地址已经被使用或者是一个无效的地址，那么内核则会自动选取一个合适的地址来划分虚拟内存区域。我们一般会将 addr 设置为 NULL，意思就是完全交由内核来帮我们决定虚拟映射区的起始地址。
+
+然后mmap还有一个flag参数来控制是否必须强制使用用户给出的地址，即 `MAP_FIXED`。
+
+- 当未设置 `MAP_FIXED`时，内核发现地址重叠，会丢弃用户地址，和将addr设置为NULL的效果一样。
+- 当设置 `MAP_FIXED`时，说明强制使用用户的地址，此时如果地址重叠，会覆盖现有的映射，如果覆盖失败，例如地址范围被其他进程占用，mmap会返回 `MAP_FAILED`
+  > MAP_FIXED
+  >
+  > If the memory region specified by addr and  len  overlaps
+  > pages  of any existing mapping(s), then the overlapped part of the existing mapping(s) will be discarded.
+  >
+  > ```
+  > 如果 addr 和 len 指定的内存区域与任何现有映射的页面重叠，则现有映射的重叠部分将被丢弃
+  > ```
+  >
+
+现在去内核看看。
+
+mmap_region是mmap的核心函数。TODO
 
 ##### 24. struct page数据结构中的_count和_mapcount有什么区别？
 
-答：
+答：mm_count: mm_struct的引用计数。降至0时，结构被释放
+
+atomic_t _mapcount;表⽰该 page 映射了多少个进程的虚拟内存空间，⼀个 page 可以被多个进程映射
 
 ##### 25. 匿名页面和page cache页面有什么区别？
 
@@ -657,25 +722,92 @@ OK，现在去内核看看为什么内核在捕捉到用户给的地址相同时
 
 ##### 25. 阅读Linux 4.0内核RMAP机制的代码，画出父子进程之间VMA、AVC、anon_vma和page等数据结构之间的关系图。
 
+答：RMAP是至Linux内核中，由物理内存反向映射虚拟内存的一种机制
+
 ##### 26. 在Linux 2.6.34中，RMAP机制采用了新的实现，在Linux 2.6.33和之前的版本中称为旧版本RMAP机制。那么在旧版本RMAP机制中，如果父进程有1000个子进程，每个子进程都有一个VMA，这个VMA里面有1000个匿名页面，当所有的子进程的VMA同时发生写复制时会是什么情况呢？
 
 ##### 27. 当page加入lru链表中，被其他线程释放了这个page，那么lru链表如何知道这个page已经被释放了。
 
-答： LRU链表指的是最近最少使用的链表
+答： LRU链表指的是最近最少使用的链表，struct page结构体中有一个值 `atomic_t_refcount`，这是内核中引用该物理页的次数，当这个值为0时，说明page已经被释放。
 
 ##### 28. kswapd内核线程何时会被唤醒？
 
-答：kswapd内核线程是用于当内存比较慢时，将闲置内存置换的交换空间上。
+答：kswapd内核线程工作包括三个部分：内存的压力检测与动态回收、与文件系统有关的页面回收（页高速缓存）以及与交换空间有关的swap页面置换。
+
+**内存压力监测与动态回收**
+
+* **水位阈值管理**：kswapd 基于三个内存水位（`pages_high`、`pages_low`、`pages_min`）判断内存压力
+
+  **高水位（High Watermark）**：空闲内存充足时，kswapd 处于休眠状态。
+
+  **低水位（Low Watermark）**：当空闲内存低于此阈值时，kswapd 被唤醒，开始异步回收内存，目标是将空闲内存提升至高水位。
+
+  **最小水位（Min Watermark）**：若内存耗尽（如 `pages_free < pages_min`），触发直接内存回收（同步阻塞进程），此时用户程序可能被冻结
+* **周期性扫描**：即使内存未达低水位，kswapd 也会周期性（默认每秒）扫描内存，提前回收非活跃页面以预防内存短缺
+
+**页面回收策略**
+
+* **优先回收非活跃页面**：
+
+  * **文件缓存（Active/Inactive File）**：优先回收不常访问的文件缓存页（如已读取的文件数据），直接释放内存
+  * **匿名内存（Active/Inactive Anonymous）**：长期未使用的进程数据页（如堆、栈），可能被交换到 Swap 分区
+* **脏页处理**：若回收的页面被修改过（脏页），kswapd 会将其写回磁盘（文件脏页）或 Swap（匿名脏页），确保数据持久化
+
+**Swap 空间管理**
+
+* **动态交换**：当物理内存不足时，kswapd 将匿名内存页写入 Swap 分区，腾出物理内存供紧急使用
+* **Swap 活跃度监控**：通过 `/proc/meminfo` 中的 `SwapCached` 和 `SwapPss` 指标可观察 Swap 使用情况，高 Swap 使用可能暗示内存瓶颈
+
+> kswapd内核线程的CPU占用率高，说明此时内存严重不足或存在内存泄漏，kswapd在持续工作，大量的回收内存。不过即使物理内存充足，kswapd也会因为内存页的迁移（如透明大页）等而持续高烈度运行。
+>
+> 对于NUMA架构来说，每一个node，都有一个kswapd内核线程，对于普通的家用PC与嵌入式平台来说，NUMA架构均只有一个node，因此只有一个kswapd0
 
 ##### 29. LRU链表如何知道page的活动频繁程度？
 
+答：LRU（Least Recently Used）链表用于管理页面的活跃程度，从而决定哪些页面可以被回收或淘汰。在Linux内核中，`struct page`结构体中的 `_refcount`字段和 `lru`字段共同作用，帮助内核跟踪页面的活动频繁程度。
+
+- 引用计数 `_refcount`
+- `lru`表示页面所在的LRU链表节点
+  * 页面被加入到LRU链表后，`lru`字段会被初始化为指向链表中的位置。
+  * LRU链表分为多个子链表，例如 `active_list`（活跃链表）和 `inactive_list`（非活跃链表）。活跃链表中的页面被认为更频繁使用，而非活跃链表中的页面更容易被回收。
+  * **页面移动规则** ：
+  * 当页面被访问时，内核可能会将其从 `inactive_list`移动到 `active_list`，以反映其更高的活跃程度。
+  * 如果页面长时间未被访问，内核可能会将其从 `active_list`移动到 `inactive_list`。
+
+总之，LRU链表通过以下方式知道页面的活动频繁程度：
+
+* **引用计数（_refcount）** ：反映页面当前被使用的次数。
+* **LRU链表位置（lru）** ：页面位于 `active_list`还是 `inactive_list`。
+* **访问标志（flags）** ：通过 `PG_referenced`和 `PG_active`等标志位记录页面的访问状态
+
 ##### 30. kswapd按照什么原则来换出页面？
 
+答：什么页面会被换出：匿名页、文件页，一些特殊页面不能换出，如内核栈，页表页等
+
+换到哪里去：
+
+- 交换空间，会将匿名页与文件页换出到交换空间，swapiness越高，越倾向于换出匿名页，越低越倾向于换出文件页。
+- 文件页（page cache）回收，脏页写回【？】
+- LRU最近最少使用原则
+
+  - 内核将内存页分为活跃与非活跃两个双向链表，活跃的链表存放近期被频繁访问的数据，如进程的代码段、堆栈、热点数据等，非活跃的链表存放长期未被访问的页面，如缓存文件、限制的堆内存。
+  - kswapd会优先换出非活跃的链表的尾部，即最久未被使用的内存
+- 内存水位触发机制
+
+  - 内存分配机制中有三条水位线，high、low、min，不同的区间有不同的处理方法，在high水位线之上时，内存充足，kswapd休眠，低水位kswapd异步回收，最小水位触发直接内存回收。
+
+  > 匿名页与文件页都在同一个LRU双向链表上，页面类型通过PageAnon(page)与PageFile(page)来区分是匿名页还是文件页
+  >
+
 ##### 31. kswapd按照什么方向来扫描zone？
+
+答：DMA-DMA32-NORMAL，从低地址到高地址的扫描。
 
 ##### 32. kswapd以什么标准来退出扫描LRU？
 
 ##### 33. 手持设备例如Android系统，没有swap分区或者swap文件，kswapd会扫描匿名页面LRU吗？
+
+答：会。kswapd的职责就是在系统内存不足的时候进行内存回收，确保系统能够继续运行。即使没有 swap 分区或 swap 文件，`kswapd` 仍然会扫描和回收匿名页面的 LRU 链表，以释放内存并保持系统的稳定性和性能。例如当有长时间未被访问的匿名页时，kswapd会将该页面放到inactive LRU上
 
 ##### 34. swappiness的含义是什么？kswapd如何计算匿名页面和page cache之间的扫描比重？
 
@@ -713,7 +845,40 @@ swapd是Linux内核的内存管理守护进程，核心任务是平衡内存使�
 
 ##### 35. 当系统充斥着大量只访问一次的文件访问(use-one streaming IO)时，kswapd如何来规避这种风暴？
 
+答：当系统充斥着大量只访问一次的文件访问时，`kswapd`通过以下机制来规避内存回收风暴：
+
+* **分页缓存优化** ：使用惰性写回和批量写回策略。
+* **内存回收阈值** ：动态调整水位线，控制内存回收的时机。
+* **页面引用计数** ：通过引用计数器判断页面的活跃程度。
+* **页面访问标记** ：使用访问标志位来识别活跃页面。
+* **透明大页** ：使用大页减少页面分配和释放的频率。
+* **内存回收算法优化** ：使用高效的扫描和回收算法。
+* **文件系统优化** ：优化文件系统的缓存管理策略。
+* **用户空间优化** ：通过应用程序调整I/O模式。
+* **内核参数调整** ：调整内核参数以优化内存回收行为。
+* **内存回收的批量处理** ：批量处理页面回收，减少开销。
+* **内存回收的优先级** ：根据页面的活跃程度和引用计数决定回收优先级。
+* **内存回收的并发控制** ：使用并发控制机制避免竞争条件。
+* **内存回收的统计信息** ：收集统计信息帮助监控和调整内存回收策略
+
 ##### 36. 在回收page cache时，对于dirty的page cache，kswapd会马上回写吗？
+
+答：不会，Linux 采用内存页来缓存磁盘文件内容，从而提高系统整体IO访问性能，这就是我们熟知的page cache机制（页高速缓存），对于进程的一次写文件操作，内核只是简单的把修改写到内存，并把页面标记为脏页，然后直接返回，具体的回写操作，由内核周期性的启动线程来完成，这个我们称为writeback机制。
+
+有以下几种触发回写的方法：
+
+- 当系统显示执行sync操作，或者进程调用fsync系统调用时，强制脏数据落盘；
+- 内核周期性(for_kupdate 5秒)的启动回写线程(wb_workfn,dirty_writeback_centisecs = 500)，回刷驻留时间超过dirty_expire_centisecs(3000)30秒的脏页。
+- 内核后台(for_background)检查脏页比例达到系统可用内存的vm.dirty_background_ratio(10%)时，就会回写时间超过dirty_expire_centisecs的脏页；此时业务进程写脏页仍然不受影响；
+- 当进程write数据时，检查脏页比例达到系统可用内存的dirty_ratio(20%)时，阻塞当前写进程，然后进行脏页平衡(balance_dirty_pages_ratelimited)，唤醒后台回写进程，回写时间超过dirty_expire_centisecs的脏页
+- 内存紧张时，业务进程申请内存触发direct reclaim，会直接唤醒kworker线程(wakeup_flusher_threads)
+- 最后一种回写触发时保证dirtytime类型的inode能够被回写，一般要12小时触发一次kworker线程
+
+```bash
+fzy@fzy-Lenovo:~$ sysctl vm.dirty
+vm.dirty_background_bytes     vm.dirty_bytes                vm.dirty_ratio                vm.dirty_writeback_centisecs  
+vm.dirty_background_ratio     vm.dirty_expire_centisecs     vm.dirtytime_expire_seconds 
+```
 
 ##### 37. 内核有哪些页面会被kswapd写回交换分区？
 
@@ -725,11 +890,13 @@ swapd是Linux内核的内存管理守护进程，核心任务是平衡内存使�
 
 ##### 38. ARM32 Linux如何模拟这个Linux版本的L_PTE_YOUNG比特位呢？
 
+答：NULL
+
 ##### 39. 如何理解Refault Distance算法？
 
 ##### 40. 请简述匿名页面的生命周期。在什么情况下会产生匿名页面？在什么条件下会释放匿名页面？
 
-答： 什么是匿名页面
+答： 匿名页面是指不存在文件相关的内存页面，如进程的堆栈等
 
 ##### 41. KSM是基于什么原理来合并页面的？
 
@@ -743,9 +910,64 @@ swapd是Linux内核的内存管理守护进程，核心任务是平衡内存使�
 
 ##### 46. 假设在内核空间获取了某个文件对应的page cache页面的struct page数据结构，而对应的VMA属性是只读，那么内核空间是否可以成功修改该文件呢？
 
-答：【???】可以，内核具有超级权限
+答：从技术可行性的角度上说，可以。直接修改该页面的内容会面临以下关键限制和潜在风险：
+
+一、**权限检查机制**
+
+1. **页表项（PTE）的权限控制**
+   * 即使 `struct page` 本身可被内核访问，其对应的页表项（PTE）仍受 **VMA 的访问权限**约束。若 VMA 标记为只读，PTE 的 `PRESENT` 位和 `WRITABLE` 位会被设置为只读模式
+     
+   * **直接修改 `struct page` 的数据**可能绕过页表权限检查，但会导致 **内存管理不一致**（如页表与物理页状态冲突）。
+2. **写时复制（COW）机制**
+   * 若尝试在内核中直接修改只读页面，可能触发 **COW 机制**：内核会创建该页面的副本（标记为可写），并更新页表指向新副本。原始页面仍保持只读状态
+     
+
+二、**VMA 属性与文件映射的关系**
+
+1. **文件映射的只读性**
+   * 若文件通过 `MAP_SHARED` 或 `MAP_PRIVATE` 映射为只读（如 `O_RDONLY` 打开），VMA 的 `vm_flags` 会包含 `VM_READONLY` 标志。此时：
+     * **用户空间**的写操作会被直接拒绝（触发 SIGSEGV）。
+     * **内核空间**若强行修改页面数据，需手动处理页表权限（如设置 `PTE_WRITE`），但可能破坏文件映射的语义
+2. **内核修改页面的后果**
+   * **数据不一致**：文件系统元数据（如 inode 的 `i_size`、`i_blocks`）可能未同步更新，导致文件实际大小与内容不匹配。
+   * **缓存失效**：修改后的页面可能未被标记为脏页（`PG_dirty`），导致数据无法持久化到磁盘
+
+三、**内核空间修改页面的可行性**
+
+1. **技术可行性**
+   * **直接操作 `struct page`**：内核模块可通过 `kmap()` 或 `page_address()` 获取页面的虚拟地址，直接修改其内容。例如：
+
+     ```c
+     structpage*page =...;// 获取目标页面
+     void*addr =kmap(page);
+     *((char*)addr)='A';// 直接写入数据
+     kunmap(page);
+     ```
+     
+     **绕过页表权限**：通过修改页表项（如 `set_pte_at()`）将 PTE 的 `WRITABLE` 位置位，允许写操作
+
+2. **风险与限制**
+   * **破坏内存管理**：若未同步更新 VMA 或页表，可能导致后续访问崩溃或数据损坏。
+   * **文件系统不感知**：修改后的数据可能未被文件系统记录，导致文件元数据与内容不一致。
+   * **安全机制触发**：某些内核子系统（如 SELinux）可能拦截非法内存操作。
+
+---
+
+四、**合法修改只读页面的场景**
+
+1. **内核模块的显式授权**
+   * 若模块通过 `ioctl` 或 `sysfs` 接口获得用户授权，可临时修改 VMA 权限（如调用 `mprotect()` 设置 `PROT_WRITE`），再修改页面内容
+     
+2. **文件系统支持**
+   * 某些文件系统（如 `tmpfs`）允许在只读映射中动态扩展或修改内容，但需文件系统自身支持（如通过 `remap_file_pages()`
 
 ##### 47. 如果用户进程使用只读属性(PROT_READ)来mmap映射一个文件到用户空间，然后使用memcpy来写这段内存空间，会是什么样的情况？
+
+答：例如以下程序：
+
+```c
+#include <stdio.h>
+```
 
 ##### 48. 请画出内存管理中常用的数据结构的关系图，如mm_struct、vma、vaddr、page、pfn、pte、zone、paddr和pg_data等，并思考如下转换关系
 
@@ -970,7 +1192,6 @@ CONFIG_NETWORK_SECMARK=y
 CONFIG_NF_CONNTRACK_SECMARK=y
 CONFIG_NETFILTER_XT_TARGET_CONNSECMARK=m
 CONFIG_NETFILTER_XT_TARGET_SECMARK=m
-
 ```
 
 ##### mmap的四种映射分别对应什么场景?
@@ -981,6 +1202,10 @@ CONFIG_NETFILTER_XT_TARGET_SECMARK=m
 - 私有文件映射：加载动态链接库
 - 共享匿名映射：进程间通信，即共享内存
 - 共享文件映射：进程间通信，内存映射I/O
+
+##### 理想星环OS的内存多级卸载策略是什么？
+
+答：内存多级卸载之前主要用于服务器中。
 
 ---
 
@@ -1293,3 +1518,5 @@ U-boot是一个引导加载程序，它在系统启动时负责初始化硬件�
 经典必读：
 
 bin的技术小屋-内存管理部分
+
+[推荐-Linux内核-ARM等相关](https://github.com/carloscn/blog)
