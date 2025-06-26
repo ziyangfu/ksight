@@ -1,6 +1,7 @@
-//
-// Created by fzy on 2025/2/11.
-//
+/*!
+ * \brief Unix 域套接字 BPF生成代码的封装
+ * \file UdsBpf.h
+ * */
 
 #ifndef IPC_IPC_WATCHER_UDS_BPF_H
 #define IPC_IPC_WATCHER_UDS_BPF_H
@@ -11,12 +12,9 @@
 #include <optional>
 #include "ConfigArgs.h"
 #include "ipcwatcher.h"
-
 extern "C" {
 #include "ipc/ipcwatcher/uds.skel.h"
 }
-
-#include "PcapGenerator.h"
 
 namespace ipc::ipcWatcher {
 
@@ -47,7 +45,6 @@ private:
     std::unique_ptr<std::unordered_map<std::uint32_t, std::string>> pidCommandHash_;
 
     std::optional<struct uds_transfer_data> udsData_;   /** 只有需要输出到pcap文件中采用 */
-    std::unique_ptr<PcapGenerator> pcapGenerator_;
 
 public:
     explicit UdsBpf(ConfigArgs& config);
@@ -60,6 +57,9 @@ public:
     void setRodataFlags(int value) {
         skel_->rodata->filter_is_exist_path = value;
     }
+    void setRodataFlags();
+
+
     void setBpfProgsLoadOpt();
     void poll();
 private:
@@ -67,8 +67,12 @@ private:
     static std::string pidToCommand(std::uint32_t pid);
     std::string findCommand(std::uint32_t pid);
     static void handleCommand(std::string& command);
+    static std::string toHex(const char* data, size_t len);
+    static std::string hexToString(const char* data, size_t len);
+
+
     static std::string getUdsType(int enumId);
-    void setAndPrintHeader();
+    void setAndPrintHeader(FormatType type);
     void saveToPcap();
 };
 

@@ -28,33 +28,18 @@
 #include <string.h>
 
 /** user option */
-const volatile char*  filter_uds_path= NULL;
+const volatile char*  filter_uds_path = NULL;
 const volatile int filter_is_exist_path = 1;
-
+const volatile int send_pid = 0;    /** 根据发送pid进行过滤 */
+const volatile int recv_pid = 0;    /** 根据接收pid进行过滤 */
 
 #define AF_UNIX		1	/* Unix domain sockets 		*/
 #define AF_LOCAL	1	/* POSIX name for AF_UNIX	*/
 #define PF_UNIX		AF_UNIX
 #define PF_LOCAL	AF_LOCAL
 
-struct {
-    __uint(type, BPF_MAP_TYPE_RINGBUF);
-    __uint(max_entries, 256 * 1024);
-} uds_events SEC(".maps");
 
-struct {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 256 * 1024);
-    __type(key, struct sock*);   /** fixme： 怎么唯一标识数据包？ sock? */
-    __type(value, struct uds_event);
-} uds_data_map SEC(".maps");
 
-struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 256 * 1024);
-    __type(key, struct sock*);
-    __type(value, struct uds_payload);
-} uds_payload_map SEC(".maps");
 
 // 操作BPF映射的一个辅助函数
 static __always_inline void * //__always_inline强制内联
@@ -100,6 +85,9 @@ bpf_map_lookup_or_try_init(void *map, const void *key, const void *init) {
 #define WRITE_ONCE(x, val) ((*(volatile typeof(x) *)&(x)) = val)
 
 /* help functions */
+
+
+
 // 将struct sock类型的指针转化为struct tcp_sock类型的指针
 static __always_inline struct tcp_sock *tcp_sk(const struct sock *sk) {
     return (struct tcp_sock *)sk;

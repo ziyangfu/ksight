@@ -1,5 +1,6 @@
 /*!
 \brief Linux kernel IPC 观测工具, 使用 Linux eBPF 技术
+\file ipcwatcher.cpp
 \TODO
     1. 将抓取到的数据，在终端输出
     2. 将抓取到的数据，存入pcap文件中，并可以使用wireshark进行分析
@@ -18,15 +19,18 @@ namespace fmt = std;
 #endif
 
 #include "UdsBpf.h"
+#include "ShmBpf.h"
+
 #include "Version.h"
 #include "ConfigArgs.h"
+#include "ArgParser.h"
 
-std::atomic<bool> g_interrupted(false);
+std::atomic<bool> gStoped(false);
 
 void signalHandler(int signum) {
     if (signum == SIGINT) {
         SPDLOG_INFO("Received SIGINT, preparing to exit...");
-        g_interrupted = true;
+        gStoped = true;
     }
 }
 
@@ -47,78 +51,12 @@ void initSignalHandling() noexcept {
     signal(SIGINT, signalHandler);
 }
 
-
-int cmdParser(argparse::ArgumentParser& parser, ipc::ipcWatcher::ConfigArgs& config) {
-    parser.add_argument("-u", "--uds")
-        .help("Trace unix domain socket")
-        .default_value(false)
-        .implicit_value(true)
-        .store_into(config.traceUds);
-    parser.add_argument("-m", "--mmap")
-        .help("Trace mmap")
-        .default_value(false)
-        .implicit_value(true)
-        .store_into(config.traceMmap);
-    parser.add_argument("--filterPath")
-        .help("Filter path")
-        .default_value("")
-        .action([&config](const std::string& path) {
-            /** --filter_path=/tmp/uds.socket
-             * path: /tmp/uds.socket */
-            config.filterPath = path;
-        });
-    parser.add_argument("--traceNoAnonUds")
-        .help("only trace no anon uds like /tmp/sample.uds")
-        .default_value(false)
-        .implicit_value(true)
-        .store_into(config.traceNoAnonUds);
-    parser.add_argument("--payload")
-        .help("Print payload")
-        .default_value(false)
-        .implicit_value(true)
-        .store_into(config.printPayload);
-    parser.add_argument("--force")
-        .help("Force enable payload printing")
-        .default_value(false)
-        .implicit_value(true)
-        .store_into(config.forcePayload);
-    parser.add_argument("--pcapFile")
-        .help("Save output to pcap file")
-        .default_value("")
-        .store_into(config.pcapFile);
-    parser.add_argument("--fromJson")
-        .help("read config args from json file")
-        .default_value(false)
-        .implicit_value(true)
-        .store_into(config.readFromJson);
-    parser.add_argument("--vvv", "--verbose")
-        .help("Output more information")
-        .default_value(false)
-        .implicit_value(true)
-        .store_into(config.verbose);
-    parser.add_argument("-v", "--version")           /** 使用自定义的版本显示 */
-        .help("Output version information and exit")
-        .default_value(false)
-        .implicit_value(true)
-        .action(
-                [](const std::string& value) {
-                    ipc::ipcWatcher::printVersion();
-                    exit(0);
-                }
-                );
-//    parser.add_argument("reserve_sample_int")
-//        .help("Positional Arguments sample like: <...>/ipcwatcher 10")
-//        .scan<'i', int>();
-    //config.reserve = parser.get<int>("reserve_int");
-    return 0;
-}
-
 int main(int argc, char *argv[]) {
     spdlog::set_level(spdlog::level::info);
     //initSignalHandling();
     ipc::ipcWatcher::ConfigArgs config;
-    argparse::ArgumentParser parser("ipc_watcher", "1.0", argparse::default_arguments::help);
-    cmdParser(parser, config);
+    argparse::ArgumentParser parser("ipc_watcher");
+    ipc::ipcWatcher::cmdParser(parser, config);
     try {
         parser.parse_args(argc, argv);
     } catch (const std::runtime_error& err) {
@@ -128,18 +66,24 @@ int main(int argc, char *argv[]) {
     if (config.traceUds) {
         ipc::ipcWatcher::UdsBpf udsBpf(config);
         udsBpf.open();
+        udsBpf.setRodataFlags();
         udsBpf.load();
         udsBpf.attach();
-        while (!g_interrupted) {
+        while (!gStoped) {
             udsBpf.poll();
         }
     }
     else if (config.traceMmap) {
         fmt::print("do not support right now, exiting...\n");
+//        ipc::ipcWatcher::ShmBpf shmBpf(config);
+//        shmBpf.open();
+//        shmBpf.load();
+//        shmBpf.attach();
+//        while (!gStoped) {
+//            shmBpf.poll();
+//        }
      }
     else {
         fmt::print("No trace type selected, exiting...\n");
     }
-
-
 }

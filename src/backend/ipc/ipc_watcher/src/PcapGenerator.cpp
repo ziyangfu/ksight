@@ -4,40 +4,23 @@
 #include "PcapGenerator.h"
 #include "spdlog/spdlog.h"
 
-#include <exception>
-#include <vector>
-#include "fmt/format.h"
-
-#include <iostream>
-
 using namespace ipc::ipcWatcher;
 
 //template<class DataStruct>
 PcapGenerator::PcapGenerator(std::string& path)
     : path_(path),
-      handler_(pcap_open_dead(12, 65535)),
-      dumper_(pcap_dump_open(handler_, path_.data()))
+      handler_(pcap_open_dead(DLT_RAW, 65535))
 {
-    //std::cout << "dumper_: " << dumper_ << std::endl;
-    assert(handler_ != nullptr);
-    try {
-        assert(dumper_ != nullptr);
-    }
-    catch (const std::exception& e) {
+    dumper_ = pcap_dump_open(handler_, path_.data());
+    if (dumper_ == nullptr) {
+        SPDLOG_ERROR("pcap_dump_open error");
         pcap_close(handler_);
-        SPDLOG_ERROR("Failed to open pcap file: {}", e.what());
+        handler_ = nullptr;
     }
 }
 
 PcapGenerator::~PcapGenerator() {
-    if (dumper_ != nullptr) {
-        pcap_dump_close(dumper_);
-        dumper_ = nullptr;
-    }
-    if (handler_ != nullptr) {
-        pcap_close(handler_);
-        handler_ = nullptr;
-    }
+
 }
 
 /*!
@@ -47,40 +30,25 @@ PcapGenerator::~PcapGenerator() {
  *   2. 分配内存来存储数据包
  *   3. 写入数据包到 pcap 文件
  * */
-void PcapGenerator::WriteToPcap(uds_event& data) {
-    //fmt::print("WriteToPcap: {}\n", data.timestamp);
-    const std::uint8_t payload[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
-    //memcpy(data.payload, payload, sizeof(payload));
+void PcapGenerator::WriteToPcap(const UDSData& data) {
+    const char* payload;
+
     if (dumper_ == nullptr) {
-        SPDLOG_ERROR("dumper_ is nullptr");
+        //std::cerr << "Pcap file not opened" << std::endl;
         return;
     }
-    struct pcap_pkthdr header {};
-    header.ts.tv_sec = time(nullptr);  /** 可以用 data.event.timestamp? */
+
+    struct pcap_pkthdr header;
+    header.ts.tv_sec = time(nullptr);
     header.ts.tv_usec = 0;
-    header.caplen = sizeof(UDSData) + sizeof(payload);
+    header.caplen = sizeof(UDSData) + data.event.size;
     header.len = header.caplen;
-    std::vector<std::uint8_t> packet(header.len);
-    memcpy(packet.data(), &data, sizeof(UDSData));
-    memcpy(packet.data() + sizeof(UDSData), payload, sizeof(payload));
-    pcap_dump(reinterpret_cast<u_char*>(dumper_), &header, packet.data());
+
+    uint8_t* packet = new uint8_t[header.caplen];
+    memcpy(packet, &data, sizeof(UDSData));
+    memcpy(packet + sizeof(UDSData), payload, data.event.size);
+
+    pcap_dump(reinterpret_cast<u_char*>(dumper_), &header, packet);
+    delete[] packet;
 }
 
-void PcapGenerator::WriteToPcap(uds_event* data) {
-    //fmt::print("WriteToPcap: {}\n", data.timestamp);
-    const std::uint8_t payload[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
-    //memcpy(data.payload, payload, sizeof(payload));
-    if (dumper_ == nullptr) {
-        SPDLOG_ERROR("dumper_ is nullptr");
-        return;
-    }
-    struct pcap_pkthdr header {};
-    header.ts.tv_sec = time(nullptr);  /** 可以用 data.event.timestamp? */
-    header.ts.tv_usec = 0;
-    header.caplen = sizeof(UDSData) + sizeof(payload);
-    header.len = header.caplen;
-    std::vector<std::uint8_t> packet(header.len);
-    memcpy(packet.data(), data, sizeof(UDSData));
-    memcpy(packet.data() + sizeof(UDSData), payload, sizeof(payload));
-    pcap_dump(reinterpret_cast<u_char*>(dumper_), &header, packet.data());
-}

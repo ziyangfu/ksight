@@ -11,8 +11,12 @@
 namespace ipc::ipcWatcher {
 /*!
  * 1. 命令行参数解析
+ * 必选参数
  *      - -u --uds 追踪unix domain socket
  *      - -m --mmap 追踪mmap
+ * 可选参数
+ *      - -x 显示UDS基本连接信息
+ *      - -p --pid=<val> 追踪指定进程的UDS/SHM信息
  *      - --filter_path=/path/to/file 追踪指定路径下的文件
  *      - --payload 是否打印 payload， 为保证性能，仅支持过滤状态跟踪，可使用 --force 强制开启全局payload打印
  *      - --force 强制开启全局payload打印
@@ -22,28 +26,17 @@ namespace ipc::ipcWatcher {
  *      - -h --help 输出帮助信息
  * */
 struct ConfigArgs {
-    bool traceUds;
-    bool traceMmap;
-    bool traceNoAnonUds;  /** 非匿名UDS，例如 /tmp/sample.uds */
-    bool printPayload;
-    bool forcePayload;
-    bool readFromJson;
-    bool verbose;
+    bool traceUds               {false};
+    bool traceMmap              {false};
+    bool traceNoAnonUds         {false};  /** 非匿名UDS，例如 /tmp/sample.uds */
+    int pid                     {0};
+    bool printPayload           {false};
+    bool printPayloadHex        {false};
+    bool forcePayload           {false};  /** payload输出一般仅支持pid过滤后输出，不推荐全量输出 */
+    bool readFromJson           {false};
+    bool verbose                {false};
     std::string filterPath;
     std::string pcapFile;
-
-    ConfigArgs()
-    : traceUds(false),
-      traceMmap(false),
-      traceNoAnonUds(false),
-      printPayload(false),
-      forcePayload(false),
-      readFromJson(false),
-      verbose(false)
-    {
-    }
-
-    ~ConfigArgs() = default;
 };
 
 }  // namespace ipc::ipcWatcher

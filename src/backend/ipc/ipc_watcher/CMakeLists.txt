@@ -16,16 +16,6 @@ set(TOOL_BELONG_TO_MODULE ipc)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 查找 libpcap 库文件和头文件
-find_library(PCAP_LIBRARY pcap REQUIRED)
-find_path(PCAP_INCLUDE_DIR pcap.h REQUIRED)
-if(NOT PCAP_LIBRARY OR NOT PCAP_INCLUDE_DIR)
-    message(FATAL_ERROR "libpcap not found")
-else ()
-    message(STATUS "\t\t libpcap found")
-endif()
-# include_directories(${PCAP_INCLUDE_DIR})  # 装在系统目录，不用
-
 set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)
 set(FMT_DIR ${CMAKE_SOURCE_DIR}/third_party/fmt/include)
 set(SPDLOG_DIR ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
@@ -41,7 +31,8 @@ file(GLOB_RECURSE ${TOOL_NAME}_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 find_package(Threads REQUIRED)
 
-file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
+# file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
+file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/uds.bpf.c)
 # 若不用Rust，则排除 profile.bpf.c
 if(NOT CARGO_EXISTS)
     list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/profile.bpf.c)
@@ -64,7 +55,7 @@ endforeach()
 
 
 add_executable(${TOOL_NAME} ${${TOOL_NAME}_SRCS})
-target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} ${PCAP_LIBRARY})
+target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} pcap)
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
     target_link_libraries(${TOOL_NAME} ${app_stem}_skel)
