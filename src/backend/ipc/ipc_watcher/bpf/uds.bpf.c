@@ -20,7 +20,7 @@
         0. 功能：
             1. 跟踪并输出uds的基本信息，包括可选的发送与接收信息
             2. 跟踪uds从发送到接收的路径跟踪
-                unix_xx_sendmsg --> VFS --> unix_xx_recvmsg 的路径跟踪
+                unix_xx_sendmsg --> 拷贝skb到接收队列 --> unix_xx_recvmsg 的路径跟踪
         1. 挂载点
             unix_dgram
                 kprobe:unix_dgram_sendmsg
@@ -34,19 +34,11 @@
                 kprobe:unix_stream_connect  [opt]
                 
         2. 内核文件： net/unix/af_unix.c
-    mmap shm：
-        TODO
-    signal：
-        TODO
+相关的工具，BCC undump： 转储 payload
+              sofdsnoop 跟踪 uds 传递文件描述符fd
 */
 
 /**
- * 如何唯一标识一条uds stream连接
- * 如何唯一定位这条连接的数据包
- *
- * 在这个过程是，uds path起到了什么作用？
- *
- *
  * 在 unix_stream_sendmsg中获取发送数据端的pid
  * 获取自己的sock与对方的sock
  * 通过自己的sock，强制类型转换为unix_sock，获取unix_address，并获取到path
@@ -65,10 +57,6 @@
 
 
 /** FIXME: 可以考虑通过 uprobe 截取 uds 的数据 */
-/*!
- * uds部分：
- *      1. 在如/tmp下的显性文件的跟踪
- * */
 
 #include "common.bpf.h"
 
@@ -136,7 +124,6 @@ static void get_uds_path(struct unix_sock *u, char *path) {
         u32 payload_size = BPF_CORE_READ(skb, len);
         // 限制最大读取长度为 MAX_PAYLOAD_SIZE（例如 64 字节）
         payload_size = payload_size > sizeof(event->payload) ? sizeof(event->payload) : payload_size;
-        //bpf_probe_read_kernel(BPF_CORE_READ(event, payload), payload_size, BPF_CORE_READ(skb, data));
         bpf_probe_read_kernel_str(event->payload, sizeof(event->payload), BPF_CORE_READ(skb, data));
     }
  }
@@ -273,16 +260,10 @@ int BPF_KPROBE(unix_stream_sendmsg, struct socket *sock, struct msghdr *msg,
     return 0;
 }
 
-
-//SEC("kprobe/skb_copy_datagram_from_iter")
-//int BPF_KPROBE(skb_copy_datagram_from_iter, struct sk_buff *skb, unsigned int offset){
-//    return 0;
-//}
-
 /*!
 \brief
     挂载点 unix_stream_recvmsg, 负责采集流式uds的基本信息与接收的数据
-    获取接收侧 PID， uds path， 接收的size大小， payload，接收时间点
+    获取接收侧 PID
 */
 SEC("kprobe/unix_stream_recvmsg")
 int BPF_KPROBE(unix_stream_recvmsg, const struct socket *sock, const struct msghdr *msg,
@@ -324,6 +305,11 @@ int BPF_KPROBE(unix_stream_recvmsg, const struct socket *sock, const struct msgh
 //            return 0;
 //        }
 //    }
+    /** FIXME：低功耗调试模式，直接打印到pipe上，不拷贝输出 */
+    // pr_debug("uds_id: %d, send_pid: %d, recv_pid: %d, size: %d, timestamp: %d, type: %d",
+    //         uds_id, event->send_pid, event->recv_pid, event->size, event->timestamp, event->type);
+
+
 
     trans_rb_event->send_pid = event->send_pid;
     trans_rb_event->recv_pid = event->recv_pid;

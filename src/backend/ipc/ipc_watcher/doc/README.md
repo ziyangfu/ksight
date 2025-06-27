@@ -79,3 +79,22 @@ Timestamp      sendPID    sendComm                       recvPID    recvComm    
 284665225205   2289       /usr/bin/gnome-shell           308        /lib/systemd/systemd-journald  24         SOCK_STREAM  <none>                        
 284665225458   2148       /usr/lib/xorg/Xorg             822        /usr/sbin/rsyslogd             32         SOCK_STREAM                               
 ```
+
+
+共享内存
+
+传统工具或市场上以后的工具
+```bash
+fzy@fzy-Lenovo:~$ ipcs -m
+
+------ Shared Memory Segments --------
+key        shmid      owner      perms      bytes      nattch     status      
+0x7ef6b94f 0          daemon     666        256        1                       
+0xccf909d3 1          daemon     666        4096       1                       
+0x06377f5f 2          daemon     666        128868     1                       
+0x00000000 2195459    fzy        600        524288     2          dest         
+0x00000000 2195462    fzy        600        524288     2          dest         
+0x00000000 2195463    fzy        600        524288     2          dest         
+0x00000000 16         fzy        600        524288     2          dest         
+0x00000000 2195476    fzy        600        524288     2          dest    
+```

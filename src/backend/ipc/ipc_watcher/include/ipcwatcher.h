@@ -43,5 +43,12 @@ struct uds_transfer_data {
     char payload[MAX_PAYLOAD_LEN]; /** 记录发送/接收的实际数据 */
 };
 
+struct shm_event {
+    u64 timestamp;
+    u32 send_pid;
+    u32 recv_pid;
+    char payload[MAX_PAYLOAD_LEN];
+};
+
 
 #endif /* IPC_IPC_WATCHER_IPC_WATCHER_H */
