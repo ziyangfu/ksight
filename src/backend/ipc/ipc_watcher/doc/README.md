@@ -98,3 +98,41 @@ key        shmid      owner      perms      bytes      nattch     status
 0x00000000 16         fzy        600        524288     2          dest         
 0x00000000 2195476    fzy        600        524288     2          dest    
 ```
+
+
+
+```bash
+fzy@fzy-Lenovo:~/Downloads/04_bcc_ebpf/ksight/build/src/backend/ipc/ipc_watcher$ sudo ./ipcwatcher -m
+Tracing POSIX shared memory com ... Ctrl+C to exit
+timestamp       PID            command              fd                   shm_size             shm_flag             shm_prot            
+109876405724    1282728        ipcwatcher           3                    4096                 MAP_SHARED           PROT_READ | PROT_WRITE
+109876405739    1282728        ipcwatcher           3                    33558528             MAP_SHARED           PROT_READ           
+109877004770    2705           gnome-shell          13                   65536                MAP_SHARED           PROT_READ | PROT_WRITE
+109877066875    2705           gnome-shell          13                   12288                MAP_SHARED           PROT_READ | PROT_WRITE
+109878060208    2564           Xorg                 15                   40960                MAP_SHARED           PROT_READ | PROT_WRITE
+109878060571    2564           Xorg                 15                   40960                MAP_SHARED           PROT_READ | PROT_WRITE
+109878060841    2564           Xorg                 15                   40960                MAP_SHARED           PROT_READ | PROT_WRITE
+109878061128    2564           Xorg                 15                   40960                MAP_SHARED           PROT_READ | PROT_WRITE
+109878061500    2564           Xorg                 15                   40960                MAP_SHARED           PROT_READ | PROT_WRITE
+109878063040    2564           Xorg                 15                   4096                 MAP_SHARED           PROT_READ | PROT_WRITE
+109878063340    2564           Xorg                 15                   4096                 MAP_SHARED           PROT_READ | PROT_WRITE
+109879089547    2705           gnome-shell          13                   12288                MAP_SHARED           PROT_READ | PROT_WRITE
+
+
+```
+
+
+
+```bash
+fzy@fzy-Lenovo:~/Downloads/04_bcc_ebpf/ksight/build/src/backend/ipc/ipc_watcher$ sudo ./ipcwatcher -m
+Tracing POSIX shared memory com ... Ctrl+C to exit
+timestamp       PID        command      fd    shm_size shm_flag     shm_prot                  shm_path                  shm_vm_addr                        
+111924416333    1305311    ipcwatcher   3     4096     MAP_SHARED   PROT_READ | PROT_WRITE    anon_inode:bpf-map        7f9f9550e000-7f9f9750f000          
+111924416346    1305311    ipcwatcher   3     33558528 MAP_SHARED   PROT_READ                 anon_inode:bpf-map        7f9f9550e000-7f9f9750f000          
+111924940064    2564       Xorg:gdrv0   15    65536    MAP_SHARED   PROT_READ | PROT_WRITE    /dev/dri/card0            None                               
+111924941818    2564       Xorg:gdrv0   15    65536    MAP_SHARED   PROT_READ | PROT_WRITE    /dev/dri/card0            None                               
+111924942994    2564       Xorg:gdrv0   15    65536    MAP_SHARED   PROT_READ | PROT_WRITE    /dev/dri/card0            None                               
+111924943080    2564       Xorg:gdrv0   15    65536    MAP_SHARED   PROT_READ | PROT_WRITE    /dev/dri/card0            None                               
+111924943614    2564       Xorg         15    65536    MAP_SHARED   PROT_READ | PROT_WRITE    /dev/dri/card0            None                               
+111924963545    2564       Xorg         15    65536    MAP_SHARED   PROT_READ | PROT_WRITE    /dev/dri/card0            None 
+```

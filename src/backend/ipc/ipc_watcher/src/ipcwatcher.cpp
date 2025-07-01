@@ -74,14 +74,14 @@ int main(int argc, char *argv[]) {
         }
     }
     else if (config.traceMmap) {
-        fmt::print("do not support right now, exiting...\n");
-//        ipc::ipcWatcher::ShmBpf shmBpf(config);
-//        shmBpf.open();
-//        shmBpf.load();
-//        shmBpf.attach();
-//        while (!gStoped) {
-//            shmBpf.poll();
-//        }
+        //fmt::print("do not support right now, exiting...\n");
+        ipc::ipcWatcher::ShmBpf shmBpf(config);
+        shmBpf.open();
+        shmBpf.load();
+        shmBpf.attach();
+        while (!gStoped) {
+            shmBpf.poll();
+        }
      }
     else {
         fmt::print("No trace type selected, exiting...\n");

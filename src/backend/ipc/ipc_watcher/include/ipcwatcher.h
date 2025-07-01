@@ -27,6 +27,8 @@ typedef unsigned int u32;
 typedef unsigned long long u64;
 
 #define MAX_PAYLOAD_LEN 64  // 512
+#define MAX_COMM_LEN 64
+#define MAX_SHM_PATH_LEN 128
 
 struct uds_event {
     u32 send_pid;                       /** 发送进程 */
@@ -43,12 +45,22 @@ struct uds_transfer_data {
     char payload[MAX_PAYLOAD_LEN]; /** 记录发送/接收的实际数据 */
 };
 
-struct shm_event {
+
+/*!
+ *     pid， comm， ,Addr, len, prot(读写权限),flag（MAP_SHARED, path(通过fd->file->path)
+ * */
+struct shm_basic_info_event {
     u64 timestamp;
-    u32 send_pid;
-    u32 recv_pid;
-    char payload[MAX_PAYLOAD_LEN];
+    u32 pid;
+    char comm[MAX_COMM_LEN];
+    unsigned long fd;
+    //unsigned long addr;
+    unsigned long len;
+    unsigned long prot;
+    unsigned long flag;
+    //char path[MAX_SHM_PATH_LEN];
 };
+
 
 
 #endif /* IPC_IPC_WATCHER_IPC_WATCHER_H */

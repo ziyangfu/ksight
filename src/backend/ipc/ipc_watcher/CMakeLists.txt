@@ -16,6 +16,12 @@ set(TOOL_BELONG_TO_MODULE ipc)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ---------------------------------------------------------------------
+# 临时，只是为了CMake能包括bpf的代码，方便在CLion中编程
+file(GLOB TEMP_BPF_C_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
+add_library(temp_lib STATIC ${TEMP_BPF_C_SRCS})
+# ---------------------------------------------------------------------
+
 set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)
 set(FMT_DIR ${CMAKE_SOURCE_DIR}/third_party/fmt/include)
 set(SPDLOG_DIR ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
@@ -31,8 +37,8 @@ file(GLOB_RECURSE ${TOOL_NAME}_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 find_package(Threads REQUIRED)
 
-# file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
-file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/uds.bpf.c)
+file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
+# file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/uds.bpf.c)
 # 若不用Rust，则排除 profile.bpf.c
 if(NOT CARGO_EXISTS)
     list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/profile.bpf.c)
@@ -55,7 +61,7 @@ endforeach()
 
 
 add_executable(${TOOL_NAME} ${${TOOL_NAME}_SRCS})
-target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} pcap)
+target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} pcap rt)
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
     target_link_libraries(${TOOL_NAME} ${app_stem}_skel)
