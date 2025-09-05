@@ -239,6 +239,53 @@ std::string ShmBpf::pidToCommand(std::uint32_t pid) {
     return command;
 }
 
+/*!
+ * \brief 根据程序名获取PID，与程序名同名的可能有多个
+ * */
+std::vector<int> ShmBpf::commandToPid(const std::string &processName) {
+    std::vector<int> pids;
+
+    // 遍历/proc目录
+    for (const auto& entry : fs::directory_iterator("/proc")) {
+        // 检查是否为目录且目录名为数字
+        if (entry.is_directory()) {
+            std::string dirName = entry.path().filename().string();
+            if (std::all_of(dirName.begin(), dirName.end(), ::isdigit)) {
+                // 构造cmdline文件路径
+                std::string cmdlinePath = entry.path() / "cmdline";
+
+                try {
+                    // 读取cmdline文件内容
+                    std::ifstream cmdlineFile(cmdlinePath);
+                    if (cmdlineFile.is_open()) {
+                        std::string cmdline;
+                        std::getline(cmdlineFile, cmdline, '\0'); // cmdline以null字符分隔
+                        cmdlineFile.close();
+
+                        // cmdline中的第一个参数通常是程序名
+                        if (!cmdline.empty()) {
+                            // 提取程序名部分（处理路径情况）
+                            std::string progName = cmdline;
+                            size_t lastSlash = progName.find_last_of('/');
+                            if (lastSlash != std::string::npos) {
+                                progName = progName.substr(lastSlash + 1);
+                            }
+
+                            // 检查是否匹配
+                            if (progName == processName) {
+                                pids.push_back(std::stoi(dirName));
+                            }
+                        }
+                    }
+                } catch (...) {
+                    // 忽略无法访问的进程
+                    continue;
+                }
+            }
+        }
+    }
+    return pids;
+}
 
 std::string ShmBpf::toHex(const char *data, size_t len) {
     std::string result;
@@ -268,6 +315,11 @@ std::string ShmBpf::hexToString(const char *data, size_t len) {
 /*!
  * \brief  proc/{pid}/fd/{fd}
  * */
+ /**
+  * \bug \fixme terminate called after throwing an instance of 'std::filesystem::__cxx11::filesystem_error'
+  what():  filesystem error: read_symlink: No such file or directory [/proc/9463/fd/62]
+
+  * */
 std::string ShmBpf::getShmPath(int pid, int fd) {
     // 构造 /proc/{pid}/fd/{fd} 路径
     fs::path fd_path = fmt::format("/proc/{}/fd/{}", pid, fd);
@@ -397,4 +449,19 @@ void ShmBpf::createMmapMonitor() {
     }
     shmMonitorAddr_ = static_cast<int*>(
             ::mmap(nullptr, shmMonitorSize_, PROT_READ, MAP_SHARED, shmMonitorFd_, 0));
+}
+
+/*!
+ * \details 通过读取 /proc/<pid>/pagemap 文件，获取虚拟地址对应的物理地址
+ *          pagemap 在 Linux kernel 2.6.25中引入
+ *          要注意 swap的影响，如果物理页帧被交换到 swap 中，则物理页是不对的
+ *          这时要检查 pread读取的uint64位数据中的第63位，如果为1，则表示该页帧被交换到 swap 中
+ * */
+uintptr_t ShmBpf::vaddrToPhysicalAddr(pid_t pid, std::string vaddr) {
+    return 0;
+}
+
+
+void ShmBpf::printShmConnectInfo() {
+
 }

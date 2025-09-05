@@ -65,13 +65,21 @@ public:
 private:
     void createMmapMonitor();
     /*!
+     * \brief 输入pid与虚拟地址，获取共享内存的物理地址
+     * */
+    static uintptr_t vaddrToPhysicalAddr(pid_t pid, std::string vaddr);
+    /*!
      * \brief 轮询 cat /proc/{pid}/fd/{fd}的数据，这是共享内存写入与读取的payload
      *        识别到数据改变时，输出一次。
      * */
     static std::string readShmPayloadCycle(int pid, int fd);
 
     static void handleEvent(void *ctx, void *data, size_t len);
+
     static std::string pidToCommand(std::uint32_t pid);
+    std::vector<int> commandToPid(const std::string& processName);
+
+
     std::string findCommand(std::uint32_t pid);
     static void handleCommand(std::string& command);
 
@@ -86,6 +94,18 @@ private:
 
 
     void setAndPrintHeader(FormatType type);
+
+
+    /*!
+     * \brief 展示共享内存连接信息
+     * 例如：  (client) pid --> vaddr  -------->> pfn(physical addr) <<------------- vaddr --> pid (server)
+     *  pid， fd， vm_addr...                              pid， fd， vm_addr
+                   \                               /
+                    \_______ page cache addr  ____/
+                    /                             \
+ pid， fd， vm_addr /                               \   pid， fd， vm_addr
+     * */
+    void printShmConnectInfo();
 };
 
 } // namespace ipc::ipcWatcher

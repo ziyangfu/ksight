@@ -136,3 +136,143 @@ timestamp       PID        command      fd    shm_size shm_flag     shm_prot    
 111924943614    2564       Xorg         15    65536    MAP_SHARED   PROT_READ | PROT_WRITE    /dev/dri/card0            None                               
 111924963545    2564       Xorg         15    65536    MAP_SHARED   PROT_READ | PROT_WRITE    /dev/dri/card0            None 
 ```
+
+
+
+
+
+共享内存的**内存泄漏（Memory Leak）**是指在使用共享内存的过程中，由于程序逻辑错误或资源管理不当，导致分配的共享内存没有被正确释放，从而造成内存资源的浪费。这种泄漏不会立即引发系统崩溃，但随着时间推移，未释放的共享内存会不断积累，最终可能导致系统性能下降甚至内存耗尽。
+
+---
+
+## 🧠 一、什么是共享内存泄漏？
+
+共享内存泄漏通常表现为以下几种形式：
+
+### 1. **未调用 `munmap()`**
+- 某个进程将共享内存映射到用户空间后（通过 `mmap()`），但没有调用 `munmap()` 解除映射。
+- 导致该进程退出后仍保留映射区域，内核无法回收这部分内存。
+
+### 2. **未调用 `shm_unlink()`**
+- 使用 `shm_open()` 创建共享内存对象后，若没有调用 `shm_unlink()` 删除该对象，即使所有进程都已关闭文件描述符，该对象仍存在于系统中。
+- 类似于文件系统的“硬链接”机制，引用计数不为零时无法删除。
+
+### 3. **未关闭文件描述符**
+- 即使调用了 `munmap()`，但如果未调用 [close(fd)](file:///home/fzy/Downloads/04_bcc_ebpf/ksight/third_party/fmt/test/posix-mock.h#L47-L47) 关闭共享内存的文件描述符，也会导致资源未完全释放。
+
+### 4. **异常退出未清理**
+- 进程在执行过程中发生异常（如崩溃、信号中断等），未能执行正常的清理代码（如 `munmap()` 和 [close()](file:///home/fzy/Downloads/04_bcc_ebpf/ksight/third_party/fmt/test/posix-mock.h#L47-L47)）。
+
+---
+
+## ⚠️ 二、哪些场景下容易发生共享内存泄漏？
+
+### 场景 1：多进程通信未统一释放
+- 多个进程共享同一块内存区域，但只有部分进程调用 `munmap()` 或 [close()](file:///home/fzy/Downloads/04_bcc_ebpf/ksight/third_party/fmt/test/posix-mock.h#L47-L47)。
+- 常见于服务端/客户端模型中，客户端意外退出而未通知服务端释放资源。
+
+### 场景 2：守护进程长期运行
+- 长期运行的服务（如监控工具、日志收集器）如果每次启动新任务都创建新的共享内存，但没有定期清理旧的，就容易累积大量未释放的共享内存。
+
+### 场景 3：动态分配但未跟踪生命周期
+- 在动态创建多个共享内存对象的场景中（如基于事件驱动的 IPC），如果没有良好的资源追踪机制，容易遗漏某些对象的释放操作。
+
+### 场景 4：跨线程访问控制不当
+- 多线程环境下，一个线程负责分配共享内存，另一个线程负责释放，若线程间协调不当，可能造成释放失败。
+
+### 场景 5：使用匿名共享内存（如 `memfd_create`）
+- 匿名共享内存没有名字，依赖文件描述符传递和管理。一旦某个接收方忘记关闭 fd 或未进行映射解除，就可能造成泄漏。
+
+---
+
+## 🔍 三、如何检测共享内存泄漏？
+
+### 方法 1：查看 `/dev/shm`
+```bash
+ls -l /dev/shm
+```
+
+- 列出当前系统中所有命名共享内存对象。
+- 如果发现大量未命名或无关联进程的共享内存对象，可能是泄漏。
+
+### 方法 2：使用 `ipcs` 查看 IPC 资源
+```bash
+ipcs -m
+```
+
+- 显示系统中所有 System V 共享内存段。
+- 可以看到 key、shmid、owner、size 等信息。
+
+### 方法 3：检查 `/proc/<pid>/maps`
+```cpp
+// C++ 示例：读取某进程的 maps 文件
+std::ifstream maps(fmt::format("/proc/{}/maps", pid));
+std::string line;
+while (std::getline(maps, line)) {
+    if (line.find("/dev/shm") != std::string::npos) {
+        // 找到共享内存映射
+    }
+}
+```
+
+
+### 方法 4：eBPF 监控系统调用
+- 挂载 `sys_enter_shm_open`, `sys_exit_mmap`, `sys_exit_munmap` 等 tracepoint。
+- 统计未匹配的 mmap/munmap 对，或未 unlink 的 shm 对象。
+
+---
+
+## ✅ 四、如何避免共享内存泄漏？
+
+### 推荐做法：
+1. **RAII 模式封装共享内存资源**
+   - 使用智能指针或 RAII 封装类自动管理 `mmap` 和 [close](file:///home/fzy/Downloads/04_bcc_ebpf/ksight/third_party/fmt/test/posix-mock.h#L47-L47)。
+2. **注册清理钩子函数**
+   - 使用 `atexit()` 或 `pthread_cleanup_push()` 注册清理函数，确保进程退出前释放资源。
+3. **统一释放入口**
+   - 设计统一的资源释放接口，避免多个地方重复释放或遗漏。
+4. **使用 eBPF 实时监控**
+   - 如上所述，通过 eBPF 程序实时统计共享内存的分配与释放情况，及时发现异常。
+5. **增加超时机制**
+   - 对长期未使用的共享内存设置自动清理策略（如定时扫描并释放）。
+
+---
+
+## 📦 五、示例：C++ 中共享内存泄漏模拟
+
+```cpp
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <iostream>
+
+int main() {
+    const char* name = "/my_shared_memory";
+    int size = 4096;
+
+    int shm_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
+    ftruncate(shm_fd, size);
+
+    void* ptr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+    // 错误：没有调用 munmap 和 close
+    // 正确做法应在退出前调用：
+    // munmap(ptr, size);
+    // close(shm_fd);
+    // shm_unlink(name);
+
+    std::cout << "Shared memory created but not cleaned up!" << std::endl;
+    return 0;
+}
+```
+
+
+> 上述代码会导致共享内存泄漏，因为进程退出前没有执行任何清理操作。
+
+---
+
+## 🧩 六、结语
+
+共享内存泄漏虽然不像堆内存泄漏那样频繁出现，但在系统级编程、高性能 IPC、eBPF 监控等领域却非常关键。通过合理的设计模式、资源管理机制以及借助 eBPF 的可观测性手段，可以有效预防和定位这类问题。
+
+如果你希望我为你提供一个完整的共享内存泄漏检测模块（包括 eBPF 程序 + 用户态分析工具），我可以根据 MagicEyes 架构为你生成可集成的代码模板。是否需要？

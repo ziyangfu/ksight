@@ -5,13 +5,34 @@
  *      ARCH Support: X86-64, ARM64
  * */
 #include "common.bpf.h"
-/** FIXME： 匿名 文件共享映射， 如何获取它的addr，无path */
+#include "shm_trace.bpf.h"
+
+
+/** FIXME： 匿名 文件共享映射， 如何获取它的addr，无path
+ *
+ * TODO，feature，物理地址/address_space地址，同一块共享内存，有多少个进程在映射
+ * 有没有进程 mmap了，但没有munmap就退出了（只有所有映射结束，内存才能回收）
+ * physical_addr    num         pids                    comms[opt]
+ *  XXX - XXX        3       128922,212121,128923    /XXX, /xxx, /xxx
+ *
+ *  监控共享内存区域的变化，迭代的显示（迭代显示模式）
+ *  当引用计数为0，但这块共享内存还在，那么这个共享内存就泄露了（悬空了）
+ * */
 
 /*!
+ * 对于mmap映射来说，有如下4种映射方式
  *              共享              私有
  * 匿名页     父子进程通信        申请虚拟内存
  * 文件页        IPC            页高速缓存 page_cache
+ * 因此，对于共享内存，只需要关注文件共享映射，不过，文件共享映射
+ * 中的文件，有2种，一种是显性的文件，通过open，shm_open等系统
+ * 调用创建，在文件系统中有关联的inode。另一种的匿名文件，一般用过
+ * memfd_create创建，也可以通过open，加上flag O_TMPFILE创建，
  *
+ * int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+ *
+ * int fd = open("/path/to/dir", O_TMPFILE | O_RDWR,
+                                          S_IRUSR | S_IWUSR）
  *
  *  1. 匿名共享内存
     2. 文件共享内存
@@ -24,8 +45,8 @@
 4. 开发共享内存IPC的应用或中间件时的调试辅助，例如：共享内存的无侵入式内存泄露检测
 
 
-  监控共享内存区域的变化，迭代的显示（迭代显示模式）
 
+异构共享，异构多核（A-M核），CPU-GPU共享观测
 5. Linux与RTOS通过共享内存通信时的数据包观测。 https://github.com/nxp-auto-linux/ipc-shm
 
  * */
@@ -88,12 +109,40 @@ ipc_watcher 需要先启动，不然追踪不到mmap，也就拿不到虚拟地�
 
  *
  * */
+
+/**
+ * 共享内存计数器，目标为检测共享内存的内存泄露问题
+ *
+ * 实现共享内存的快照，获取共享内存内存，用于调试数据变化、同步异常等问题
+ *
+ * 自动清理机制（opt），对于内存泄露的端，调用 shm_unlink进行清理。
+ *
+ *
+ * 获取page cache地址，打印内存连接图
+类似于下面这种：
+ pid， fd， vm_addr...                              pid， fd， vm_addr
+                   \                               /
+                    \_______ page cache addr  ____/
+                    /                             \
+ pid， fd， vm_addr /                               \   pid， fd， vm_addr
+
+ *
+ * */
 #define MAP_SHARED	0x01		/* Share changes.  */
 #define MAP_ANONYMOUS	0x20		/* don't use a file */
 
+/*!
+ * \brief 使用pid+fd作为key，不能够唯一标记一个共享内存，当使用多次映射时
+ * \details  pid + mmap返回的vm起始地址，也可以标记一段内存区域
+ * */
 struct mmap_key {
     pid_t pid;
     unsigned long fd;
+};
+
+struct mmap_key_new {
+    pid_t pid;
+    unsigned long mmap_addr;   // mmap_addr + size == 共享内存区域VM
 };
 
 struct {
@@ -230,6 +279,36 @@ int handle_syscall_exit_mmap(struct trace_event_raw_sys_exit *ctx)
 //    trans_rb_event->addr = BPF_CORE_READ(ctx, ret);
 //
 //    bpf_ringbuf_submit(trans_rb_event, 0);
+    return 0;
+}
+
+
+/*!
+ * \brief 针对匿名文件共享映射，memfd_create
+ *
+ * pid，+ path， fd， struct file*
+ *
+ *  memfd_create
+ *  mmap
+ *
+ * */
+SEC("tracepoint/syscalls/sys_enter_memfd_create")
+int handle_memfd_create(struct trace_event_raw_sys_enter *ctx)
+{
+    /** 获取当前pid */
+    /** 获取name与flag */
+
+    return 0;
+}
+
+SEC("tracepoint/syscalls/sys_enter_ftruncate")
+int handle_ftruncate_enter(struct trace_event_raw_sys_enter *ctx) {
+    return 0;
+}
+
+
+SEC("kprobe/__do_fault")
+int get_page_cache(struct vm_fault *vmf) {
     return 0;
 }
 

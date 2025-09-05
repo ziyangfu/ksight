@@ -61,6 +61,22 @@ struct shm_basic_info_event {
     //char path[MAX_SHM_PATH_LEN];
 };
 
+/*!
+ * \brief 用于呈现共享内存在内核中运行的轨迹
+ *      pid
+ * */
+struct shm_path_trace_event {
+    u64 timestamp;
+    u32 pid;
+    char comm[MAX_COMM_LEN];
+    unsigned long fd;
+    unsigned long addr;
+    unsigned long len;
+    unsigned long prot;
+    unsigned long flag;
+    char path[MAX_SHM_PATH_LEN];
+};
+
 
 
 #endif /* IPC_IPC_WATCHER_IPC_WATCHER_H */
