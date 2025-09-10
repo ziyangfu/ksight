@@ -4,6 +4,8 @@
 
 一款用于Linux内核的可观测性定制命令行工具，覆盖CPU、内存、网络、IPC、文件、虚拟化等子系统。
 
+ksight 洞见内核
+
 ksight family：
 - [ksight](https://github.com/ziyangfu/ksight)：Linux内核可观测性定制工具。命令行，后端，可单独使用，正在开发中
 - [ksight-lite](https://github.com/ziyangfu/ksight-lite)：针对RTOS(AUTOSAR OS?)的可观测性定制工具。命令行，后端，可单独使用，计划开发中

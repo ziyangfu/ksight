@@ -23,6 +23,7 @@ private:
     enum class FormatType : std::uint8_t {
         kMmapPrintNormal = 0,
         kPrintTest,
+        kPrintTest2,
         kReserve,
     };
     enum class PrintType : std::uint8_t {
@@ -44,10 +45,10 @@ private:
     std::string formatHeaderVars;
     std::unique_ptr<std::unordered_map<std::uint32_t, std::string>> pidCommandHash_;
 
-    int shmMonitorFd_;
-    std::string shmMonitorPath_;
-    int shmMonitorSize_;
-    int* shmMonitorAddr_;
+    int shmMonitorFd_{0};
+    std::string shmMonitorPath_{};
+    int shmMonitorSize_{0};
+    int* shmMonitorAddr_{nullptr};
 
 public:
     explicit ShmBpf(ConfigArgs& config);
@@ -58,43 +59,14 @@ public:
     void attach();
     void destroy();
     void setRodataFlags();
-
-
     void setBpfProgsLoadOpt();
     void poll();
 private:
     void createMmapMonitor();
-    /*!
-     * \brief 输入pid与虚拟地址，获取共享内存的物理地址
-     * */
-    static uintptr_t vaddrToPhysicalAddr(pid_t pid, std::string vaddr);
-    /*!
-     * \brief 轮询 cat /proc/{pid}/fd/{fd}的数据，这是共享内存写入与读取的payload
-     *        识别到数据改变时，输出一次。
-     * */
-    static std::string readShmPayloadCycle(int pid, int fd);
-
     static void handleEvent(void *ctx, void *data, size_t len);
 
-    static std::string pidToCommand(std::uint32_t pid);
-    std::vector<int> commandToPid(const std::string& processName);
-
-
     std::string findCommand(std::uint32_t pid);
-    static void handleCommand(std::string& command);
-
-    static std::string getShmPath(int pid, int fd);  /** 仅针对非匿名 文件共享映射 */
-    static std::vector<unsigned long> getShmVmAddr(int pid, std::string& shmPath); /** 起始地址与结束地址 */
-    static std::string getShmVmAddrString(int pid, std::string& shmPath);
-    static std::string getShmProtString(unsigned long prot);
-    static std::string getShmFlagString(unsigned long flag);
-
-    static std::string toHex(const char* data, size_t len);
-    static std::string hexToString(const char* data, size_t len);
-
-
     void setAndPrintHeader(FormatType type);
-
 
     /*!
      * \brief 展示共享内存连接信息

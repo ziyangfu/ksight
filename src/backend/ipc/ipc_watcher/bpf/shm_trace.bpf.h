@@ -8,14 +8,35 @@
  * 跟踪某个进程
  * */
 
-SEC("tracepoint/sys_enter_mmap")
-int tracepoint__sys_enter_mmap(struct trace_event_raw_sys_enter *ctx)
+/*!
+ * \brief 针对匿名文件共享映射，memfd_create
+ * */
+SEC("tracepoint/syscalls/sys_enter_memfd_create")
+int handle_memfd_create(struct trace_event_raw_sys_enter *ctx)
 {
-    if (xxx == pid) {
-
-    }
+    /** 获取当前pid */
+    /** 获取name与flag */
     return 0;
 }
+
+SEC("tracepoint/syscalls/sys_enter_ftruncate")
+int handle_ftruncate_enter(struct trace_event_raw_sys_enter *ctx) {
+    return 0;
+}
+
+
+SEC("kprobe/__do_fault")
+int get_page_cache(struct vm_fault *vmf) {
+    return 0;
+}
+
+
+
+//SEC("tracepoint/sys_enter_mmap")
+//inline int tracepoint__sys_enter_mmap(struct trace_event_raw_sys_enter *ctx)
+//{
+//    return 0;
+//}
 
 
 SEC("tracepoint/sys_enter_munmap")

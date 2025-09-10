@@ -39,9 +39,6 @@ const volatile int recv_pid = 0;    /** 根据接收pid进行过滤 */
 #define PF_UNIX		AF_UNIX
 #define PF_LOCAL	AF_LOCAL
 
-
-
-
 // 操作BPF映射的一个辅助函数
 static __always_inline void * //__always_inline强制内联
 bpf_map_lookup_or_try_init(void *map, const void *key, const void *init) {

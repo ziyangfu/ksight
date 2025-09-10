@@ -1,5 +1,5 @@
 # \copyright
-# Copyright (c) 2024 by the lmp/magic_eyes project authors. All Rights Reserved.
+# Copyright (c) 2024 by the ksight project authors. All Rights Reserved.
 #
 # This file is open source software, licensed to you under the terms
 # of the Apache License, Version 2.0 (the "License").  See the NOTICE file
@@ -8,14 +8,14 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      lmp/magic_eyes 顶层 CMakeLists 文件
+#      ksight 顶层 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
 cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_C_COMPILER gcc)
 set(CMAKE_CXX_COMPILER g++)
 
-set(PROJECT_NAME MagicEyes)
+set(PROJECT_NAME ksight)
 project(${PROJECT_NAME})
 
 # 查看目标系统，目前仅支持Linux
@@ -156,5 +156,5 @@ if (NOT BpfObject_FOUND)
 endif ()
 
 add_subdirectory(src/backend)
-add_subdirectory(src/bridge)
 add_subdirectory(src/magic_eyes_cli)
+

@@ -5,11 +5,12 @@
 
 #include "ShmBpf.h"
 #include "ipcwatcher.h"
+#include "ShmUtils.h"
+
 #include "spdlog/spdlog.h"
 #include "fmt/format.h"
 
 using namespace ipc::ipcWatcher;
-namespace fs = std::filesystem;
 
 ShmBpf::ShmBpf(ConfigArgs& config)
         : config_(config),
@@ -86,28 +87,7 @@ void ShmBpf::setRodataFlags() {
     skel_->rodata->send_pid = config_.pid;
 }
 
-/*!
- * \brief 根据选项要求，设置并打印头部信息
- */
-void ShmBpf::setAndPrintHeader(FormatType type) {
-    type_ = type;
-    switch (type) {
-        case FormatType::kMmapPrintNormal: {
-            formatHeader = "{:<15} {:<14} {:<20} {:<20} {:<20} {:<20} {:<20} {:<20}\n";
-            fmt::print(formatHeader, "timestamp", "PID", "command", "shm_addr",
-                       "shm_size", "shm_flag", "shm_prot", "shm_path");
-            break;
-        }
-        case FormatType::kPrintTest: {
-            formatHeader = "{:<15} {:<10} {:<12} {:<5} {:<8} {:<12} {:<25} {:<25} {:<35}\n";
-            fmt::print(formatHeader, "timestamp", "PID", "command", "fd",
-                       "shm_size", "shm_flag", "shm_prot", "shm_path", "shm_vm_addr");
-            break;
-        }
-        default:
-            break;
-    }
-}
+
 
 /*!
  * \brief 接收BPF采集的数据，并调用处理函数进行处理
@@ -149,29 +129,80 @@ void ShmBpf::destroy() {
     shm_bpf::destroy(skel_);
 }
 
+/*!
+ * \brief 根据选项要求，设置并打印头部信息
+ * 货架信息： ts, PID, command, fd, shm_flag, shm_prot, shm_path, shm_size,
+ *          shm_ret_addr, shm_vm_addr_area, shm_phy_addr_area, phy_mem_count(物理内存进程引用计数)
+ *          （shm_name，从shm_open或者open，或者memfd_create中的）
+ * 基本信息打印：
+ * 物理内存映射的多进程图表展示：
+ * 共享内存的内存泄露检测
+ * 共享内存的运行脉络打印
+ */
+void ShmBpf::setAndPrintHeader(FormatType type) {
+    type_ = type;
+    switch (type) {
+        case FormatType::kMmapPrintNormal: {
+            formatHeader = "{:<15} {:<14} {:<20} {:<20} {:<20} {:<20} {:<20} {:<20}\n";
+            fmt::print(formatHeader, "timestamp", "PID", "command", "shm_addr",
+                       "shm_size", "shm_flag", "shm_prot", "shm_path");
+            break;
+        }
+        case FormatType::kPrintTest: {
+            formatHeader = "{:<15} {:<10} {:<12} {:<5} {:<8} {:<12} {:<25} {:<25} {:<35}\n";
+            fmt::print(formatHeader, "PID", "command","len", "prot", "flags",
+                       "fd", "shm_path", "mmap_addr","shm_vm_addr");
+            break;
+        }
+        case FormatType::kPrintTest2: {
+            formatHeader = "{:<15} {:<6} {:<10} {:<20} {:<20} {:<12} {:<20} {:<25}\n";
+            fmt::print(formatHeader, "timestamp", "PID", "len", "prot", "flags",
+                       "fd", "off", "mmap_addr");
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 /** static */ void ShmBpf::handleEvent(void *ctx, void *data, size_t len) {
     auto shmBpf = reinterpret_cast<ShmBpf*>(ctx);
-    auto *e = reinterpret_cast<shm_basic_info_event*>(data);
+    auto *e = reinterpret_cast<shm_transfer_basic_data*>(data);
 
-    std::string shmPath = getShmPath(e->pid, e->fd);
-    std::string shmAddr = getShmVmAddrString(e->pid, shmPath);
+    std::string shmPath = shmUtils::getShmPath(e->pid, e->fd);
+    std::string shmAddr = shmUtils::getShmVmAddrString(e->pid, shmPath);
+    std::string command = shmBpf->findCommand(e->pid);
     if (shmBpf->type_ == FormatType::kMmapPrintNormal) {
         //fmt::print(shmBpf->formatHeader,   e->pid, );
     }
-//    "timestamp", "PID", "command", "fd",
-//            "shm_size", "shm_flag", "shm_prot"
+//    fmt::print(formatHeader, "PID", "command","len", "prot", "flags",
+//               "fd", "shm_path", "mmap_addr","shm_vm_addr");
     else if (shmBpf->type_ == FormatType::kPrintTest) {
-        fmt::print(shmBpf->formatHeader,    e->timestamp,
-                                            e->pid,
-                                            e->comm,
-                                            e->fd,
+        fmt::print(shmBpf->formatHeader,    e->pid,
+                                            command,
                                             e->len,
-                                            getShmFlagString(e->flag),
-                                            getShmProtString(e->prot),
+                                            shmUtils::getShmFlagString(e->prot),
+                                            shmUtils::getShmProtString(e->flags),
+                                            e->fd,
                                             shmPath,
+                                            e->mmap_addr,
                                             shmAddr
                    );
     }
+
+    else if (shmBpf->type_ == FormatType::kPrintTest2) {
+        // 验证 fd 值是否在有效范围内 (0-1023)
+        std::string fd_str = (e->fd < 1024) ? std::to_string(e->fd) : "BB";
+        fmt::print(shmBpf->formatHeader,    e->timestamp,
+                                            e->pid,
+                                            e->len,
+                                            shmUtils::getShmProtString(e->prot),
+                                            shmUtils::getShmFlagString(e->flags),
+                                            fd_str,
+                                            e->off,
+                                            e->mmap_addr
+        );
+     }
 }
 
 /*!
@@ -184,8 +215,8 @@ std::string ShmBpf::findCommand(std::uint32_t pid) {
         return it->second;
     }
     else {
-        std::string cmd = pidToCommand(pid);
-        handleCommand(cmd);
+        std::string cmd = shmUtils::pidToCommand(pid);
+        shmUtils::handleCommand(cmd);
         pidCommandHash_->emplace(pid, cmd);
         return cmd;
     }
@@ -203,241 +234,6 @@ std::string ShmBpf::findCommand(std::uint32_t pid) {
     */
 }
 
-/*!
- * \brief 处理command，删除命令后带的一系列参数，便于在终端展示
- * \details 可以进一步考虑限制输出大小，例如 {：<25} 强制截取前面的命令
- * */
-void ShmBpf::handleCommand(std::string &command) {
-    /** 找到第一个空格的位置 */
-    size_t spacePos = command.find(' ');
-    /** 如果找到了空格，则截取空格之前的部分 */
-    if (spacePos != std::string::npos) {
-        command = command.substr(0, spacePos);
-    }
-    /** 如果截取后的字符串长度大于30个字符，则截取前30个字符 */
-    if (command.length() > 30) {
-        command = command.substr(0, 30);
-    }
-}
-
-/*!
- * \brief 根据PID获取进程名
- * */
-std::string ShmBpf::pidToCommand(std::uint32_t pid) {
-    std::string cmdFormatPath {"/proc/{}/cmdline"};
-    std::string cmdlinePath = fmt::vformat(cmdFormatPath, fmt::make_format_args(pid));
-    fs::path path(cmdlinePath);
-    if (!fs::exists(path)) {
-        return "";
-    }
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        return "";
-    }
-    std::string command;
-    std::getline(file, command, '\0');
-    return command;
-}
-
-/*!
- * \brief 根据程序名获取PID，与程序名同名的可能有多个
- * */
-std::vector<int> ShmBpf::commandToPid(const std::string &processName) {
-    std::vector<int> pids;
-
-    // 遍历/proc目录
-    for (const auto& entry : fs::directory_iterator("/proc")) {
-        // 检查是否为目录且目录名为数字
-        if (entry.is_directory()) {
-            std::string dirName = entry.path().filename().string();
-            if (std::all_of(dirName.begin(), dirName.end(), ::isdigit)) {
-                // 构造cmdline文件路径
-                std::string cmdlinePath = entry.path() / "cmdline";
-
-                try {
-                    // 读取cmdline文件内容
-                    std::ifstream cmdlineFile(cmdlinePath);
-                    if (cmdlineFile.is_open()) {
-                        std::string cmdline;
-                        std::getline(cmdlineFile, cmdline, '\0'); // cmdline以null字符分隔
-                        cmdlineFile.close();
-
-                        // cmdline中的第一个参数通常是程序名
-                        if (!cmdline.empty()) {
-                            // 提取程序名部分（处理路径情况）
-                            std::string progName = cmdline;
-                            size_t lastSlash = progName.find_last_of('/');
-                            if (lastSlash != std::string::npos) {
-                                progName = progName.substr(lastSlash + 1);
-                            }
-
-                            // 检查是否匹配
-                            if (progName == processName) {
-                                pids.push_back(std::stoi(dirName));
-                            }
-                        }
-                    }
-                } catch (...) {
-                    // 忽略无法访问的进程
-                    continue;
-                }
-            }
-        }
-    }
-    return pids;
-}
-
-std::string ShmBpf::toHex(const char *data, size_t len) {
-    std::string result;
-    for (size_t i = 0; i < len; ++i) {
-        result += fmt::format("{:02x}", static_cast<unsigned char>(data[i]));
-        if (i < len - 1) result += " ";
-    }
-    return result;
-}
-
-std::string ShmBpf::hexToString(const char *data, size_t len) {
-    std::string result;
-    result.reserve(len); // 预分配内存以提高效率
-
-    for (size_t i = 0; i < len; ++i) {
-        char c = data[i];
-        if (c >= 0x20 && c <= 0x7E) {
-            result += static_cast<char>(c); // 可打印字符直接添加
-        } else {
-            result += '.'; // 不可打印字符用 '.' 替代
-        }
-    }
-
-    return result;
-}
-
-/*!
- * \brief  proc/{pid}/fd/{fd}
- * */
- /**
-  * \bug \fixme terminate called after throwing an instance of 'std::filesystem::__cxx11::filesystem_error'
-  what():  filesystem error: read_symlink: No such file or directory [/proc/9463/fd/62]
-
-  * */
-std::string ShmBpf::getShmPath(int pid, int fd) {
-    // 构造 /proc/{pid}/fd/{fd} 路径
-    fs::path fd_path = fmt::format("/proc/{}/fd/{}", pid, fd);
-
-    // 读取符号链接指向的实际路径
-    if (fs::exists(fd_path) && fs::is_symlink(fd_path)) {
-        fs::path target_path = fs::read_symlink(fd_path);
-
-        // 将路径转换为字符串
-        std::string path_str = target_path.string();
-
-        // 如果路径以 "/dev/shm" 开头，则去除该前缀
-        if (path_str.rfind("/dev/shm", 0) == 0) {
-            return path_str.substr(strlen("/dev/shm"));
-        }
-        return path_str;
-    }
-
-    // 如果路径不存在或不是符号链接，返回空字符串或错误信息
-    return "None";
-}
-
-/*!
- * \brief  proc/{pid}/maps
- * */
-std::vector<unsigned long> ShmBpf::getShmVmAddr(int pid, std::string &shmPath) {
-    std::vector<unsigned long> result;
-
-    // 构造 /proc/{pid}/maps 路径
-    std::string maps_path = fmt::format("/proc/{}/maps", pid);
-
-    // 打开 maps 文件
-    std::ifstream maps_file(maps_path);
-    if (!maps_file.is_open()) {
-        return result;  // 如果无法打开文件，返回空结果
-    }
-
-    std::string line;
-    while (std::getline(maps_file, line)) {
-        // 检查行是否包含指定的共享内存名称
-        if (line.find(shmPath) != std::string::npos) {
-            // 解析地址范围，例如：7f29418ae000-7f29418af000
-            std::istringstream iss(line);
-            std::string addr_range;
-            iss >> addr_range;
-
-            // 提取 '-' 分隔前后的地址
-            size_t dash_pos = addr_range.find('-');
-            if (dash_pos != std::string::npos) {
-                std::string start_addr_str = addr_range.substr(0, dash_pos);
-                std::string end_addr_str = addr_range.substr(dash_pos + 1);
-
-                unsigned long start_addr = std::stoul(start_addr_str, nullptr, 16);
-                unsigned long end_addr = std::stoul(end_addr_str, nullptr, 16);
-
-                result.push_back(start_addr);
-                result.push_back(end_addr);
-            }
-        }
-    }
-
-    maps_file.close();
-    return result;
-}
-
-std::string ShmBpf::getShmVmAddrString(int pid, std::string &shmPath) {
-    auto val = getShmVmAddr(pid, shmPath);
-    if (val.empty()) {
-        return "None";
-    }
-    return fmt::format("{:x}-{:x}", val.at(0), val.at(1));
-}
-
-
-std::string ShmBpf::getShmProtString(unsigned long prot) {
-    std::string protStr {};
-    switch (prot) {
-        case PROT_READ:
-            protStr = "PROT_READ";
-            break;
-        case PROT_WRITE:
-            protStr = "PROT_WRITE";
-            break;
-        case PROT_READ | PROT_WRITE:
-            protStr = "PROT_READ | PROT_WRITE";
-            break;
-        case PROT_EXEC:
-            protStr = "PROT_EXEC";
-            break;
-        case PROT_NONE:
-            protStr = "PROT_NONE";
-            break;
-        default:
-            protStr = "Unknown";
-            break;
-    }
-    return protStr;
-}
-
-std::string ShmBpf::getShmFlagString(unsigned long flag) {
-    std::string flagStr {};
-    switch (flag) {
-        case MAP_SHARED:
-            flagStr = "MAP_SHARED";
-            break;
-        case MAP_PRIVATE:
-            flagStr = "MAP_PRIVATE";
-            break;
-        case MAP_SHARED | MAP_PRIVATE:
-            flagStr = "MAP_SHARED | MAP_PRIVATE";
-            break;
-        default:
-            flagStr = "Unknown";
-            break;
-    }
-    return flagStr;
-}
-
 
 void ShmBpf::createMmapMonitor() {
     int fd = ::shm_open(shmMonitorPath_.c_str(), O_CREAT | O_RDWR, 0666);
@@ -449,16 +245,6 @@ void ShmBpf::createMmapMonitor() {
     }
     shmMonitorAddr_ = static_cast<int*>(
             ::mmap(nullptr, shmMonitorSize_, PROT_READ, MAP_SHARED, shmMonitorFd_, 0));
-}
-
-/*!
- * \details 通过读取 /proc/<pid>/pagemap 文件，获取虚拟地址对应的物理地址
- *          pagemap 在 Linux kernel 2.6.25中引入
- *          要注意 swap的影响，如果物理页帧被交换到 swap 中，则物理页是不对的
- *          这时要检查 pread读取的uint64位数据中的第63位，如果为1，则表示该页帧被交换到 swap 中
- * */
-uintptr_t ShmBpf::vaddrToPhysicalAddr(pid_t pid, std::string vaddr) {
-    return 0;
 }
 
 

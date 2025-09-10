@@ -1,18 +1,3 @@
-// Copyright 2023 The LMP Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// https://github.com/linuxkerneltravel/lmp/blob/develop/LICENSE
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
 /*!
  * \brief ipcwatcher工具的头文件，定义内核态与用户态数据传递的结构体
  * \file ipcwatcher.h
@@ -75,6 +60,18 @@ struct shm_path_trace_event {
     unsigned long prot;
     unsigned long flag;
     char path[MAX_SHM_PATH_LEN];
+};
+
+
+struct shm_transfer_basic_data {
+    u64 timestamp;
+    unsigned int pid;
+    unsigned long len;
+    unsigned long prot;
+    unsigned long flags;
+    unsigned long fd;
+    unsigned long off;
+    unsigned long mmap_addr;
 };
 
 

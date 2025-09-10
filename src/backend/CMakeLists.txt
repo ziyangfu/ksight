@@ -39,8 +39,6 @@ option(BUILD_IPC_WATCHER "is build ipc_watcher? "     ON)
 
 if (BUILD_ALL)
     message(STATUS "build all tools")
-    # TODO(fzy, 2024.03.13) 没找到代码
-    # add_subdirectory(fs/fs_watcher)
     add_subdirectory(memory/mem_watcher)
     add_subdirectory(net/net_watcher)
     add_subdirectory(net/delay_analysis)
