@@ -22,6 +22,10 @@ class ShmBpf final {
 private:
     enum class FormatType : std::uint8_t {
         kMmapPrintNormal = 0,
+        kPhyAddrPrint,
+        kPhyAddrPrint2,
+        kPhyAddrPrintGui,
+        kShmLeakCheck,
         kPrintTest,
         kPrintTest2,
         kReserve,

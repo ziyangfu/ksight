@@ -5,7 +5,7 @@
  *      ARCH Support: X86-64, ARM64
  * */
 #include "common.bpf.h"
-//#include "shm_trace.bpf.h"
+#include "shm_trace.bpf.h"
 #include "shm_data.h"
 
 /*!

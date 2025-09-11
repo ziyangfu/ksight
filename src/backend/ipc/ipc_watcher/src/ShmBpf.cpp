@@ -148,6 +148,27 @@ void ShmBpf::setAndPrintHeader(FormatType type) {
                        "shm_size", "shm_flag", "shm_prot", "shm_path");
             break;
         }
+        /** 物理内存引用计数输出 */
+        case FormatType::kPhyAddrPrint: {
+            formatHeader = "{:<25} {:<10} {:<35} {:<35}\n";
+            fmt::print(formatHeader, "physical_addr", "map_count", "pids", "command");
+            break;
+        }
+        case FormatType::kPhyAddrPrint2: {
+            formatHeader = "{:<25} {:<10} {:<35} {:<10} {:<35}\n";
+            fmt::print(formatHeader, "timestamp", "PID", "vm_addr", "len", "phy_addr");
+            break;
+        }
+        /** 物理内存引用计数在命令行中类图形化输出 */
+        case FormatType::kPhyAddrPrintGui: {
+            fmt::print("print with CLI GUI\n");
+            break;
+        }
+        /** 内存泄露检测 */
+        case FormatType::kShmLeakCheck: {
+            fmt::print("print shared memory leak in system\n");
+            break;
+        }
         case FormatType::kPrintTest: {
             formatHeader = "{:<15} {:<10} {:<12} {:<5} {:<8} {:<12} {:<25} {:<25} {:<35}\n";
             fmt::print(formatHeader, "PID", "command","len", "prot", "flags",
