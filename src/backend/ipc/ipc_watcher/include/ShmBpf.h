@@ -18,23 +18,24 @@ extern "C" {
 
 namespace ipc::ipcWatcher {
 
+enum class FormatType : std::uint8_t {
+    kMmapPrintBasic = 0,        /** 基本信息输出 */
+    kMmapPrintBasicWithComm,    /** 基本信息输出 + 进程名称 */
+    kPhyAddrPrint,              /** 进程虚拟地址 + 物理地址映射输出 */
+    kPhyAddrMapCount,           /** 共享内存物理地址映射计数输出 */
+    kPhyAddrPrintGui,           /** 以命令行简图的形式输出物理地址与多虚拟地址的映射 */
+    kShmLeakCheck,              /** 共享内存泄露检测 */
+    kPrintTest,
+    kPrintTest2,
+    kReserve,
+};
+enum class PrintType : std::uint8_t {
+    kTerminal = 0,
+    kPcap,
+    kOther
+};
+
 class ShmBpf final {
-private:
-    enum class FormatType : std::uint8_t {
-        kMmapPrintNormal = 0,
-        kPhyAddrPrint,
-        kPhyAddrPrint2,
-        kPhyAddrPrintGui,
-        kShmLeakCheck,
-        kPrintTest,
-        kPrintTest2,
-        kReserve,
-    };
-    enum class PrintType : std::uint8_t {
-        kTerminal = 0,
-        kPcap,
-        kOther
-    };
 private:
     ConfigArgs& config_;
     shm_bpf *skel_;

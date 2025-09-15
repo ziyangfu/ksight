@@ -39,8 +39,8 @@ int get_page_cache(struct vm_fault *vmf) {
 //}
 
 
-SEC("tracepoint/sys_enter_munmap")
-int tracepoint__sys_enter_munmap(struct trace_event_raw_sys_enter *ctx)
+SEC("tracepoint/syscalls/sys_enter_munmap")
+int tp__sys_enter_munmap(struct trace_event_raw_sys_enter *ctx)
 {
     return 0;
 }
@@ -103,15 +103,15 @@ int kprobe__free_pgtables(struct pt_regs *ctx)
 }
 
 
-SEC("tracepoint/sys_exit_munmap")
-int tracepoint__sys_exit_munmap(struct trace_event_raw_sys_exit *ctx)
+SEC("tracepoint/syscalls/sys_exit_munmap")
+int tp__sys_exit_munmap(struct trace_event_raw_sys_exit *ctx)
 {
     return 0;
 }
 
 
-SEC("tracepoint/sys_enter_open")
-int tracepoint__sys_enter_open(struct trace_event_raw_sys_enter *ctx)
+SEC("tracepoint/syscalls/sys_enter_open")
+int tp__sys_enter_open(struct trace_event_raw_sys_enter *ctx)
 {
     return 0;
 }

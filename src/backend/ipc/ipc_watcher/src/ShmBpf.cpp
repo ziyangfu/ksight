@@ -19,7 +19,7 @@ ShmBpf::ShmBpf(ConfigArgs& config)
           rb_(nullptr),
           formatHeader(),
           pidCommandHash_(std::make_unique<std::unordered_map<std::uint32_t, std::string>>()),
-          type_(FormatType::kPrintTest),
+          type_(FormatType::kPhyAddrPrint),
           printType_(PrintType::kTerminal)
 {
     //config_.printPayloadHex = true;
@@ -142,21 +142,26 @@ void ShmBpf::destroy() {
 void ShmBpf::setAndPrintHeader(FormatType type) {
     type_ = type;
     switch (type) {
-        case FormatType::kMmapPrintNormal: {
-            formatHeader = "{:<15} {:<14} {:<20} {:<20} {:<20} {:<20} {:<20} {:<20}\n";
-            fmt::print(formatHeader, "timestamp", "PID", "command", "shm_addr",
-                       "shm_size", "shm_flag", "shm_prot", "shm_path");
+        case FormatType::kMmapPrintBasic: {
+            formatHeader = "{:<15} {:<6} {:<10} {:<15} {:<10} {:<12} {:<15} {:<25}\n";
+            fmt::print(formatHeader, "timestamp", "PID", "len", "prot", "flags",
+                       "fd", "off", "vm_addr");
+            break;
+        }
+        case FormatType::kMmapPrintBasicWithComm: {
+            formatHeader = "{:<15} {:<6} {:<26} {:<15} {:<10} {:<25}\n";
+            fmt::print(formatHeader, "timestamp", "PID", "Command", "prot", "fd", "vm_addr");
+            break;
+        }
+        case FormatType::kPhyAddrPrint: {
+            formatHeader = "{:<25} {:<10} {:<26} {:<35} {:<10} {:<35}\n";
+            fmt::print(formatHeader, "timestamp", "PID", "Command", "vm_addr", "len", "phy_addr");
             break;
         }
         /** 物理内存引用计数输出 */
-        case FormatType::kPhyAddrPrint: {
+        case FormatType::kPhyAddrMapCount: {
             formatHeader = "{:<25} {:<10} {:<35} {:<35}\n";
             fmt::print(formatHeader, "physical_addr", "map_count", "pids", "command");
-            break;
-        }
-        case FormatType::kPhyAddrPrint2: {
-            formatHeader = "{:<25} {:<10} {:<35} {:<10} {:<35}\n";
-            fmt::print(formatHeader, "timestamp", "PID", "vm_addr", "len", "phy_addr");
             break;
         }
         /** 物理内存引用计数在命令行中类图形化输出 */
@@ -190,40 +195,71 @@ void ShmBpf::setAndPrintHeader(FormatType type) {
     auto shmBpf = reinterpret_cast<ShmBpf*>(ctx);
     auto *e = reinterpret_cast<shm_transfer_basic_data*>(data);
 
+
     std::string shmPath = shmUtils::getShmPath(e->pid, e->fd);
+    /** 进程虚拟地址空间VM区域 */
     std::string shmAddr = shmUtils::getShmVmAddrString(e->pid, shmPath);
-    std::string command = shmBpf->findCommand(e->pid);
-    if (shmBpf->type_ == FormatType::kMmapPrintNormal) {
-        //fmt::print(shmBpf->formatHeader,   e->pid, );
-    }
-//    fmt::print(formatHeader, "PID", "command","len", "prot", "flags",
-//               "fd", "shm_path", "mmap_addr","shm_vm_addr");
-    else if (shmBpf->type_ == FormatType::kPrintTest) {
-        fmt::print(shmBpf->formatHeader,    e->pid,
-                                            command,
-                                            e->len,
-                                            shmUtils::getShmFlagString(e->prot),
-                                            shmUtils::getShmProtString(e->flags),
-                                            e->fd,
-                                            shmPath,
-                                            e->mmap_addr,
-                                            shmAddr
-                   );
+
+
+
+    int mapCount = shmUtils::getShmMapCount();
+    std::string pids {};
+    std::string commands {};
+
+
+    if (shmBpf->type_ == FormatType::kMmapPrintBasic) {
+        // 验证 fd 值是否在有效范围内 (0-1023)
+        std::string fd_str = (e->fd < 1024) ? std::to_string(e->fd) : "Over Limit";
+        /** FIXME： 是否要打印 fd超限的这种情况，这是合法的共享文件映射吗 */
+        fmt::print(shmBpf->formatHeader,   e->timestamp,
+                                           e->pid,
+                                           e->len,
+                                           shmUtils::getShmProtString(e->prot),
+                                           shmUtils::getShmFlagString(e->flags),
+                                           fd_str,
+                                           e->off,
+                                           shmUtils::decimalToHex(e->mmap_addr, true)
+        );
     }
 
-    else if (shmBpf->type_ == FormatType::kPrintTest2) {
+    if (shmBpf->type_ == FormatType::kMmapPrintBasicWithComm) {
+        std::string command = shmBpf->findCommand(e->pid);
         // 验证 fd 值是否在有效范围内 (0-1023)
-        std::string fd_str = (e->fd < 1024) ? std::to_string(e->fd) : "BB";
+        std::string fd_str = (e->fd < 1024) ? std::to_string(e->fd) : "Over Limit";
+
+        fmt::print(shmBpf->formatHeader,   e->timestamp,
+                                           e->pid,
+                                           command,
+                                           shmUtils::getShmProtString(e->prot),
+                                           fd_str,
+                                           shmUtils::decimalToHex(e->mmap_addr, true)
+        );
+    }
+    else if (shmBpf->type_ == FormatType::kPhyAddrPrint) {
+        std::string shmPhyAddr = shmUtils::vaddrToPhysicalAddrString(e->pid, e->mmap_addr);
+        std::string command = shmBpf->findCommand(e->pid);
         fmt::print(shmBpf->formatHeader,    e->timestamp,
                                             e->pid,
+                                            command,
+                                            e->mmap_addr,
                                             e->len,
-                                            shmUtils::getShmProtString(e->prot),
-                                            shmUtils::getShmFlagString(e->flags),
-                                            fd_str,
-                                            e->off,
-                                            e->mmap_addr
+                                            shmPhyAddr
+        );
+    }
+    else if (shmBpf->type_ == FormatType::kPhyAddrMapCount) {
+        std::string shmPhyAddr = shmUtils::vaddrToPhysicalAddrString(e->pid, e->mmap_addr);
+        fmt::print(shmBpf->formatHeader,    shmPhyAddr,
+                                            mapCount,
+                                            pids,
+                                            commands
         );
      }
+    else if (shmBpf->type_ == FormatType::kPhyAddrPrintGui) {
+        shmBpf->printShmConnectInfo();
+    }
+    else if (shmBpf->type_ == FormatType::kShmLeakCheck) {
+        // fmt::print(shmBpf->formatHeader,    shmPhyAddr,);
+    }
 }
 
 /*!
@@ -270,5 +306,6 @@ void ShmBpf::createMmapMonitor() {
 
 
 void ShmBpf::printShmConnectInfo() {
+    //xxx
 
 }

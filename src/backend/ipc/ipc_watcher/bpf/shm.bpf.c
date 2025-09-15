@@ -25,17 +25,18 @@
  SEC("tracepoint/syscalls/sys_enter_mmap")
  int handle_syscall_enter_mmap(struct trace_event_raw_sys_enter *ctx)
 {
+     /** 确定是共享映射，排除匿名映射，则只剩下了共享文件映射，即共享内存 */
     unsigned long flags = (unsigned long) ctx->args[3];  // 获取flags参数
     bool is_shared = flags & MAP_SHARED;  /** 检查是否为共享映射 */
     if (!is_shared) {
         return 0;
     }
-    unsigned long fd = (unsigned long) ctx->args[4];
     bool is_anonymous = flags & MAP_ANONYMOUS; /** 检查是否为匿名映射 */
-    if (is_anonymous && fd != -1UL) {  // 匿名映射但fd有效，需要排除
+    //if (is_anonymous && fd != -1UL) {
+    if (is_anonymous) {   /** fd 返回的是无符号整数，如果有符号应该是-1，所以使用fd的超限判断 */
         return 0;
     }
-
+    unsigned long fd = (unsigned long) ctx->args[4];
     // 获取pid和tid
     u64 id = bpf_get_current_pid_tgid();
     pid_t pid = id >> 32;
