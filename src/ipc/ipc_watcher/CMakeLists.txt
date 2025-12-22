@@ -68,9 +68,9 @@ foreach (app ${apps})
 
     if(${app_stem} STREQUAL "profile")
         target_include_directories(${app_stem} PRIVATE
-                ${CMAKE_SOURCE_DIR}/blazesym/include)
+                ${CMAKE_SOURCE_DIR}/third_party/blazesym/include)
         target_link_libraries(${app_stem}
-                ${CMAKE_SOURCE_DIR}/blazesym/target/release/libblazesym.a -lpthread -lrt -ldl)
+                ${CMAKE_SOURCE_DIR}/third_party/blazesym/target/release/libblazesym.a -lpthread -lrt -ldl)
     endif()
 endforeach ()
 

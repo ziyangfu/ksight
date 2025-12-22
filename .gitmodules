@@ -1,12 +1,12 @@
 
 [submodule "blazesym"]
-	path = blazesym
+	path = third_party/blazesym
 	url = https://github.com/libbpf/blazesym.git
 [submodule "bpftool"]
-	path = bpftool
+	path = third_party/bpftool
 	url = https://github.com/libbpf/bpftool.git
 [submodule "libbpf"]
-	path = libbpf
+	path = third_party/libbpf
 	url = https://github.com/libbpf/libbpf.git
 [submodule "third_party/scx"]
 	path = third_party/scx
