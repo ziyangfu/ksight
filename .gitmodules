@@ -8,3 +8,6 @@
 [submodule "libbpf"]
 	path = libbpf
 	url = https://github.com/libbpf/libbpf.git
+[submodule "third_party/scx"]
+	path = third_party/scx
+	url = https://github.com/sched-ext/scx.git
