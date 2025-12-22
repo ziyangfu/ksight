@@ -23,3 +23,6 @@
 [submodule "third_party/yaml-cpp"]
 	path = third_party/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "third_tools/nettrace"]
+	path = third_tools/nettrace
+	url = https://github.com/OpenCloudOS/nettrace.git
