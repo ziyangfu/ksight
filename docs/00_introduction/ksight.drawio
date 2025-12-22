@@ -1,0 +1,105 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/25.0.2 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="25.0.2">
+  <diagram name="ipc_watcher" id="vjbvdwllAMUu8z_T3wv6">
+    <mxGraphModel dx="993" dy="1735" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-33" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="650" y="-15" width="270" height="365" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-2" value="" style="shape=crossbar;whiteSpace=wrap;html=1;rounded=1;strokeWidth=3;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="320" y="200" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-3" value="" style="shape=crossbar;whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="300" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-4" value="" style="shape=crossbar;whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="300" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-5" value="物理内存" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="170" y="190" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="iUEk0HSqDFPuOiZPBvoh-6" target="iUEk0HSqDFPuOiZPBvoh-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-6" value="虚拟内存" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="170" y="295" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-12" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="iUEk0HSqDFPuOiZPBvoh-2" target="iUEk0HSqDFPuOiZPBvoh-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-13" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="iUEk0HSqDFPuOiZPBvoh-2" target="iUEk0HSqDFPuOiZPBvoh-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-14" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="iUEk0HSqDFPuOiZPBvoh-2" target="iUEk0HSqDFPuOiZPBvoh-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-15" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="iUEk0HSqDFPuOiZPBvoh-2" target="iUEk0HSqDFPuOiZPBvoh-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" edge="1" parent="1" source="iUEk0HSqDFPuOiZPBvoh-16" target="iUEk0HSqDFPuOiZPBvoh-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" edge="1" parent="1" source="iUEk0HSqDFPuOiZPBvoh-16" target="iUEk0HSqDFPuOiZPBvoh-17">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="410" />
+              <mxPoint x="548" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-16" value="进程A" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="312.5" y="340" width="55" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-17" value="进程B" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="340" width="55" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-18" value="进程C：Viewer" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="720" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-19" value="" style="shape=crossbar;whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="110" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-20" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;dashPattern=8 8;" edge="1" parent="1" source="iUEk0HSqDFPuOiZPBvoh-2" target="iUEk0HSqDFPuOiZPBvoh-19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-21" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;dashPattern=8 8;" edge="1" parent="1" source="iUEk0HSqDFPuOiZPBvoh-2" target="iUEk0HSqDFPuOiZPBvoh-19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-22" value="eBPF采集到对方的映射参数" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="50" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-23" value="同样映射相同物理内存" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="90" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-24" value="挂载监控物理内存是否变化（是否有进程写这段内存，谁写的）" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="670" y="140" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-25" value="【可选】是否有进程读这段内存" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="670" y="180" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-26" value="eBPF通知进程C，用户态" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="670" y="220" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-27" value="进程C也去读取物理内存里的数据" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="680" y="260" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-28" value="动态迭代展示内存区域变化（hex）" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="680" y="300" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-30" value="POSIX shm" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="410" y="360" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-32" value="同步机制：互斥锁、条件变量、信号量、UDS" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="325" y="410" width="250" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-35" value="page fault" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="130" y="250" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iUEk0HSqDFPuOiZPBvoh-36" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;无侵入式旁观共享内存通信方案&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="210" y="20" width="380" height="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
