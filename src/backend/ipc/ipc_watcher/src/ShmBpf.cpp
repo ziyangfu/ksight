@@ -10,6 +10,8 @@
 #include "spdlog/spdlog.h"
 #include "fmt/format.h"
 
+// 文件引用计数 f_count，struct page _mapcount 与 refcount
+
 using namespace ipc::ipcWatcher;
 
 ShmBpf::ShmBpf(ConfigArgs& config)
@@ -19,7 +21,7 @@ ShmBpf::ShmBpf(ConfigArgs& config)
           rb_(nullptr),
           formatHeader(),
           pidCommandHash_(std::make_unique<std::unordered_map<std::uint32_t, std::string>>()),
-          type_(FormatType::kPhyAddrPrint),
+          type_(FormatType::kPhyAddrMapCount),
           printType_(PrintType::kTerminal)
 {
     //config_.printPayloadHex = true;
@@ -159,6 +161,7 @@ void ShmBpf::setAndPrintHeader(FormatType type) {
             break;
         }
         /** 物理内存引用计数输出 */
+        /** key物理内存地址  shmid owner perms权限 bytes大小 nattch（计数） status  */
         case FormatType::kPhyAddrMapCount: {
             formatHeader = "{:<25} {:<10} {:<35} {:<35}\n";
             fmt::print(formatHeader, "physical_addr", "map_count", "pids", "command");
@@ -199,10 +202,6 @@ void ShmBpf::setAndPrintHeader(FormatType type) {
     std::string shmPath = shmUtils::getShmPath(e->pid, e->fd);
     /** 进程虚拟地址空间VM区域 */
     std::string shmAddr = shmUtils::getShmVmAddrString(e->pid, shmPath);
-
-
-
-    int mapCount = shmUtils::getShmMapCount();
     std::string pids {};
     std::string commands {};
 
@@ -248,10 +247,12 @@ void ShmBpf::setAndPrintHeader(FormatType type) {
     }
     else if (shmBpf->type_ == FormatType::kPhyAddrMapCount) {
         std::string shmPhyAddr = shmUtils::vaddrToPhysicalAddrString(e->pid, e->mmap_addr);
-        fmt::print(shmBpf->formatHeader,    shmPhyAddr,
-                                            mapCount,
-                                            pids,
-                                            commands
+        std::string command = shmBpf->findCommand(e->pid);
+        //int mapCount = shmUtils::getShmMapCount(shmUtils::vaddrToPhysicalAddr(e->pid, e->mmap_addr));
+        fmt::print(shmBpf->formatHeader,   e->pid,
+                                           command,
+                                           shmPhyAddr,
+                                           "tt"//mapCount
         );
      }
     else if (shmBpf->type_ == FormatType::kPhyAddrPrintGui) {
@@ -308,4 +309,28 @@ void ShmBpf::createMmapMonitor() {
 void ShmBpf::printShmConnectInfo() {
     //xxx
 
+}
+
+
+void ShmBpf::KernelFuncTraceInit() {
+    if (!kernelFuncTrace_) {
+        kernelFuncTrace_ = std::make_unique<std::unordered_map<std::uint32_t, std::string>>();
+    }
+    kernelFuncTrace_->clear();
+    // 添加内核函数跟踪信息
+    // 使用不同的ID来标识不同的内核函数和系统调用
+    // shm_open（1-100）
+    // ftruncate
+    // mmap
+
+    kernelFuncTrace_->emplace(101, "系统调用入口: munmap");
+    kernelFuncTrace_->emplace(102, "内核函数: __vm_munmap");
+    kernelFuncTrace_->emplace(103, "内核函数: __do_munmap");
+    kernelFuncTrace_->emplace(104, "内核函数: unmap_region");
+    kernelFuncTrace_->emplace(105, "内核函数: unmap_vmas");
+    kernelFuncTrace_->emplace(106, "内核函数: unmap_single_vma");
+    kernelFuncTrace_->emplace(107, "内核函数: unmap_page_range");
+    kernelFuncTrace_->emplace(108, "内核函数: zap_pte_range");
+    kernelFuncTrace_->emplace(109, "内核函数: free_pgtables");
+    kernelFuncTrace_->emplace(110, "系统调用出口: munmap");
 }

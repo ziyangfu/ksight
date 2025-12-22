@@ -20,7 +20,9 @@ set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)
 set(FMT_DIR ${CMAKE_SOURCE_DIR}/third_party/fmt/include)
 set(SPDLOG_DIR ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
 
-if (NOT EXISTS ${ARG_PARSE_DIR} OR NOT EXISTS ${FMT_DIR} OR NOT EXISTS ${SPDLOG_DIR})
+set(SCX_DIR ${CMAKE_SOURCE_DIR}/third_party/scx/scheds/include)
+
+if (NOT EXISTS ${ARG_PARSE_DIR} OR NOT EXISTS ${FMT_DIR} OR NOT EXISTS ${SPDLOG_DIR} OR NOT EXISTS ${SCX_DIR})
     message(FATAL_ERROR "third party include directory does not exist.")
 endif ()
 
@@ -28,6 +30,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${ARG_PARSE_DIR})
 include_directories(${FMT_DIR})
 include_directories(${SPDLOG_DIR})
+include_directories(${SCX_DIR})
 
 file(GLOB_RECURSE ${TOOL_NAME}_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 

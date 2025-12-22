@@ -50,6 +50,7 @@ private:
     std::string formatHeaderVars;
     std::unique_ptr<std::unordered_map<std::uint32_t, std::string>> pidCommandHash_;
 
+    std::unique_ptr<std::unordered_map<std::uint32_t, std::string>> kernelFuncTrace_;
     int shmMonitorFd_{0};
     std::string shmMonitorPath_{};
     int shmMonitorSize_{0};
@@ -67,6 +68,7 @@ public:
     void setBpfProgsLoadOpt();
     void poll();
 private:
+    void KernelFuncTraceInit();
     void createMmapMonitor();
     static void handleEvent(void *ctx, void *data, size_t len);
 

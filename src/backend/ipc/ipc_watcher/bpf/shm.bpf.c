@@ -4,6 +4,18 @@
  * \details
  *      ARCH Support: X86-64, ARM64
  * */
+
+
+/**
+ * task:
+ * 1. 模拟ipcs -m 给出POSIX的共享内存映射查看
+ * 2. 查看内核运行脉络
+ *
+ * mm_struct  -- VMA  --- file -- address_space --page
+ *
+ * */
+
+
 #include "common.bpf.h"
 #include "shm_trace.bpf.h"
 #include "shm_data.h"
