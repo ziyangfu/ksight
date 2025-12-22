@@ -83,11 +83,11 @@ endif ()
 message(STATUS "install directory： ${CMAKE_INSTALL_PREFIX}")
 
 # include backend common source file
-set(BPF_COMMON_FILES_DIR ${CMAKE_SOURCE_DIR}/src/backend/bpf_common_helper)
+set(BPF_COMMON_FILES_DIR ${CMAKE_SOURCE_DIR}/src/bpf_common_helper)
 file(GLOB BPF_COMMON_FILES ${BPF_COMMON_FILES_DIR})
 include_directories(${BPF_COMMON_FILES_DIR})
 # include component source file
-set(PROJECT_COMPONENT_FILES_DIR ${CMAKE_SOURCE_DIR}/src/backend/component_helper)
+set(PROJECT_COMPONENT_FILES_DIR ${CMAKE_SOURCE_DIR}/src/component_helper)
 file(GLOB PROJECT_COMPONENT_FILES ${PROJECT_COMPONENT_FILES_DIR})
 include_directories(${PROJECT_COMPONENT_FILES_DIR})
 
@@ -100,7 +100,7 @@ include(ExternalProject)
 # 编译libbpf
 ExternalProject_Add(libbpf
         PREFIX libbpf
-        SOURCE_DIR ${CMAKE_SOURCE_DIR}/libbpf/src
+        SOURCE_DIR ${CMAKE_SOURCE_DIR}/third_party/libbpf/src
         CONFIGURE_COMMAND ""
         BUILD_COMMAND make
             ARCH=${ARCH}
@@ -119,7 +119,7 @@ ExternalProject_Add(libbpf
 # 编译bpftool
 ExternalProject_Add(bpftool
         PREFIX bpftool
-        SOURCE_DIR ${CMAKE_SOURCE_DIR}/bpftool/src
+        SOURCE_DIR ${CMAKE_SOURCE_DIR}/third_party/bpftool/src
         CONFIGURE_COMMAND ""
         BUILD_COMMAND make 
             ARCH=${ARCH}
@@ -135,7 +135,7 @@ find_program(CARGO_EXISTS cargo)
 if(CARGO_EXISTS)
     ExternalProject_Add(blazesym
             PREFIX blazesym
-            SOURCE_DIR ${CMAKE_SOURCE_DIR}/blazesym
+            SOURCE_DIR ${CMAKE_SOURCE_DIR}/third_party/blazesym
             CONFIGURE_COMMAND ""
             BUILD_COMMAND cargo build --release
             BUILD_IN_SOURCE TRUE
@@ -155,6 +155,6 @@ if (NOT BpfObject_FOUND)
     message(STATUS "BpfObject not found, please check")
 endif ()
 
-add_subdirectory(src/backend)
-add_subdirectory(src/magic_eyes_cli)
+add_subdirectory(src)
+add_subdirectory(ksightCli)
 
