@@ -8,33 +8,11 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      sche_ext_rms 工具 CMakeLists 文件
+#      mem_watcher 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
-set(TOOL_NAME sche_ext_rms)
-set(TOOL_BELONG_TO_MODULE process)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)
-set(FMT_DIR ${CMAKE_SOURCE_DIR}/third_party/fmt/include)
-set(SPDLOG_DIR ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
-
-set(SCX_DIR ${CMAKE_SOURCE_DIR}/third_party/scx/scheds/include)
-
-if (NOT EXISTS ${ARG_PARSE_DIR} OR NOT EXISTS ${FMT_DIR} OR NOT EXISTS ${SPDLOG_DIR} OR NOT EXISTS ${SCX_DIR})
-    message(FATAL_ERROR "third party include directory does not exist.")
-endif ()
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${ARG_PARSE_DIR})
-include_directories(${FMT_DIR})
-include_directories(${SPDLOG_DIR})
-include_directories(${SCX_DIR})
-
-file(GLOB_RECURSE ${TOOL_NAME}_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-
-find_package(Threads REQUIRED)
+# TODO(fzy,2024.03.13): 名字应该为mem_watcher，page_fault可以作为功能块
+set(TOOL_NAME page_fault)
+set(TOOL_BELONG_TO_MODULE memory)
 
 file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
 # 若不用Rust，则排除 profile.bpf.c
@@ -57,9 +35,7 @@ foreach(app ${apps})
     add_dependencies(${app_stem}_skel libbpf-build bpftool-build)
 endforeach()
 
-add_executable(${TOOL_NAME} ${${TOOL_NAME}_SRCS})
-target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} rt m)
-
+add_executable(${TOOL_NAME} src/${TOOL_NAME}.c)
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
     target_link_libraries(${TOOL_NAME} ${app_stem}_skel)
@@ -72,7 +48,8 @@ foreach (app ${apps})
     endif()
 endforeach ()
 
+# 安装
 # 设置安装目录
-set(SCHE_EXT_RMS_INSTALL_DIR backend/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
+set(CPU_WATCHER_INSTALL_DIR ${TOOL_BELONG_TO_MODULE}/${TOOL_NAME}/)
 install(TARGETS ${TOOL_NAME}
-        RUNTIME DESTINATION ${SCHE_EXT_RMS_INSTALL_DIR}/bin)
+        RUNTIME DESTINATION ${CPU_WATCHER_INSTALL_DIR}/bin)

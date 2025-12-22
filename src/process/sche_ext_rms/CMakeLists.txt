@@ -8,13 +8,33 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      TODO: 1. <tool_name> 工具 CMakeLists 文件
+#      sche_ext_rms 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
-#TODO: 2. 工具名称，以及它属于哪个子系统
-set(TOOL_NAME <your tool name>)
-set(TOOL_BELONG_TO_MODULE <which subsystem>)
+set(TOOL_NAME sche_ext_rms)
+set(TOOL_BELONG_TO_MODULE process)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)
+set(FMT_DIR ${CMAKE_SOURCE_DIR}/third_party/fmt/include)
+set(SPDLOG_DIR ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
+
+set(SCX_DIR ${CMAKE_SOURCE_DIR}/third_party/scx/scheds/include)
+
+if (NOT EXISTS ${ARG_PARSE_DIR} OR NOT EXISTS ${FMT_DIR} OR NOT EXISTS ${SPDLOG_DIR} OR NOT EXISTS ${SCX_DIR})
+    message(FATAL_ERROR "third party include directory does not exist.")
+endif ()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${ARG_PARSE_DIR})
+include_directories(${FMT_DIR})
+include_directories(${SPDLOG_DIR})
+include_directories(${SCX_DIR})
+
+file(GLOB_RECURSE ${TOOL_NAME}_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+
+find_package(Threads REQUIRED)
 
 file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
 # 若不用Rust，则排除 profile.bpf.c
@@ -37,7 +57,9 @@ foreach(app ${apps})
     add_dependencies(${app_stem}_skel libbpf-build bpftool-build)
 endforeach()
 
-add_executable(${TOOL_NAME} src/${TOOL_NAME}.c)
+add_executable(${TOOL_NAME} ${${TOOL_NAME}_SRCS})
+target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} rt m)
+
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
     target_link_libraries(${TOOL_NAME} ${app_stem}_skel)
@@ -50,11 +72,7 @@ foreach (app ${apps})
     endif()
 endforeach ()
 
-# TODO 3. 拷贝文件至相应位置(bin, etc ...)
 # 设置安装目录
-set(CPU_WATCHER_INSTALL_DIR backend/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME}/)
+set(SCHE_EXT_RMS_INSTALL_DIR ${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
 install(TARGETS ${TOOL_NAME}
-        RUNTIME DESTINATION ${CPU_WATCHER_INSTALL_DIR}/bin)
-# 拷贝配置文件至etc目录
-
-# 拷贝 script 至 script 目录
+        RUNTIME DESTINATION ${SCHE_EXT_RMS_INSTALL_DIR}/bin)

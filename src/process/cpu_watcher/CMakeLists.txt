@@ -8,11 +8,10 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      mem_watcher 工具 CMakeLists 文件
+#      cpu_watcher 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
-# TODO(fzy,2024.03.13): 名字应该为mem_watcher，page_fault可以作为功能块
-set(TOOL_NAME page_fault)
-set(TOOL_BELONG_TO_MODULE memory)
+set(TOOL_NAME cpu_watcher)
+set(TOOL_BELONG_TO_MODULE process)
 
 file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
 # 若不用Rust，则排除 profile.bpf.c
@@ -48,8 +47,10 @@ foreach (app ${apps})
     endif()
 endforeach ()
 
-# 安装
+# 将可执行文件，配置文件等安装在对应的位置
 # 设置安装目录
-set(CPU_WATCHER_INSTALL_DIR backend/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME}/)
+set(CPU_WATCHER_INSTALL_DIR ${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
+# 安装可执行文件到 ${CPU_WATCHER_INSTALL_DIR}/bin
 install(TARGETS ${TOOL_NAME}
         RUNTIME DESTINATION ${CPU_WATCHER_INSTALL_DIR}/bin)
+# 安装配置文件到 ${CPU_WATCHER_INSTALL_DIR}/etc

@@ -8,32 +8,37 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      net_watcher 工具 CMakeLists 文件
+#      ipc_watcher 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
-set(TOOL_NAME netwatcher)
-set(TOOL_BELONG_TO_MODULE net)
+set(TOOL_NAME ipcwatcher)
+set(TOOL_BELONG_TO_MODULE ipc)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ---------------------------------------------------------------------
+# 临时，只是为了CMake能包括bpf的代码，方便在CLion中编程
+file(GLOB TEMP_BPF_C_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
+add_library(temp_lib STATIC ${TEMP_BPF_C_SRCS})
+# ---------------------------------------------------------------------
+
 set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)
 set(FMT_DIR ${CMAKE_SOURCE_DIR}/third_party/fmt/include)
 set(SPDLOG_DIR ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
-
 if (NOT EXISTS ${ARG_PARSE_DIR} OR NOT EXISTS ${FMT_DIR} OR NOT EXISTS ${SPDLOG_DIR})
     message(FATAL_ERROR "third party include directory does not exist.")
 endif ()
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${ARG_PARSE_DIR})
-include_directories(${FMT_DIR})
-include_directories(${SPDLOG_DIR})
+include_directories(${ARG_PARSE_DIR})  # cmd parser
+include_directories(${FMT_DIR}) # fmt
+include_directories(${SPDLOG_DIR})  # for log
 
 file(GLOB_RECURSE ${TOOL_NAME}_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 find_package(Threads REQUIRED)
 
 file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
+# file(GLOB apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/uds.bpf.c)
 # 若不用Rust，则排除 profile.bpf.c
 if(NOT CARGO_EXISTS)
     list(REMOVE_ITEM apps ${CMAKE_CURRENT_SOURCE_DIR}/bpf/profile.bpf.c)
@@ -46,7 +51,7 @@ if (NOT EXISTS ${SRC_GEN_TARGET_DIR})
     message(STATUS "directory create success")
 endif ()
 
-# 遍历文件夹内所有的bpf.c
+# 遍历bpf文件夹内所有的bpf.c
 foreach(app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
     # Build object skeleton and depend skeleton on libbpf build
@@ -54,9 +59,9 @@ foreach(app ${apps})
     add_dependencies(${app_stem}_skel libbpf-build bpftool-build)
 endforeach()
 
+
 add_executable(${TOOL_NAME} ${${TOOL_NAME}_SRCS})
 target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} pcap rt)
-
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
     target_link_libraries(${TOOL_NAME} ${app_stem}_skel)
@@ -71,7 +76,8 @@ endforeach ()
 
 # 将可执行文件，配置文件等安装在对应的位置
 # 设置安装目录
-set(NET_WATCHER_INSTALL_DIR backend/${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
-# 安装可执行文件到 ${NET_WATCHER_INSTALL_DIR}/bin
+set(IPC_WATCHER_INSTALL_DIR ${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
+# 安装可执行文件到 ${IPC_WATCHER_INSTALL_DIR}/bin
 install(TARGETS ${TOOL_NAME}
-        RUNTIME DESTINATION ${NET_WATCHER_INSTALL_DIR}/bin)
+        RUNTIME DESTINATION ${IPC_WATCHER_INSTALL_DIR}/bin)
+# 安装配置文件到 ${IPC_WATCHER_INSTALL_DIR}/etc

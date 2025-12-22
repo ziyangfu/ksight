@@ -8,7 +8,7 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      backend 顶层 CMakeLists 文件
+#      src 顶层 CMakeLists 文件
 #      控制哪些工具编译，哪些不编译
 # \usage
 #      编译所有工具
