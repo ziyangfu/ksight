@@ -28,10 +28,6 @@
 
 #include "udp.bpf.h"
 
-#include "mysql.bpf.h"
-
-#include "redis.bpf.h"
-
 #include "drop.bpf.h"
 
 // accecpt an TCP connection
@@ -307,17 +303,6 @@ int BPF_KPROBE(icmp_reply, struct icmp_bxm *icmp_param, struct sk_buff *skb) {
     return __reply_icmp_time(skb);
 }
 
-// mysql
-SEC("uprobe/_Z16dispatch_commandP3THDPK8COM_DATA19enum_server_command")
-int BPF_KPROBE(query__start) { return __handle_mysql_start(ctx); }
-
-SEC("uretprobe/_Z16dispatch_commandP3THDPK8COM_DATA19enum_server_command")
-int BPF_KPROBE(query__end) { return __handle_mysql_end(ctx); }
-
-SEC("uprobe/processCommand")
-int BPF_KPROBE(query__start_redis_process) { return __handle_redis_start(ctx); }
-SEC("uretprobe/call")
-int BPF_KPROBE(query__end_redis) { return __handle_redis_end(ctx); }
 // rtt
 SEC("kprobe/tcp_rcv_established")
 int BPF_KPROBE(tcp_rcv_established, struct sock *sk, struct sk_buff *skb) {

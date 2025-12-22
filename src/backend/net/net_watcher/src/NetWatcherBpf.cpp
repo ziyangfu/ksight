@@ -10,26 +10,38 @@
 #include <algorithm>
 #include <cstring>
 
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
+
 #include "NetWatcherBpf.h"
 #include "net_watcher/include/dropreason.h"
 #include "spdlog/spdlog.h"
 #include "fmt/format.h"
-#include "fmt/color.h"
+// #include "fmt/color.h"
 
 using namespace net::netWatcher;
 namespace fs = std::filesystem;
 
 static const char *tcp_states[] = {
-    [1] = "ESTABLISHED", [2] = "SYN_SENT",   [3] = "SYN_RECV",
-    [4] = "FIN_WAIT1",   [5] = "FIN_WAIT2",  [6] = "TIME_WAIT",
-    [7] = "CLOSE",       [8] = "CLOSE_WAIT", [9] = "LAST_ACK",
-    [10] = "LISTEN",     [11] = "CLOSING",   [12] = "NEW_SYN_RECV",
-    [13] = "UNKNOWN",
+    "INVALID",       // 索引 0
+    "ESTABLISHED",   // 1
+    "SYN_SENT",      // 2
+    "SYN_RECV",      // 3
+    "FIN_WAIT1",     // 4
+    "FIN_WAIT2",     // 5
+    "TIME_WAIT",     // 6
+    "CLOSE",         // 7
+    "CLOSE_WAIT",    // 8
+    "LAST_ACK",      // 9
+    "LISTEN",        // 10
+    "CLOSING",       // 11
+    "NEW_SYN_RECV",  // 12
+    "UNKNOWN",       // 13
 };
 
 struct SymbolEntry {
     unsigned long addr;
-    char name[64];
+    std::string name;
 };
 
 static std::vector<SymbolEntry> symbols;
@@ -48,8 +60,7 @@ static void readallsym() {
         char type;
         char name[64];
         if (sscanf(line.c_str(), "%lx %c %63s", &addr, &type, name) == 3) {
-            symbols.push_back({addr, ""});
-            strncpy(symbols.back().name, name, 63);
+            symbols.push_back({addr, std::string(name)});
         }
     }
     std::sort(symbols.begin(), symbols.end(), [](const SymbolEntry& a, const SymbolEntry& b) {
@@ -193,20 +204,20 @@ static int print_trace(void *ctx, void *data, size_t len) {
     return 0;
 }
 
-static int print_mysql(void *ctx, void *data, size_t len) {
-    auto pack_info = static_cast<struct mysql_query*>(data);
-    fmt::print("{:<10} {:<10} {:<15} {:<10} {:<40} {:<15} {:<10}\n",
-               pack_info->pid, pack_info->tid, pack_info->comm, pack_info->size,
-               pack_info->msql, pack_info->duratime, pack_info->count);
-    return 0;
-}
+// static int print_mysql(void *ctx, void *data, size_t len) {
+//     auto pack_info = static_cast<struct mysql_query*>(data);
+//     fmt::print("{:<10} {:<10} {:<15} {:<10} {:<40} {:<15} {:<10}\n",
+//                pack_info->pid, pack_info->tid, pack_info->comm, pack_info->size,
+//                pack_info->msql, pack_info->duratime, pack_info->count);
+//     return 0;
+// }
 
-static int print_redis(void *ctx, void *data, size_t len) {
-    auto pack_info = static_cast<struct redis_query*>(data);
-    fmt::print("{:<10} {:<15} {:<10} {:<20} {:<15}\n",
-               pack_info->pid, pack_info->comm, pack_info->argc, "redis_cmd", pack_info->duratime);
-    return 0;
-}
+// static int print_redis(void *ctx, void *data, size_t len) {
+//     auto pack_info = static_cast<struct redis_query*>(data);
+//     fmt::print("{:<10} {:<15} {:<10} {:<20} {:<15}\n",
+//                pack_info->pid, pack_info->comm, pack_info->argc, "redis_cmd", pack_info->duratime);
+//     return 0;
+// }
 
 static int print_rtt(void *ctx, void *data, size_t len) {
     auto rtt_tuple = static_cast<struct RTT*>(data);
@@ -255,46 +266,46 @@ void NetWatcherBpf::attach() {
         return;
     }
 
-    if (config_.mysql_info) {
-        attachUprobeMysql();
-    }
-    if (config_.redis_info) {
-        attachUprobeRedis();
-    }
+    // if (config_.mysql_info) {
+    //     attachUprobeMysql();
+    // }
+    // if (config_.redis_info) {
+    //     attachUprobeRedis();
+    // }
 }
 
-void NetWatcherBpf::attachUprobeMysql() {
-    // Note: binary_path should be configurable or detected. 
-    // For now, we assume it's in a standard location or the user provides it.
-    // The original code used a global binary_path[64] = ""; which is not very helpful.
-    // Usually it's /usr/sbin/mysqld
-    const char* mysql_path = "/usr/sbin/mysqld"; 
-    if (!fs::exists(mysql_path)) return;
+// void NetWatcherBpf::attachUprobeMysql() {
+//     // Note: binary_path should be configurable or detected. 
+//     // For now, we assume it's in a standard location or the user provides it.
+//     // The original code used a global binary_path[64] = ""; which is not very helpful.
+//     // Usually it's /usr/sbin/mysqld
+//     const char* mysql_path = "/usr/sbin/mysqld"; 
+//     if (!fs::exists(mysql_path)) return;
 
-    LIBBPF_OPTS(bpf_uprobe_opts, uprobe_opts, 
-                .func_name = "_Z16dispatch_commandP3THDPK8COM_DATA19enum_server_command",
-                .retprobe = false);
-    skel_->links.query__start = bpf_program__attach_uprobe_opts(
-        skel_->progs.query__start, -1, mysql_path, 0, &uprobe_opts);
+//     LIBBPF_OPTS(bpf_uprobe_opts, uprobe_opts, 
+//                 .func_name = "_Z16dispatch_commandP3THDPK8COM_DATA19enum_server_command",
+//                 .retprobe = false);
+//     skel_->links.query__start = bpf_program__attach_uprobe_opts(
+//         skel_->progs.query__start, -1, mysql_path, 0, &uprobe_opts);
     
-    uprobe_opts.retprobe = true;
-    skel_->links.query__end = bpf_program__attach_uprobe_opts(
-        skel_->progs.query__end, -1, mysql_path, 0, &uprobe_opts);
-}
+//     uprobe_opts.retprobe = true;
+//     skel_->links.query__end = bpf_program__attach_uprobe_opts(
+//         skel_->progs.query__end, -1, mysql_path, 0, &uprobe_opts);
+// }
 
-void NetWatcherBpf::attachUprobeRedis() {
-    const char* redis_path = "/usr/bin/redis-server";
-    if (!fs::exists(redis_path)) return;
+// void NetWatcherBpf::attachUprobeRedis() {
+//     const char* redis_path = "/usr/bin/redis-server";
+//     if (!fs::exists(redis_path)) return;
 
-    LIBBPF_OPTS(bpf_uprobe_opts, uprobe_opts, .func_name = "processCommand", .retprobe = false);
-    skel_->links.query__start_redis_process = bpf_program__attach_uprobe_opts(
-        skel_->progs.query__start_redis_process, -1, redis_path, 0, &uprobe_opts);
+//     LIBBPF_OPTS(bpf_uprobe_opts, uprobe_opts, .func_name = "processCommand", .retprobe = false);
+//     skel_->links.query__start_redis_process = bpf_program__attach_uprobe_opts(
+//         skel_->progs.query__start_redis_process, -1, redis_path, 0, &uprobe_opts);
 
-    uprobe_opts.func_name = "call";
-    uprobe_opts.retprobe = true;
-    skel_->links.query__end_redis = bpf_program__attach_uprobe_opts(
-        skel_->progs.query__end_redis, -1, redis_path, 0, &uprobe_opts);
-}
+//     uprobe_opts.func_name = "call";
+//     uprobe_opts.retprobe = true;
+//     skel_->links.query__end_redis = bpf_program__attach_uprobe_opts(
+//         skel_->progs.query__end_redis, -1, redis_path, 0, &uprobe_opts);
+// }
 
 void NetWatcherBpf::destroy() {
     if (rb_) { ring_buffer__free(rb_); rb_ = nullptr; }
@@ -366,28 +377,17 @@ void NetWatcherBpf::setBpfProgsLoadOpt() {
     bpf_program__set_autoload(skel_->progs.__sock_queue_rcv_skb, config_.icmp_info);
     bpf_program__set_autoload(skel_->progs.icmp_reply, config_.icmp_info);
     bpf_program__set_autoload(skel_->progs.handle_set_state, config_.tcp_info);
-    bpf_program__set_autoload(skel_->progs.query__start, config_.mysql_info);
-    bpf_program__set_autoload(skel_->progs.query__end, config_.mysql_info);
-    bpf_program__set_autoload(skel_->progs.query__end_redis, config_.redis_info);
-    bpf_program__set_autoload(skel_->progs.query__start_redis_process, config_.redis_info);
+    // bpf_program__set_autoload(skel_->progs.query__start, config_.mysql_info);
+    // bpf_program__set_autoload(skel_->progs.query__end, config_.mysql_info);
+    // bpf_program__set_autoload(skel_->progs.query__end_redis, config_.redis_info);
+    // bpf_program__set_autoload(skel_->progs.query__start_redis_process, config_.redis_info);
     bpf_program__set_autoload(skel_->progs.tcp_rcv_established, tcp_related);
     bpf_program__set_autoload(skel_->progs.handle_send_reset, config_.rst_info);
     bpf_program__set_autoload(skel_->progs.handle_receive_reset, config_.rst_info);
 }
 
-void NetWatcherBpf::printLogo() {
-    fmt::print(fmt::fg(fmt::color::cyan), 
-        "              __                          __           __               \n"
-        "             /\\ \\__                      /\\ \\__       /\\ \\              \n"
-        "  ___      __\\ \\  _\\  __  __  __     __  \\ \\  _\\   ___\\ \\ \\___      __   _ __   \n"
-        " /  _  \\  / __ \\ \\ \\/ /\\ \\/\\ \\/\\ \\  / __ \\ \\ \\ \\/  / ___\\ \\  _  \\  / __ \\/\\  __\\ \n"
-        "/\\ \\/\\ \\/\\  __/\\ \\ \\_\\ \\ \\_/ \\_/ \\/\\ \\_\\ \\_\\ \\ \\_/\\ \\__/\\ \\ \\ \\ \\/\\  __/\\ \\ \\/  \n"
-        "\\ \\_\\ \\_\\ \\____\\ \\__\\ \\_______ / /\\ \\__/\\ \\_\\ \\__\\ \\____/\\ \\_\\ \\_\\ \\____ \\ \\_\\  \n"
-        " \\/_/\\/_/\\/____/ \\/__/ \\/__//__ /  \\/_/  \\/_/\\/__/\\/____/ \\/_/\\/_/\\/____/ \\/_/  \n\n");
-}
 
 void NetWatcherBpf::poll() {
-    printLogo();
     rb_ = ring_buffer__new(bpf_map__fd(skel_->maps.rb), print_packet, this, nullptr);
     if (!rb_) { SPDLOG_ERROR("Failed to create ring buffer"); return; }
     ring_buffer__add(rb_, bpf_map__fd(skel_->maps.udp_rb), print_udp, this);
@@ -397,8 +397,8 @@ void NetWatcherBpf::poll() {
     ring_buffer__add(rb_, bpf_map__fd(skel_->maps.icmp_rb), print_icmptime, this);
     ring_buffer__add(rb_, bpf_map__fd(skel_->maps.dns_rb), print_dns, this);
     ring_buffer__add(rb_, bpf_map__fd(skel_->maps.trace_rb), print_trace, this);
-    ring_buffer__add(rb_, bpf_map__fd(skel_->maps.mysql_rb), print_mysql, this);
-    ring_buffer__add(rb_, bpf_map__fd(skel_->maps.redis_rb), print_redis, this);
+    // ring_buffer__add(rb_, bpf_map__fd(skel_->maps.mysql_rb), print_mysql, this);
+    // ring_buffer__add(rb_, bpf_map__fd(skel_->maps.redis_rb), print_redis, this);
     ring_buffer__add(rb_, bpf_map__fd(skel_->maps.rtt_rb), print_rtt, this);
     ring_buffer__add(rb_, bpf_map__fd(skel_->maps.events), print_rst, this);
     printHeader(getMonitorMode());
@@ -463,14 +463,14 @@ void NetWatcherBpf::printHeader(MonitorMode mode) const {
         fmt::print("{:=^100}\n", "DNS INFORMATION");
         fmt::print("{:<20} {:<20} {:<10} {:<10} {:<5} {:<5} {:<5} {:<5} {:<40} {:<5} {:<5} {:<5}\n", "Saddr", "Daddr", "Id", "Flags", "Qd", "An", "Ns", "Ar", "Qr", "Qc", "Sc", "RX");
         break;
-    case MonitorMode::MODE_MYSQL:
-        fmt::print("{:=^100}\n", "MYSQL INFORMATION");
-        fmt::print("{:<10} {:<10} {:<15} {:<10} {:<40} {:<15} {:<10}\n", "Pid", "Tid", "Comm", "Size", "Sql", "Duration/μs", "Request");
-        break;
-    case MonitorMode::MODE_REDIS:
-        fmt::print("{:=^100}\n", "REDIS INFORMATION");
-        fmt::print("{:<10} {:<15} {:<10} {:<20} {:<15}\n", "Pid", "Comm", "Size", "Redis", "duration/μs");
-        break;
+    // case MonitorMode::MODE_MYSQL:
+    //     fmt::print("{:=^100}\n", "MYSQL INFORMATION");
+    //     fmt::print("{:<10} {:<10} {:<15} {:<10} {:<40} {:<15} {:<10}\n", "Pid", "Tid", "Comm", "Size", "Sql", "Duration/μs", "Request");
+    //     break;
+    // case MonitorMode::MODE_REDIS:
+    //     fmt::print("{:=^100}\n", "REDIS INFORMATION");
+    //     fmt::print("{:<10} {:<15} {:<10} {:<20} {:<15}\n", "Pid", "Comm", "Size", "Redis", "duration/μs");
+    //     break;
     case MonitorMode::MODE_RTT:
         fmt::print("{:=^100}\n", "RTT INFORMATION");
         break;
