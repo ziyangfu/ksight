@@ -1,4 +1,9 @@
-## magic_eyes_cli 命令行前端
+## ksightCli 命令行前端
+
+实现：后端工具采用标准的argparse实现， 然后会通过脚本读取每个后端工具的argparse信息，自动生成ksightCli的自动补全信息。
+然后使用complete来进行自动补全。
+
+
 
 ### 1. 简述
 
