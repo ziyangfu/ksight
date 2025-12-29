@@ -24,6 +24,7 @@ namespace fmt = std;
 #include "Version.h"
 #include "ConfigArgs.h"
 #include "ArgParser.h"
+#include "JsonConfigGenerator.h"
 
 std::atomic<bool> gStoped(false);
 
@@ -55,7 +56,7 @@ int main(int argc, char *argv[]) {
     spdlog::set_level(spdlog::level::info);
     //initSignalHandling();
     ipc::ipcWatcher::ConfigArgs config;
-    argparse::ArgumentParser parser("ipc_watcher");
+    argparse::ArgumentParser parser("ipcwatcher");
     ipc::ipcWatcher::cmdParser(parser, config);
     try {
         parser.parse_args(argc, argv);
@@ -63,6 +64,18 @@ int main(int argc, char *argv[]) {
         SPDLOG_ERROR("{}", err.what());
         return 1;
     }
+    
+    // Handle JSON config generation
+    if (config.generateJson) {
+        if (ipc::ipcWatcher::generateJsonConfig(config, "ipcwatcher")) {
+            fmt::print("JSON configuration file generated successfully: ipcwatcher_args.json\n");
+            return 0;
+        } else {
+            SPDLOG_ERROR("Failed to generate JSON configuration file");
+            return 1;
+        }
+    }
+    
     if (config.traceUds) {
         ipc::ipcWatcher::UdsBpf udsBpf(config);
         udsBpf.open();

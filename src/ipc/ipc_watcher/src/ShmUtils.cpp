@@ -330,6 +330,29 @@ std::string shmUtils::decimalToHex(long long decimal, bool withPrefix) {
 // TCP/IP
 // IPC
 
+// 这个工具是什么？
+// 解决了什么问题？
+// 采用了什么样的技术，碰到了什么样的问题？
+// 实践中使用怎样？
+
+
+
+
+
+// wirefisher 网络限流
+
+
+
+
+
+
+
+
+
+
+
+
+
 // star法则
 
 // vscode 插件一体化，观测开发，作为辅助调试工具

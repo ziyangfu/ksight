@@ -34,6 +34,7 @@ struct ConfigArgs {
     bool printPayloadHex        {false};
     bool forcePayload           {false};  /** payload输出一般仅支持pid过滤后输出，不推荐全量输出 */
     bool readFromJson           {false};
+    bool generateConfigJson     {false};
     bool verbose                {false};
     std::string filterPath;
     std::string pcapFile;

@@ -73,6 +73,11 @@ inline int cmdParser(argparse::ArgumentParser& parser, ipc::ipcWatcher::ConfigAr
                         exit(0);
                     }
             );
+    parser.add_argument("--generateJson")
+            .help("Generate json config file")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.generateJson);
 //    parser.add_argument("reserve_sample_int")
 //        .help("Positional Arguments sample like: <...>/ipcwatcher 10")
 //        .scan<'i', int>();

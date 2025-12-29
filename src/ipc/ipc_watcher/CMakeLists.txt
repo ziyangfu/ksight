@@ -25,13 +25,15 @@ add_library(temp_lib STATIC ${TEMP_BPF_C_SRCS})
 set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)
 set(FMT_DIR ${CMAKE_SOURCE_DIR}/third_party/fmt/include)
 set(SPDLOG_DIR ${CMAKE_SOURCE_DIR}/third_party/spdlog/include)
-if (NOT EXISTS ${ARG_PARSE_DIR} OR NOT EXISTS ${FMT_DIR} OR NOT EXISTS ${SPDLOG_DIR})
+set(JSON_DIR ${CMAKE_SOURCE_DIR}/third_party/json/single_include)
+if (NOT EXISTS ${ARG_PARSE_DIR} OR NOT EXISTS ${FMT_DIR} OR NOT EXISTS ${SPDLOG_DIR} OR NOT EXISTS ${JSON_DIR})
     message(FATAL_ERROR "third party include directory does not exist.")
 endif ()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${ARG_PARSE_DIR})  # cmd parser
 include_directories(${FMT_DIR}) # fmt
 include_directories(${SPDLOG_DIR})  # for log
+include_directories(${JSON_DIR})  # for json config generation
 
 file(GLOB_RECURSE ${TOOL_NAME}_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 

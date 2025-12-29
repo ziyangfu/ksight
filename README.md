@@ -54,6 +54,7 @@ repo sync -d --fetch-submodules
 ksight编译安装后，会存在多个可执行文件，用户如果想单独使用某个工具，也可以直接使用。
 最推荐的方式是使用ksightCli，这是一个聚合所有工具的命令行前端，具有Tab自动补全的功能。更方便使用。
 例如：
+
 ```bash
 ksightCli netwatcher -h
 
