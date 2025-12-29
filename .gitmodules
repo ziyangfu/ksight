@@ -26,3 +26,6 @@
 [submodule "third_tools/nettrace"]
 	path = third_tools/nettrace
 	url = https://github.com/OpenCloudOS/nettrace.git
+[submodule "third_party/json"]
+	path = third_party/json
+	url = https://github.com/nlohmann/json.git
