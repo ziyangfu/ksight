@@ -66,8 +66,8 @@ int main(int argc, char *argv[]) {
     }
     
     // Handle JSON config generation
-    if (config.generateJson) {
-        if (ipc::ipcWatcher::generateJsonConfig(config, "ipcwatcher")) {
+    if (config.generateConfigJson) {
+        if (ipc::ipcWatcher::generateJsonConfig("ipcwatcher")) {
             fmt::print("JSON configuration file generated successfully: ipcwatcher_args.json\n");
             return 0;
         } else {

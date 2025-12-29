@@ -1,15 +1,143 @@
 #!/bin/bash
 
-# 编译后，开始运行的脚本，将启动HTTPS服务器以及后端的各种工具
-# 考虑shell或者python写
+# Ksight Orchestration Script
+# This script handles building, installation, and setup of Ksight tools and CLI.
 
-# mkdir build && cd build
-#
-# cmake ..
-# make
-# make install
+set -e
 
-# 准备ksightCli 自动补全
-# cd install && sh before_running.sh
+INSTALL_DIR="/usr/local/bin/ksight"
+BIN_DIR="${INSTALL_DIR}/bin"
+CONFIG_DIR="${INSTALL_DIR}/config"
+KSIGHT_CLI_DIR="$(pwd)/ksightCli"
 
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+check_sudo() {
+    if [ "$EUID" -ne 0 ]; then
+        log_error "Please run as root (use sudo)"
+        exit 1
+    fi
+}
+
+check_deps() {
+    log_info "Checking dependencies..."
+    
+    deps=("cmake" "make" "python3" "pip3")
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" &> /dev/null; then
+            log_error "$dep is not installed. Please install it first."
+            exit 1
+        fi
+    done
+    
+    # Check for click
+    if ! python3 -c "import click" &> /dev/null; then
+        log_warn "Python 'click' module not found. Attempting to install..."
+        pip3 install click
+    fi
+    
+    log_info "All dependencies satisfied."
+}
+
+build_and_install() {
+    log_info "Building and installing Ksight tools..."
+    
+    mkdir -p build
+    cd build
+    cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" ..
+    make -j$(nproc)
+    make install
+    cd ..
+    
+    log_info "Tools built and installed to ${INSTALL_DIR}"
+}
+
+install_third_party() {
+    log_info "Installing third-party tools..."
+    
+    ARCH=$(uname -m)
+    THIRD_PARTY_SRC="third_tools/binary/nettrace/${ARCH}"
+    
+    if [ ! -d "${THIRD_PARTY_SRC}" ]; then
+        log_error "Unsupported architecture: ${ARCH} or third-party tools missing."
+        exit 1
+    fi
+    
+    # Create target directories for nettrace
+    mkdir -p "${INSTALL_DIR}/net/nettrace/bin"
+    mkdir -p "${INSTALL_DIR}/net/nettrace/config"
+    
+    # Copy nettrace binary and config
+    cp "${THIRD_PARTY_SRC}/bin/nettrace" "${INSTALL_DIR}/net/nettrace/bin/"
+    cp "${THIRD_PARTY_SRC}/config/nettrace_args.json" "${INSTALL_DIR}/net/nettrace/config/"
+    
+    log_info "Third-party tools installed."
+}
+
+generate_metadata() {
+    log_info "Generating command metadata for ksightCli..."
+    
+    # Generate JSON for own tools
+    "${INSTALL_DIR}/ipc/ipcwatcher/bin/ipcwatcher" --generateConfigJson > /dev/null
+    "${INSTALL_DIR}/net/netwatcher/bin/netwatcher" --generateConfigJson > /dev/null
+    
+    # Create config directories and move generated JSONs
+    mkdir -p "${INSTALL_DIR}/ipc/ipcwatcher/config"
+    mkdir -p "${INSTALL_DIR}/net/netwatcher/config"
+    
+    mv ipcwatcher_args.json "${INSTALL_DIR}/ipc/ipcwatcher/config/"
+    mv netwatcher_args.json "${INSTALL_DIR}/net/netwatcher/config/"
+    
+    # Run gen_cmd_data.py to create commands_data.py
+    # Now scanning the entire INSTALL_DIR
+    python3 "${KSIGHT_CLI_DIR}/gen_cmd_data.py" --scan-dir "${INSTALL_DIR}" --output "${KSIGHT_CLI_DIR}/commands_data.py"
+    
+    log_info "Metadata generated."
+}
+
+setup_ksight_cli() {
+    log_info "Setting up ksightCli..."
+    
+    # Create ksightCli directory in INSTALL_DIR
+    mkdir -p "${INSTALL_DIR}/ksightCli"
+    
+    # Copy ksightCli and generated commands_data.py
+    cp "${KSIGHT_CLI_DIR}/ksightCli" "${INSTALL_DIR}/ksightCli/"
+    cp "${KSIGHT_CLI_DIR}/commands_data.py" "${INSTALL_DIR}/ksightCli/"
+    chmod +x "${INSTALL_DIR}/ksightCli/ksightCli"
+    
+    # Create symlink in /usr/local/bin
+    ln -sf "${INSTALL_DIR}/ksightCli/ksightCli" /usr/local/bin/ksightCli
+    
+    log_info "ksightCli setup complete. You can now use 'ksightCli' command."
+    log_info "To enable tab completion, run: eval \"\$(_KSIGHTCLI_COMPLETE=source ksightCli)\""
+}
+
+main() {
+    check_sudo
+    check_deps
+    build_and_install
+    install_third_party
+    generate_metadata
+    setup_ksight_cli
+    
+    log_info "Ksight installation finished successfully!"
+}
+
+main "$@"

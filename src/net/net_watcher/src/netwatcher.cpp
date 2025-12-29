@@ -9,6 +9,7 @@
 #include "ConfigArgs.h"
 #include "ArgParser.h"
 #include "NetWatcherBpf.h"
+#include "JsonConfigGenerator.h"
 
 std::atomic<bool> gStoped(false);
 
@@ -32,6 +33,17 @@ int main(int argc, char *argv[]) {
         SPDLOG_ERROR("{}", err.what());
         std::cerr << parser;
         return 1;
+    }
+
+    // Handle JSON config generation
+    if (config.generateConfigJson) {
+        if (net::netWatcher::generateJsonConfig("netwatcher")) {
+            fmt::print("JSON configuration file generated successfully: netwatcher_args.json\n");
+            return 0;
+        } else {
+            SPDLOG_ERROR("Failed to generate JSON configuration file");
+            return 1;
+        }
     }
 
     signal(SIGINT, signalHandler);

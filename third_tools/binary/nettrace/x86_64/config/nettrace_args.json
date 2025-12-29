@@ -1,0 +1,446 @@
+{
+    "options": [
+        {
+            "default": "",
+            "flags": [
+                "-s",
+                "--saddr"
+            ],
+            "help": "filter source ip/ipv6 address",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": "",
+            "flags": [
+                "-d",
+                "--daddr"
+            ],
+            "help": "filter dest ip/ipv6 address",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": "",
+            "flags": [
+                "--addr"
+            ],
+            "help": "filter source or dest ip/ipv6 address",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "-S",
+                "--sport"
+            ],
+            "help": "filter source TCP/UDP port",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "-D",
+                "--dport"
+            ],
+            "help": "filter dest TCP/UDP port",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "-P",
+                "--port"
+            ],
+            "help": "filter source or dest TCP/UDP port",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": "",
+            "flags": [
+                "-p",
+                "--proto"
+            ],
+            "help": "filter L3/L4 protocol, such as 'tcp', 'arp'",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "--netns"
+            ],
+            "help": "filter by net namespace inode",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--netns-current"
+            ],
+            "help": "filter by current net namespace",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "--pid"
+            ],
+            "help": "filter by current process id(pid)",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "--min-latency"
+            ],
+            "help": "filter by the minial time to live of the skb in us",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "--pkt-len"
+            ],
+            "help": "filter by the IP packet length (include header) in byte",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": "",
+            "flags": [
+                "--tcp-flags"
+            ],
+            "help": "filter by TCP flags, such as: SAPR",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--basic"
+            ],
+            "help": "use 'basic' trace mode, don't trace skb's life",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--diag"
+            ],
+            "help": "enable 'diagnose' mode",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--diag-quiet"
+            ],
+            "help": "only print abnormal packet",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--diag-keep"
+            ],
+            "help": "don't quit when abnormal packet found",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--drop"
+            ],
+            "help": "skb drop monitor mode, for replace of 'droptrace'",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--drop-stack"
+            ],
+            "help": "print the kernel function call stack of kfree_skb",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--sock"
+            ],
+            "help": "enable 'sock' mode",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--monitor"
+            ],
+            "help": "enable 'monitor' mode",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--rtt"
+            ],
+            "help": "enable 'rtt' in statistics mode",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--rtt-detail"
+            ],
+            "help": "enable 'rtt' in detail mode",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "--filter-srtt"
+            ],
+            "help": "filter by the minial first-acked rtt in ms",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "--filter-minrtt"
+            ],
+            "help": "filter by the minial last-acked rtt in ms",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--latency-show"
+            ],
+            "help": "show latency between kernel functions",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--latency-free"
+            ],
+            "help": "account the latency of skb free",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--latency"
+            ],
+            "help": "enable 'latency' mode",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--latency-summary"
+            ],
+            "help": "show latency by statistics",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": "",
+            "flags": [
+                "-t",
+                "--trace"
+            ],
+            "help": "enable trace group or trace. Some traces are disabled by default, use \"all\" to enable all",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--force"
+            ],
+            "help": "skip some check and force load nettrace",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--ret"
+            ],
+            "help": "show function return value",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--detail"
+            ],
+            "help": "show extern packet info, such as pid, ifname, etc",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--date"
+            ],
+            "help": "print timestamp in date-time format",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "-c",
+                "--count"
+            ],
+            "help": "exit after receiving count packets",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--hooks"
+            ],
+            "help": "print netfilter hooks if dropping by netfilter",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--tiny-show"
+            ],
+            "help": "set this option to show less infomation",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--trace-stack"
+            ],
+            "help": "print call stack for traces or group",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": "",
+            "flags": [
+                "--trace-matcher"
+            ],
+            "help": "traces that can match packet(default all)",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": "",
+            "flags": [
+                "--trace-exclude"
+            ],
+            "help": "traces that should be disabled",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--trace-noclone"
+            ],
+            "help": "don't trace skb clone",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": "",
+            "flags": [
+                "--trace-free"
+            ],
+            "help": "custom the free functions",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--func-stats"
+            ],
+            "help": "only do the statistics for function call",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": 0,
+            "flags": [
+                "--rate-limit"
+            ],
+            "help": "limit the output to N/s, not valid in diag/default mode",
+            "required": false,
+            "type": "int"
+        },
+        {
+            "default": "",
+            "flags": [
+                "--btf-path"
+            ],
+            "help": "custom the path of BTF info of vmlinux",
+            "required": false,
+            "type": "string"
+        },
+        {
+            "default": false,
+            "flags": [
+                "-v"
+            ],
+            "help": "show log information",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "--debug"
+            ],
+            "help": "show debug information",
+            "required": false,
+            "type": "bool"
+        },
+        {
+            "default": false,
+            "flags": [
+                "-V",
+                "--version"
+            ],
+            "help": "show nettrace version",
+            "required": false,
+            "type": "bool"
+        }
+    ],
+    "tool_name": "nettrace"
+}

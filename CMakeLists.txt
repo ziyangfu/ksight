@@ -75,12 +75,12 @@ if (NOT EXISTS ${CONFIG_SRC_GEN_DIR})
 endif ()
 include_directories(${CONFIG_SRC_GEN_DIR})
 
-# 修改默认安装路径为 <build_dir>/install而不是/usr/local
+# 修改默认安装路径为 /usr/local/bin/ksight
 # 可通过 cmake -DCMAKE_INSTALL_PREFIX=<install_dir> 修改路径
-if (${CMAKE_INSTALL_PREFIX} STREQUAL "/usr/local")
-    set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install/)
-endif ()
-message(STATUS "install directory： ${CMAKE_INSTALL_PREFIX}")
+# if (${CMAKE_INSTALL_PREFIX} STREQUAL "/usr/local")
+#     set(CMAKE_INSTALL_PREFIX "/usr/local/bin/ksight")
+# endif ()
+# message(STATUS "install directory： ${CMAKE_INSTALL_PREFIX}")
 
 # include backend common source file
 set(BPF_COMMON_FILES_DIR ${CMAKE_SOURCE_DIR}/src/bpf_common_helper)

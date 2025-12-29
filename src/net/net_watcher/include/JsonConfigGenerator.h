@@ -1,10 +1,10 @@
 /*!
- * \brief Generate JSON configuration file from argument metadata
+ * \brief Generate JSON configuration file from argument metadata for net_watcher
  * \file  JsonConfigGenerator.h
  * */
 
-#ifndef IPC_IPC_WATCHER_JSON_CONFIG_GENERATOR_H
-#define IPC_IPC_WATCHER_JSON_CONFIG_GENERATOR_H
+#ifndef NET_NET_WATCHER_JSON_CONFIG_GENERATOR_H
+#define NET_NET_WATCHER_JSON_CONFIG_GENERATOR_H
 
 #include "ArgMetadata.h"
 #include "nlohmann/json.hpp"
@@ -12,7 +12,7 @@
 #include <string>
 #include <any>
 
-namespace ipc::ipcWatcher {
+namespace net::netWatcher {
 
 /*!
  * \brief Convert std::any to JSON value based on type string
@@ -77,6 +77,6 @@ inline bool generateJsonConfig(const std::string& toolName) {
     }
 }
 
-}  // namespace ipc::ipcWatcher
+}  // namespace net::netWatcher
 
-#endif //IPC_IPC_WATCHER_JSON_CONFIG_GENERATOR_H
+#endif // NET_NET_WATCHER_JSON_CONFIG_GENERATOR_H

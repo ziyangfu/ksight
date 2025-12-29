@@ -28,6 +28,7 @@ struct ConfigArgs {
     int count_info          {0};
     bool rtt_info           {false};
     bool rst_info           {false};
+    bool generateConfigJson {false};
 };
 
 } // namespace net::netWatcher
