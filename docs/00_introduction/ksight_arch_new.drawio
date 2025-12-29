@@ -1,0 +1,58 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/25.0.2 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="25.0.2">
+  <diagram name="ipc_watcher" id="vjbvdwllAMUu8z_T3wv6">
+    <mxGraphModel dx="828" dy="529" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-1" value="netwatcher" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-2" value="nettrace" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="130" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-3" value="ipcwatcher" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="180" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-4" value="cpuwatcher" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="230" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="Bh3Dlk416WVbVsJxtB7b-5" target="Bh3Dlk416WVbVsJxtB7b-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-5" value="ksightCli" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="270" y="160" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="Bh3Dlk416WVbVsJxtB7b-6" target="Bh3Dlk416WVbVsJxtB7b-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-6" value="Connetcor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="160" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-7" value="ksight-UI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="720" y="160" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-8" value="工具开发：&lt;div style=&quot;line-height: 170%;&quot;&gt;Kernel Code: C&lt;div&gt;User Code: C++17&lt;/div&gt;&lt;div&gt;build tool: CMake + Shell + Python&lt;/div&gt;&lt;/div&gt;&lt;div style=&quot;line-height: 170%;&quot;&gt;Connector：TCP server(Python/C++17， TCP、MQTT or DDS)&lt;/div&gt;&lt;div style=&quot;line-height: 170%;&quot;&gt;ksight-UI： based on Web&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="130" y="310" width="430" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-9" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="240" y="100" width="20" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-11" value="TCP/UDS" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="395" y="150" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-12" value="TCP" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="620" y="150" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-14" value="&amp;nbsp;兼容本地与远程" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="600" y="180" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-15" value="非必须" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="370" y="180" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Bh3Dlk416WVbVsJxtB7b-16" value="连接管理&lt;div&gt;指令下发&lt;/div&gt;&lt;div&gt;数据上传&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="480" y="210" width="100" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

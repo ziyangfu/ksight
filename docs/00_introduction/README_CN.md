@@ -1,35 +1,34 @@
 # ksight
 
-> [简体中文](./docs/00_introduction/README_CN.md)
+## 1. 简介
 
-## 1. Introduction
+一款用于Linux内核的可观测性定制命令行工具，覆盖CPU、内存、网络、IPC、文件、虚拟化等子系统
 
-A customized observability command-line toolkit for the Linux kernel, covering subsystems such as CPU, Memory, Network, IPC, File, and Virtualization.
+ksight寓意着洞见内核。
 
-**ksight** means "Kernel Insight."
+ksight family：
+- [ksight](https://github.com/ziyangfu/ksight)：Linux内核可观测性定制工具。使用eBPF，命令行后端，可单独使用，正在开发中
+- [ksight-lite](https://github.com/ziyangfu/ksight-lite)：针对RTOS(AUTOSAR OS?)的可观测性定制工具。命令行，后端，可单独使用，计划开发中
+- [ksight-ui](https://github.com/ziyangfu/ksight-ui)： 跨平台应用软件（可能支持Windows），时间序列图表可视化，可交互。前端，与后端配套，计划开发中。
 
-**The ksight Family:**
+母项目直达：[lmp](https://github.com/linuxkerneltravel/lmp)
 
-- **ksight**: A customized observability tool for the Linux kernel. Built with **eBPF** and a command-line backend. It can be used as a standalone tool. *(In Development)*
-- **ksight-lite**: A customized observability tool targeting RTOS (e.g., AUTOSAR OS). Features a command-line backend and can be used standalone. *(Planned)*
-- **ksight-ui**: A cross-platform application (Windows support planned) for interactive time-series chart visualization. It serves as the frontend designed to complement the backends. *(Planned)*
+## 2. 开发语言与架构
 
-**Parent Project:** [lmp](https://github.com/linuxkerneltravel/lmp)
+Kernel Code: C
 
-## 2. Language & Architecture
+User Code: C++17
 
-- **Kernel Code**: C
-- **User Code**: C++17
-- **Build Tools**: CMake + Shell + Python
-- **Connector**: Network Server (Python/C++17 supporting TCP, HTTPS, MQTT, or DDS)
-- **ksight-UI**: Web-based, potentially deployed via Docker
+build tool: CMake + Shell + Python
 
-![arch](./docs/00_introduction/images_dir/arch.png)
+Connector：Network server(Python/C++17， TCP、HTTPS、MQTT or DDS)
 
-## 3. Installation
+ksight-UI： based on Web， maybe in Docker
 
-### 3.1 One-Click Build and Install
+![image-20251229173315093](./images_dir/arch.png)
 
+## 3. 安装
+### 3.1 一键编译安装
 ```bash
 sudo apt install clang libelf1 libelf-dev zlib1g-dev
 
@@ -38,20 +37,23 @@ git clone --recurse-submodules <ksight_github_address>
 # 将安装在/usr/local/bin/ksight
 sudo ./run.sh
 ```
+### 3.2 安装ksight family
 
-### 3.2 Install the ksight Family (Multi-repo)
+提前入坑...
 
 ```bash
 mkdir ksights
 cd ksights
-rm -rf ./.repo/ 
+rm -rf ./.repo/  # 如此前有同步失败，需要先删除原有.repo目录；如果没有.repo目录，可以忽略此步骤
 repo init -u git@github.com:ziyangfu/ksight-repo.git -b master -m default.xml
 repo sync -d --fetch-submodules
 ```
 
-## 4. How to use?
 
-After building and installing **ksight**, multiple executable files will be generated. Users can call individual tools directly if desired. However, the recommended approach is to use **ksightCli**—a unified command-line frontend that aggregates all tools. It features **Tab auto-completion** for a more seamless user experience. For example:
+## 4. 使用
+ksight编译安装后，会存在多个可执行文件，用户如果想单独使用某个工具，也可以直接使用。
+最推荐的方式是使用ksightCli，这是一个聚合所有工具的命令行前端，具有Tab自动补全的功能。更方便使用。
+例如：
 
 ```bash
 ksightCli netwatcher -h
