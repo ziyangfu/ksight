@@ -1,3 +1,14 @@
+/*!
+    \FIXME: 
+当前由工具生成json文件，然后在ksightCli中读取json文件，方案不合适。
+不合适的原因是，当前的cmdParser，不直观，并且如果要修改，依然需要修改2处
+考虑更换为：
+每个工具自己写一个bash-complete脚本。然后有一个工具，读取bash-complete，
+生成ksightCli的command_data.py
+同时，如果工具想单独使用，也可以有自动补全功能。
+
+*/
+
 #ifndef IPC_IPC_WATCHER_ARG_PARSER_H
 #define IPC_IPC_WATCHER_ARG_PARSER_H
 
