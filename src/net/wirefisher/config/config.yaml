@@ -1,0 +1,36 @@
+kafka:
+  brokers: "localhost:9092"
+  topic: "wirefisher.flow"
+
+# cgroup_module:
+#   cgroup_rule:
+#     target_cgroup: "/sys/fs/cgroup"
+#     rate_bps: 100M
+#     gress: ingress
+#     time_scale: 1s
+
+# eth_module:
+#   eth_rule:
+#     target_if: ens33
+#     rate_bps: 1M
+#     gress: ingress
+#     time_scale: 1s
+
+#process_module:
+#  process_rule:
+#    target_pid: 12284
+#    rate_bps: 1M
+#    gress: ingress
+#    time_scale: 1s
+
+ip_pro_port_module:
+  ip_pro_port_rule:
+    target_ip:          192.168.91.129
+    target_port:        9090
+    target_protocol:    TCP
+    rate_bps:           5M
+    time_scale:         1s
+    gress:              ingress
+    ip_enable:          enable
+    port_enable:        disable
+    protocol_enable:    disable
