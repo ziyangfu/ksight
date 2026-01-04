@@ -30,7 +30,7 @@ ksight-UI： based on Web， maybe in Docker
 ## 3. 安装
 ### 3.1 一键编译安装
 ```bash
-sudo apt install clang libelf1 libelf-dev zlib1g-dev
+sudo apt install clang libelf1 libelf-dev zlib1g-dev libpcap-dev
 
 git clone --recurse-submodules <ksight_github_address>
 # eg：git clone --recurse-submodules https://github.com/ziyangfu/ksight.git
