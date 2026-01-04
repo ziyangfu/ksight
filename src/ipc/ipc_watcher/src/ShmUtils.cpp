@@ -333,7 +333,7 @@ std::string shmUtils::decimalToHex(long long decimal, bool withPrefix) {
 // 这个工具是什么？
 // 解决了什么问题？
 // 采用了什么样的技术，碰到了什么样的问题？
-// 实践中使用怎样？
+// 实践中使用怎样？效果如何？
 
 
 
@@ -345,6 +345,7 @@ std::string shmUtils::decimalToHex(long long decimal, bool withPrefix) {
 
 
 
+// 问题是什么？
 
 
 
