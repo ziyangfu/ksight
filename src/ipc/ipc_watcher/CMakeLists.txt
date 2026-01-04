@@ -18,8 +18,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ---------------------------------------------------------------------
 # 临时，只是为了CMake能包括bpf的代码，方便在CLion中编程
-file(GLOB TEMP_BPF_C_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
-add_library(temp_lib STATIC ${TEMP_BPF_C_SRCS})
+# file(GLOB TEMP_BPF_C_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/bpf/*.bpf.c)
+# add_library(temp_lib STATIC ${TEMP_BPF_C_SRCS})
 # ---------------------------------------------------------------------
 
 set(ARG_PARSE_DIR ${CMAKE_SOURCE_DIR}/third_party/argparse/include)

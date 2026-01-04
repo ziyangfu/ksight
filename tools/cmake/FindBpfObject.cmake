@@ -118,6 +118,10 @@ elseif(BPFOBJECT_BPFTOOL_EXE)
   endif()
 endif()
 
+# Ensure GENERATED_VMLINUX_DIR is an absolute path
+get_filename_component(GENERATED_VMLINUX_DIR "${GENERATED_VMLINUX_DIR}" ABSOLUTE)
+message(STATUS "BPF vmlinux.h directory: ${GENERATED_VMLINUX_DIR}")
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(BpfObject
   REQUIRED_VARS
@@ -204,10 +208,14 @@ macro(bpf_object name input src_gen_dir)
   if(ARCH STREQUAL "x86")
     target_link_libraries(${OUTPUT_TARGET} INTERFACE ${LIBBPF_LIBRARIES} -lelf -lz)
   elseif(ARCH STREQUAL "arm64")
-    target_link_libraries(${OUTPUT_TARGET} INTERFACE 
-    ${LIBBPF_LIBRARIES} 
-    ${ZLIB_ARM64_DIR}/libz.a 
-    ${ELF_ARM64_DIR}/libelf.a )
+    if(ZLIB_ARM64_DIR AND ELF_ARM64_DIR)
+      target_link_libraries(${OUTPUT_TARGET} INTERFACE 
+      ${LIBBPF_LIBRARIES} 
+      ${ZLIB_ARM64_DIR}/libz.a 
+      ${ELF_ARM64_DIR}/libelf.a )
+    else()
+      target_link_libraries(${OUTPUT_TARGET} INTERFACE ${LIBBPF_LIBRARIES} -lelf -lz)
+    endif()
   else()
   endif()
 

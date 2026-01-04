@@ -5,7 +5,7 @@
 #ifndef IPC_IPC_WATCHER_SHM_DATA_H
 #define IPC_IPC_WATCHER_SHM_DATA_H
 
-#include "vmlinux.h"
+// #include "vmlinux.h"
 #include <asm-generic/errno.h>
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>

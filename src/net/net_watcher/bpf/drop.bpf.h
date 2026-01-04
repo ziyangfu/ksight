@@ -40,7 +40,7 @@ int __tp_kfree(struct trace_event_raw_kfree_skb *ctx)
     message->dport = pkt_tuple.dport;
     message->protocol = ctx->protocol;
     message->location = (long)ctx->location;
-    message->drop_reason = ctx->reason;
+    message->drop_reason = BPF_CORE_READ(ctx, reason);
     bpf_ringbuf_submit(message,0);
     if(stack_info)
         getstack(ctx);

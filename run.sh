@@ -127,6 +127,8 @@ setup_ksight_cli() {
     
     log_info "ksightCli setup complete. You can now use 'ksightCli' command."
     log_info "To enable tab completion, run: eval \"\$(_KSIGHTCLI_COMPLETE=source ksightCli)\""
+
+    # 将eval 命令写入.bashrc文件
 }
 
 main() {
