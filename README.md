@@ -31,7 +31,7 @@ A customized observability command-line toolkit for the Linux kernel, covering s
 ### 3.1 One-Click Build and Install
 
 ```bash
-sudo apt install clang libelf1 libelf-dev zlib1g-dev
+sudo apt install clang libelf1 libelf-dev zlib1g-dev libpcap-dev
 
 git clone --recurse-submodules <ksight_github_address>
 # eg：git clone --recurse-submodules https://github.com/ziyangfu/ksight.git
