@@ -328,8 +328,8 @@ void NetWatcherBpf::setRodataFlags() {
     skel_->rodata->icmp_info = config_.icmp_info;
     skel_->rodata->dns_info = config_.dns_info;
     skel_->rodata->stack_info = config_.stack_info;
-    skel_->rodata->mysql_info = config_.mysql_info;
-    skel_->rodata->redis_info = config_.redis_info;
+    // skel_->rodata->mysql_info = config_.mysql_info;
+    // skel_->rodata->redis_info = config_.redis_info;
     skel_->rodata->rtt_info = config_.rtt_info;
     skel_->rodata->rst_info = config_.rst_info;
 }
@@ -430,8 +430,8 @@ NetWatcherBpf::MonitorMode NetWatcherBpf::getMonitorMode() const {
     if (config_.icmp_info) return MonitorMode::MODE_ICMP;
     if (config_.tcp_info) return MonitorMode::MODE_TCP;
     if (config_.dns_info) return MonitorMode::MODE_DNS;
-    if (config_.mysql_info) return MonitorMode::MODE_MYSQL;
-    if (config_.redis_info) return MonitorMode::MODE_REDIS;
+    // if (config_.mysql_info) return MonitorMode::MODE_MYSQL;
+    // if (config_.redis_info) return MonitorMode::MODE_REDIS;
     if (config_.rtt_info) return MonitorMode::MODE_RTT;
     if (config_.rst_info) return MonitorMode::MODE_RST;
     return MonitorMode::MODE_DEFAULT;
@@ -463,14 +463,6 @@ void NetWatcherBpf::printHeader(MonitorMode mode) const {
         fmt::print("{:=^100}\n", "DNS INFORMATION");
         fmt::print("{:<20} {:<20} {:<10} {:<10} {:<5} {:<5} {:<5} {:<5} {:<40} {:<5} {:<5} {:<5}\n", "Saddr", "Daddr", "Id", "Flags", "Qd", "An", "Ns", "Ar", "Qr", "Qc", "Sc", "RX");
         break;
-    // case MonitorMode::MODE_MYSQL:
-    //     fmt::print("{:=^100}\n", "MYSQL INFORMATION");
-    //     fmt::print("{:<10} {:<10} {:<15} {:<10} {:<40} {:<15} {:<10}\n", "Pid", "Tid", "Comm", "Size", "Sql", "Duration/μs", "Request");
-    //     break;
-    // case MonitorMode::MODE_REDIS:
-    //     fmt::print("{:=^100}\n", "REDIS INFORMATION");
-    //     fmt::print("{:<10} {:<15} {:<10} {:<20} {:<15}\n", "Pid", "Comm", "Size", "Redis", "duration/μs");
-    //     break;
     case MonitorMode::MODE_RTT:
         fmt::print("{:=^100}\n", "RTT INFORMATION");
         break;

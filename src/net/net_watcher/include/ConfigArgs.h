@@ -23,12 +23,9 @@ struct ConfigArgs {
     bool time_load          {false};
     bool dns_info           {false};
     bool stack_info         {false};
-    bool mysql_info         {false};
-    bool redis_info         {false};
     int count_info          {0};
     bool rtt_info           {false};
     bool rst_info           {false};
-    bool generateConfigJson {false};
 };
 
 } // namespace net::netWatcher

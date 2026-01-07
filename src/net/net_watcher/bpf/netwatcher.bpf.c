@@ -101,10 +101,10 @@ int BPF_KPROBE(eth_type_trans, struct sk_buff *skb) {
 }
 
 /** in only ipv4 */
-SEC("kprobe/ip_rcv_core") // 跟踪记录ipv4数据包在内核中的处理时间
+SEC("kprobe/ip_rcv_core.isra.0") // 跟踪记录ipv4数据包在内核中的处理时间
 int BPF_KPROBE(ip_rcv_core, struct sk_buff *skb) { return __ip_rcv_core(skb); }
 /** in only ipv6 */
-SEC("kprobe/ip6_rcv_core")
+SEC("kprobe/ip6_rcv_core.isra.0")
 int BPF_KPROBE(ip6_rcv_core, struct sk_buff *skb) {
     return __ip6_rcv_core(skb);
 }

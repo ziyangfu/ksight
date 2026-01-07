@@ -21,8 +21,6 @@ public:
         MODE_ICMP,
         MODE_TCP,
         MODE_DNS,
-        MODE_MYSQL,
-        MODE_REDIS,
         MODE_RTT,
         MODE_RST,
         MODE_DEFAULT

@@ -3,90 +3,111 @@
 
 #include "argparse/argparse.hpp"
 #include "ConfigArgs.h"
-#include "ArgMetadata.h"
 #include <string>
 
 namespace net::netWatcher {
 
 inline int cmdParser(argparse::ArgumentParser& parser, net::netWatcher::ConfigArgs& config) {
-    // Get argument metadata
-    auto argsMetadata = getArgsMetadata();
-    
-    // Configure parser using metadata
-    for (const auto& meta : argsMetadata) {
-        // Create argument with all flags
-        argparse::Argument* arg_ptr;
-        if (meta.flags.size() == 1) {
-            arg_ptr = &parser.add_argument(meta.flags[0]);
-        } else {
-            arg_ptr = &parser.add_argument(meta.flags[0], meta.flags[1]);
-        }
-        auto& arg = *arg_ptr;
-        
-        // Set help text
-        arg.help(meta.help);
-        
-        // Configure based on type
-        if (meta.type == "bool") {
-            bool defaultVal = std::any_cast<bool>(meta.default_value);
-            arg.default_value(defaultVal)
-               .implicit_value(true);
-            
-            // Store into appropriate config field
-            if (meta.flags[0] == "-a" || meta.flags[0] == "--all") {
-                arg.store_into(config.all_conn);
-            } else if (meta.flags[0] == "-e" || meta.flags[0] == "--err") {
-                arg.store_into(config.err_packet);
-            } else if (meta.flags[0] == "-x" || meta.flags[0] == "--extra") {
-                arg.store_into(config.extra_conn_info);
-            } else if (meta.flags[0] == "-r" || meta.flags[0] == "--retrans") {
-                arg.store_into(config.retrans_info);
-            } else if (meta.flags[0] == "-t" || meta.flags[0] == "--time") {
-                arg.store_into(config.layer_time);
-            } else if (meta.flags[0] == "-i" || meta.flags[0] == "--http") {
-                arg.store_into(config.http_info);
-            } else if (meta.flags[0] == "-u" || meta.flags[0] == "--udp") {
-                arg.store_into(config.udp_info);
-            } else if (meta.flags[0] == "-n" || meta.flags[0] == "--net_filter") {
-                arg.store_into(config.net_filter);
-            } else if (meta.flags[0] == "-k" || meta.flags[0] == "--drop_reason") {
-                arg.store_into(config.drop_reason);
-            } else if (meta.flags[0] == "-F" || meta.flags[0] == "--addr_to_func") {
-                arg.store_into(config.addr_to_func);
-            } else if (meta.flags[0] == "-I" || meta.flags[0] == "--icmptime") {
-                arg.store_into(config.icmp_info);
-            } else if (meta.flags[0] == "-S" || meta.flags[0] == "--tcpstate") {
-                arg.store_into(config.tcp_info);
-            } else if (meta.flags[0] == "-L" || meta.flags[0] == "--timeload") {
-                arg.store_into(config.time_load);
-            } else if (meta.flags[0] == "-D" || meta.flags[0] == "--dns") {
-                arg.store_into(config.dns_info);
-            } else if (meta.flags[0] == "-A" || meta.flags[0] == "--stack") {
-                arg.store_into(config.stack_info);
-            } else if (meta.flags[0] == "-M" || meta.flags[0] == "--mysql") {
-                arg.store_into(config.mysql_info);
-            } else if (meta.flags[0] == "-R" || meta.flags[0] == "--redis") {
-                arg.store_into(config.redis_info);
-            } else if (meta.flags[0] == "-T" || meta.flags[0] == "--rtt") {
-                arg.store_into(config.rtt_info);
-            } else if (meta.flags[0] == "-U" || meta.flags[0] == "--rst_counters") {
-                arg.store_into(config.rst_info);
-            } else if (meta.flags[0] == "--generateConfigJson") {
-                arg.store_into(config.generateConfigJson);
-            }
-        } else if (meta.type == "int") {
-            int defaultVal = std::any_cast<int>(meta.default_value);
-            arg.default_value(defaultVal).scan<'i', int>();
-            
-            if (meta.flags[0] == "-s" || meta.flags[0] == "--sport") {
-                arg.store_into(config.sport);
-            } else if (meta.flags[0] == "-d" || meta.flags[0] == "--dport") {
-                arg.store_into(config.dport);
-            } else if (meta.flags[0] == "-C" || meta.flags[0] == "--count") {
-                arg.store_into(config.count_info);
-            }
-        }
-    }
+    parser.add_argument("-a", "--all")
+            .help("set to trace CLOSED connection")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.all_conn);
+    parser.add_argument("-e", "--err")
+            .help("set to trace TCP error packets")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.err_packet);
+    parser.add_argument("-x", "--extra")
+            .help("set to trace extra conn info")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.extra_conn_info);
+    parser.add_argument("-r", "--retrans")
+            .help("set to trace extra retrans info")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.retrans_info);
+    parser.add_argument("-t", "--time")
+            .help("set to trace layer time of each packet")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.layer_time);
+    parser.add_argument("-i", "--http")
+            .help("set to trace http info")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.http_info);
+    parser.add_argument("-s", "--sport")
+            .help("trace this source port only")
+            .default_value(0)
+            .scan<'i', int>()
+            .store_into(config.sport);
+    parser.add_argument("-d", "--dport")
+            .help("trace this destination port only")
+            .default_value(0)
+            .scan<'i', int>()
+            .store_into(config.dport);
+    parser.add_argument("-u", "--udp")
+            .help("trace the udp message")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.udp_info);
+    parser.add_argument("-n", "--net_filter")
+            .help("trace ipv4 packget filter")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.net_filter);
+    parser.add_argument("-k", "--drop_reason")
+            .help("trace kfree")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.drop_reason);
+    parser.add_argument("-F", "--addr_to_func")
+            .help("translation addr to func and offset")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.addr_to_func);
+    parser.add_argument("-I", "--icmptime")
+            .help("set to trace layer time of icmp")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.icmp_info);
+    parser.add_argument("-S", "--tcpstate")
+            .help("set to trace tcpstate")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.tcp_info);
+    parser.add_argument("-L", "--timeload")
+            .help("analysis time load")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.time_load);
+    parser.add_argument("-D", "--dns")
+            .help("set to trace dns information")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.dns_info);
+    parser.add_argument("-A", "--stack")
+            .help("set to trace of stack")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.stack_info);
+    parser.add_argument("-C", "--count")
+            .help("specify the time to count the number of requests")
+            .default_value(0)
+            .scan<'i', int>()
+            .store_into(config.count_info);
+    parser.add_argument("-T", "--rtt")
+            .help("set to trace rtt")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.rtt_info);
+    parser.add_argument("-U", "--rst_counters")
+            .help("set to trace rst")
+            .default_value(false)
+            .implicit_value(true)
+            .store_into(config.rst_info);
 
     parser.add_description("Watch tcp/ip in network subsystem");
     return 0;

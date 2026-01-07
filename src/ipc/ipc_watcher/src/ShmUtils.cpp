@@ -330,6 +330,14 @@ std::string shmUtils::decimalToHex(long long decimal, bool withPrefix) {
 // TCP/IP
 // IPC
 
+
+// 问题设想：
+
+
+
+
+
+
 // 这个工具是什么？
 // 解决了什么问题？
 // 采用了什么样的技术，碰到了什么样的问题？
@@ -416,169 +424,3 @@ int shmUtils::getShmMapCount(unsigned long pfn) {
 }
 
 } // namespace ipc::ipcWatcher
-
-
-// // 416.分割等和子集
-// // 只包含正整数的非空数组 nums，判断是否可以将这个数组分割成两个子集，使得两个子集的元素和相等
-// // 问题转化为： 能否从数组中选出一些元素，使其和等于总和的一半
-// class Solution {
-// public:
-//     bool canPartition(vector<int>& nums) {
-//         // 计算数组总和
-//         int sum = accumulate(nums.begin(), nums.end(), 0);
-        
-//         // 如果总和为奇数，不可能分割成两个相等的子集
-//         if (sum % 2 != 0) {
-//             return false;
-//         }
-//         // 目标和为总和的一半
-//         int target = sum / 2;
-//         // 使用一维DP数组实现01背包
-//         // dp[i]表示是否能选出和为i的子集
-//         std::vector<bool> dp(target + 1, false);
-//         dp[0] = true; // 和为0总是可以实现的（空集）
-//         // 遍历每个数字（物品）
-//         for (int num : nums) {
-//             // 从后往前更新，避免重复使用同一个数字
-//             for (int j = target; j >= num; j--) {
-//                 dp[j] = dp[j] || dp[j - num];
-
-//             }
-//         }
-//         // 返回是否能达到目标和
-//         return dp[target];
-//     }
-// };
-// // 1049.最后一块石头的重量II
-// // 本质：我们要将石头分成两堆，使两堆的重量差最小。这实际上是一个变形的01背包问题。
-// class Solution {
-// public:
-//     int lastStoneWeightII(vector<int>& stones) {
-//         // 计算所有石头的总重量
-//         int sum = accumulate(stones.begin(), stones.end(), 0);
-        
-//         // 目标是尽可能接近总重量的一半
-//         int target = sum / 2;
-        
-//         // 使用01背包思想
-//         // dp[i] 表示是否能选出一些石头使其总重量为i
-//         vector<bool> dp(target + 1, false);
-//         dp[0] = true; // 重量为0总是可以实现的（不选任何石头）
-//         for (int stone : stones) {
-//             for (int j = target; j >= stone; j--) {
-//                 dp[j] = dp[j] || dp[j - stone];
-//             }
-//         }
-
-//         for (int i = target; i >= 0; i--) {
-//             if (dp[i]) {
-//                 return sum - 2 * i;
-//             }
-//         }
-        
-//         // TODO: 实现状态转移逻辑
-//         // 遍历每块石头
-//         // for (int stone : stones) {
-//         //     // 从后往前更新，避免重复使用同一块石头
-//         //     for (int j = target; j >= stone; j--) {
-//         //         dp[j] = dp[j] || dp[j - stone];
-//         //     }
-//         // }
-        
-//         // 找到能组成的最接近target的重量
-//         // for (int i = target; i >= 0; i--) {
-//         //     if (dp[i]) {
-//         //         return sum - 2 * i;
-//         //     }
-//         // }
-        
-//         return 0;
-//     }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 19. [图论：最小生成树之prim](./problems/kamacoder/0053.寻宝-prim.md)
-// 20. [图论：最小生成树之kruskal](./problems/kamacoder/0053.寻宝-Kruskal.md)
-// 21. [图论：拓扑排序](./problems/kamacoder/0117.软件构建.md)
-// 22. [图论：dijkstra（朴素版）](./problems/kamacoder/0047.参会dijkstra朴素.md)
-// 23. [图论：dijkstra（堆优化版）](./problems/kamacoder/0047.参会dijkstra堆.md)
-// 24. [图论：Bellman_ford 算法](./problems/kamacoder/0094.城市间货物运输I.md)
-// 25. [图论：Bellman_ford 队列优化算法（又名SPFA）](./problems/kamacoder/0094.城市间货物运输I-SPFA.md)
-// 26. [图论：Bellman_ford之判断负权回路](./problems/kamacoder/0095.城市间货物运输II.md)
-// 27. [图论：Bellman_ford之单源有限最短路](./problems/kamacoder/0096.城市间货物运输III.md)
-// 28. [图论：Floyd 算法](./problems/kamacoder/0097.小明逛公园.md)
-// 29. [图论：A * 算法](./problems/kamacoder/0126.骑士的攻击astar.md)
-// 30. [图论：最短路算法总结篇](./problems/kamacoder/最短路问题总结篇.md)
-// 31. [图论：图论总结篇](./problems/kamacoder/图论总结篇.md)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 动态规划
-// 494.目标和
-// 474.一和零 
-// 18. [动态规划：完全背包理论基础（二维dp数组）
-// 19. [动态规划：完全背包理论基础（一维dp数组）
-// 518.零钱兑换II
-
-
-
-
-
-
-
-
-
-
-
-
-
-

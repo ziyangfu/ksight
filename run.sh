@@ -85,7 +85,7 @@ install_third_party() {
     
     # Copy nettrace binary and config
     cp "${THIRD_PARTY_SRC}/bin/nettrace" "${INSTALL_DIR}/net/nettrace/bin/"
-    cp "${THIRD_PARTY_SRC}/config/nettrace_args.json" "${INSTALL_DIR}/net/nettrace/config/"
+    cp "${THIRD_PARTY_SRC}/config/bash-complete.sh" "${INSTALL_DIR}/net/nettrace/config/"
     
     log_info "Third-party tools installed."
 }
@@ -93,19 +93,15 @@ install_third_party() {
 generate_metadata() {
     log_info "Generating command metadata for ksightCli..."
     
-    # Generate JSON for own tools
-    "${INSTALL_DIR}/ipc/ipcwatcher/bin/ipcwatcher" --generateConfigJson > /dev/null
-    "${INSTALL_DIR}/net/netwatcher/bin/netwatcher" --generateConfigJson > /dev/null
-    
-    # Create config directories and move generated JSONs
+    # Create config directories and copy bash-complete.sh
     mkdir -p "${INSTALL_DIR}/ipc/ipcwatcher/config"
     mkdir -p "${INSTALL_DIR}/net/netwatcher/config"
     
-    mv ipcwatcher_args.json "${INSTALL_DIR}/ipc/ipcwatcher/config/"
-    mv netwatcher_args.json "${INSTALL_DIR}/net/netwatcher/config/"
+    cp "src/ipc/ipc_watcher/config/bash-complete.sh" "${INSTALL_DIR}/ipc/ipcwatcher/config/"
+    cp "src/net/net_watcher/config/bash-complete.sh" "${INSTALL_DIR}/net/netwatcher/config/"
     
     # Run gen_cmd_data.py to create commands_data.py
-    # Now scanning the entire INSTALL_DIR
+    # Now scanning the entire INSTALL_DIR for bash-complete.sh
     python3 "${KSIGHT_CLI_DIR}/gen_cmd_data.py" --scan-dir "${INSTALL_DIR}" --output "${KSIGHT_CLI_DIR}/commands_data.py"
     
     log_info "Metadata generated."
@@ -128,7 +124,13 @@ setup_ksight_cli() {
     log_info "ksightCli setup complete. You can now use 'ksightCli' command."
     log_info "To enable tab completion, run: eval \"\$(_KSIGHTCLI_COMPLETE=source ksightCli)\""
 
-    # 将eval 命令写入.bashrc文件
+    # Add eval command to .bashrc if not already present
+    BASHRC="${HOME}/.bashrc"
+    COMP_CMD="eval \"\$(_KSIGHTCLI_COMPLETE=source ksightCli)\""
+    if ! grep -qF "${COMP_CMD}" "${BASHRC}"; then
+        log_info "Adding auto-completion to ${BASHRC}..."
+        echo -e "\n# Ksight CLI auto-completion\n${COMP_CMD}" >> "${BASHRC}"
+    fi
 }
 
 main() {
