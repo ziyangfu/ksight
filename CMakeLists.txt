@@ -120,7 +120,7 @@ ExternalProject_Add(libbpf
 ExternalProject_Add(bpftool
         PREFIX bpftool
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/third_party/bpftool/src
-        PATCH_COMMAND sed -i "s/install -m 644 -t/cp/g" Makefile && sed -i "s/cp \$$(LIBBPF_HDRS_DIR) \$</cp \$< \$$@/g" Makefile && sed -i "s/cp \$$(LIBBPF_BOOTSTRAP_HDRS_DIR) \$</cp \$< \$$@/g" Makefile
+        # PATCH_COMMAND sed -i "s/install -m 644 -t/cp/g" Makefile && sed -i "s/cp \$$(LIBBPF_HDRS_DIR) \$</cp \$< \$$@/g" Makefile && sed -i "s/cp \$$(LIBBPF_BOOTSTRAP_HDRS_DIR) \$</cp \$< \$$@/g" Makefile
         CONFIGURE_COMMAND ""
         BUILD_COMMAND make 
             ARCH=${ARCH}
