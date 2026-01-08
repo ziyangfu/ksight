@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     spdlog::set_level(spdlog::level::info);
     
     net::netWatcher::ConfigArgs config;
-    argparse::ArgumentParser parser("net_watcher");
+    argparse::ArgumentParser parser("netwatcher");
     net::netWatcher::cmdParser(parser, config);
 
     try {

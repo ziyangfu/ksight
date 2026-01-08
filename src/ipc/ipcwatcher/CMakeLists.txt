@@ -8,7 +8,7 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      ipc_watcher 工具 CMakeLists 文件
+#      ipcwatcher 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
 set(TOOL_NAME ipcwatcher)
 set(TOOL_BELONG_TO_MODULE ipc)
@@ -82,4 +82,9 @@ set(IPC_WATCHER_INSTALL_DIR ${TOOL_BELONG_TO_MODULE}/${TOOL_NAME})
 # 安装可执行文件到 ${IPC_WATCHER_INSTALL_DIR}/bin
 install(TARGETS ${TOOL_NAME}
         RUNTIME DESTINATION ${IPC_WATCHER_INSTALL_DIR}/bin)
-# 安装配置文件到 ${IPC_WATCHER_INSTALL_DIR}/etc
+# 安装配置文件到 ${IPC_WATCHER_INSTALL_DIR}/config
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/brief.json
+        DESTINATION ${IPC_WATCHER_INSTALL_DIR}/config)
+# 安装脚本文件到 ${IPC_WATCHER_INSTALL_DIR}/scripts
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/scripts/bash-complete.sh
+        DESTINATION ${IPC_WATCHER_INSTALL_DIR}/scripts)

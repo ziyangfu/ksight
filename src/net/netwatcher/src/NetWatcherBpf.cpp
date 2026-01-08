@@ -14,7 +14,7 @@
 #include <bpf/libbpf.h>
 
 #include "NetWatcherBpf.h"
-#include "net_watcher/include/dropreason.h"
+#include "netwatcher/include/dropreason.h"
 #include "spdlog/spdlog.h"
 #include "fmt/format.h"
 // #include "fmt/color.h"

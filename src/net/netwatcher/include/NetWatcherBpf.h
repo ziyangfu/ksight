@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 #include "ConfigArgs.h"
-#include "net_watcher/include/netwatcher.h"
+#include "netwatcher/include/netwatcher.h"
 
 extern "C" {
 #include "net/netwatcher/netwatcher.skel.h"

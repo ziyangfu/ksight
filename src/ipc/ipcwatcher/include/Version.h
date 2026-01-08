@@ -18,7 +18,7 @@ namespace ipc::ipcWatcher {
 
 const std::string kIpcWatcherVersion {"0.0.1"};
 int printVersion() {
-    fmt::print("ipc_watcher version: {}\n", kIpcWatcherVersion);
+    fmt::print("ipcwatcher version: {}\n", kIpcWatcherVersion);
     return 0;
 }
 }  // namespace ipc::ipcWatcher

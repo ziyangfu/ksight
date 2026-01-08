@@ -58,7 +58,6 @@ if(DEFINED TARCH AND TARCH STREQUAL arm64 OR TARCH STREQUAL aarch64)
 else()
 endif()
 
-
 # 判断CPU架构
 # if (NOT DEFINED OS_ARCH)
 #    string(TOLOWER ${CMAKE_HOST_SYSTEM_PROCESSOR} OS_ARCH)
@@ -120,7 +119,6 @@ ExternalProject_Add(libbpf
 ExternalProject_Add(bpftool
         PREFIX bpftool
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/third_party/bpftool/src
-        # PATCH_COMMAND sed -i "s/install -m 644 -t/cp/g" Makefile && sed -i "s/cp \$$(LIBBPF_HDRS_DIR) \$</cp \$< \$$@/g" Makefile && sed -i "s/cp \$$(LIBBPF_BOOTSTRAP_HDRS_DIR) \$</cp \$< \$$@/g" Makefile
         CONFIGURE_COMMAND ""
         BUILD_COMMAND make 
             ARCH=${ARCH}

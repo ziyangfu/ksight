@@ -2,12 +2,14 @@
 import os
 import json
 import re
+import argparse
 
 def generate_commands_data(scan_dir, output_file):
     commands = {}
     
     # Walk through the scan directory to find all bash-complete.sh files
-    # Expected structure: scan_dir/module/tool/config/bash-complete.sh
+    # Expected structure: scan_dir/module/tool/scripts/bash-complete.sh
+    #                     scan_dir/module/tool/config/brief.json
     for root, dirs, files in os.walk(scan_dir):
         for file in files:
             if file == "bash-complete.sh":
@@ -25,18 +27,28 @@ def generate_commands_data(scan_dir, output_file):
                             # Split options and filter out empty strings
                             options = [opt.strip() for opt in options_str.split() if opt.strip()]
                             
-                            # root is something like scan_dir/net/netwatcher/config
-                            # we want the path to the binary: scan_dir/net/netwatcher/bin/netwatcher
-                            
-                            # Get the tool directory (parent of config)
+                            # root is something like scan_dir/net/netwatcher/scripts
+                            # Get the tool directory (parent of scripts)
                             tool_dir = os.path.dirname(root)
                             
                             # Binary path relative to scan_dir
                             bin_path_abs = os.path.join(tool_dir, "bin", tool_name)
                             bin_path_rel = os.path.relpath(bin_path_abs, scan_dir)
                             
+                            # Try to read description from brief.json
+                            description = "No description available"
+                            brief_json_path = os.path.join(tool_dir, "config", "brief.json")
+                            if os.path.exists(brief_json_path):
+                                try:
+                                    with open(brief_json_path, 'r') as brief_f:
+                                        brief_data = json.load(brief_f)
+                                        description = brief_data.get("description", description)
+                                except Exception as e:
+                                    print(f"Warning: Could not read {brief_json_path}: {e}")
+                            
                             commands[tool_name] = {
                                 "bin_path": bin_path_rel,
+                                "description": description,
                                 "options": options
                             }
                 except Exception as e:

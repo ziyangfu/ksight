@@ -1,13 +1,11 @@
 #!/bin/bash
 
 # Ksight Orchestration Script
-# This script handles building, installation, and setup of Ksight tools and CLI.
+# This script handles building, installation, and setup of ksight tools and CLI.
 
 set -e
 
 INSTALL_DIR="/usr/local/bin/ksight"
-BIN_DIR="${INSTALL_DIR}/bin"
-CONFIG_DIR="${INSTALL_DIR}/config"
 KSIGHT_CLI_DIR="$(pwd)/ksightCli"
 
 # Colors for output
@@ -56,7 +54,14 @@ check_deps() {
 }
 
 build_and_install() {
-    log_info "Building and installing Ksight tools..."
+    log_info "Building and installing ksight tools..."
+
+    # 检查当前文件夹，确保在 ksight 根目录下运行 run.sh
+    if [ ! -f "CMakeLists.txt" ] || [ ! -d "src" ] || [ ! -d "ksightCli" ]; then
+        log_error "This script must be run from the ksight root directory."
+        log_error "Please navigate to the ksight project root and try again."
+        exit 1
+    fi
     
     mkdir -p build
     cd build
@@ -70,7 +75,7 @@ build_and_install() {
 
 install_third_party() {
     log_info "Installing third-party tools..."
-    
+    # nettrace的安装   
     ARCH=$(uname -m)
     THIRD_PARTY_SRC="third_tools/binary/nettrace/${ARCH}"
     
@@ -82,24 +87,18 @@ install_third_party() {
     # Create target directories for nettrace
     mkdir -p "${INSTALL_DIR}/net/nettrace/bin"
     mkdir -p "${INSTALL_DIR}/net/nettrace/config"
+    mkdir -p "${INSTALL_DIR}/net/nettrace/scripts"
     
     # Copy nettrace binary and config
     cp "${THIRD_PARTY_SRC}/bin/nettrace" "${INSTALL_DIR}/net/nettrace/bin/"
-    cp "${THIRD_PARTY_SRC}/config/bash-complete.sh" "${INSTALL_DIR}/net/nettrace/config/"
-    
+    cp "${THIRD_PARTY_SRC}/config/brief.json" "${INSTALL_DIR}/net/nettrace/config/"
+    cp "${THIRD_PARTY_SRC}/scripts/bash-complete.sh" "${INSTALL_DIR}/net/nettrace/scripts/"
+
     log_info "Third-party tools installed."
 }
 
 generate_metadata() {
-    log_info "Generating command metadata for ksightCli..."
-    
-    # Create config directories and copy bash-complete.sh
-    mkdir -p "${INSTALL_DIR}/ipc/ipcwatcher/config"
-    mkdir -p "${INSTALL_DIR}/net/netwatcher/config"
-    
-    cp "src/ipc/ipc_watcher/config/bash-complete.sh" "${INSTALL_DIR}/ipc/ipcwatcher/config/"
-    cp "src/net/net_watcher/config/bash-complete.sh" "${INSTALL_DIR}/net/netwatcher/config/"
-    
+    log_info "Generating command metadata for ksightCli..."    
     # Run gen_cmd_data.py to create commands_data.py
     # Now scanning the entire INSTALL_DIR for bash-complete.sh
     python3 "${KSIGHT_CLI_DIR}/gen_cmd_data.py" --scan-dir "${INSTALL_DIR}" --output "${KSIGHT_CLI_DIR}/commands_data.py"
@@ -125,11 +124,27 @@ setup_ksight_cli() {
     log_info "To enable tab completion, run: eval \"\$(_KSIGHTCLI_COMPLETE=source ksightCli)\""
 
     # Add eval command to .bashrc if not already present
-    BASHRC="${HOME}/.bashrc"
+    # When running with sudo, we need to get the actual user's home directory
+    if [ -n "${SUDO_USER}" ]; then
+        # Running under sudo, get the actual user's home directory
+        ACTUAL_USER="${SUDO_USER}"
+        ACTUAL_HOME=$(eval echo ~${SUDO_USER})
+    else
+        # Not running under sudo
+        ACTUAL_USER="${USER}"
+        ACTUAL_HOME="${HOME}"
+    fi
+    
+    BASHRC="${ACTUAL_HOME}/.bashrc"
     COMP_CMD="eval \"\$(_KSIGHTCLI_COMPLETE=source ksightCli)\""
+    
     if ! grep -qF "${COMP_CMD}" "${BASHRC}"; then
         log_info "Adding auto-completion to ${BASHRC}..."
-        echo -e "\n# Ksight CLI auto-completion\n${COMP_CMD}" >> "${BASHRC}"
+        echo -e "\n# ksight CLI auto-completion\n${COMP_CMD}" >> "${BASHRC}"
+        source "${BASHRC}"
+        log_info "Auto-completion added. Please restart shell to enable it"
+    else
+        log_info "Auto-completion already configured in ${BASHRC}"
     fi
 }
 
@@ -141,7 +156,7 @@ main() {
     generate_metadata
     setup_ksight_cli
     
-    log_info "Ksight installation finished successfully!"
+    log_info "ksight installation finished successfully!"
 }
 
 main "$@"
