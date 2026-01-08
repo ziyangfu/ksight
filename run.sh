@@ -2,6 +2,7 @@
 
 # Ksight Orchestration Script
 # This script handles building, installation, and setup of ksight tools and CLI.
+# sample： sudo ./run.sh
 
 set -e
 
@@ -75,6 +76,7 @@ build_and_install() {
 
 install_third_party() {
     log_info "Installing third-party tools..."
+    # third_party 工具，目前采用自主安装的方式进行
     # nettrace的安装   
     ARCH=$(uname -m)
     THIRD_PARTY_SRC="third_tools/binary/nettrace/${ARCH}"
@@ -120,9 +122,6 @@ setup_ksight_cli() {
     # Create symlink in /usr/local/bin
     ln -sf "${INSTALL_DIR}/ksightCli/ksightCli" /usr/local/bin/ksightCli
     
-    log_info "ksightCli setup complete. You can now use 'ksightCli' command."
-    log_info "To enable tab completion, run: eval \"\$(_KSIGHTCLI_COMPLETE=source ksightCli)\""
-
     # Add eval command to .bashrc if not already present
     # When running with sudo, we need to get the actual user's home directory
     if [ -n "${SUDO_USER}" ]; then
@@ -136,7 +135,15 @@ setup_ksight_cli() {
     fi
     
     BASHRC="${ACTUAL_HOME}/.bashrc"
-    COMP_CMD="eval \"\$(_KSIGHTCLI_COMPLETE=source ksightCli)\""
+
+    
+    CLICK_VERSION=$(python3 -c "import click; print(click.__version__.split('.')[0])")
+    if [ "$CLICK_VERSION" -ge "8" ]; then
+        COMP_METHOD="bash_source"
+    else
+        COMP_METHOD="source"
+    fi
+    COMP_CMD="eval \"\$(_KSIGHTCLI_COMPLETE=$COMP_METHOD ksightCli)\""
     
     if ! grep -qF "${COMP_CMD}" "${BASHRC}"; then
         log_info "Adding auto-completion to ${BASHRC}..."
@@ -146,6 +153,8 @@ setup_ksight_cli() {
     else
         log_info "Auto-completion already configured in ${BASHRC}"
     fi
+
+    log_info "ksightCli setup complete. You can now use 'ksightCli' command."
 }
 
 main() {
