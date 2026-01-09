@@ -35,7 +35,8 @@ sudo apt install clang libelf1 libelf-dev zlib1g-dev libpcap-dev
 
 git clone --recurse-submodules <ksight_github_address>
 # eg：git clone --recurse-submodules https://github.com/ziyangfu/ksight.git
-# 将安装在/usr/local/bin/ksight
+# will install in /usr/local/bin/ksight
+# if bpftool error like can not find some source file，try rerun ./run.sh
 sudo ./run.sh
 ```
 

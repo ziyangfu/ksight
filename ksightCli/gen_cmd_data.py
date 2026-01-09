@@ -1,38 +1,55 @@
 #!/usr/bin/env python3
 import os
 import json
+import re
 import argparse
-import sys
 
 def generate_commands_data(scan_dir, output_file):
     commands = {}
     
-    # Walk through the scan directory to find all *_args.json files
-    # Expected structure: scan_dir/module/tool/config/tool_args.json
+    # Walk through the scan directory to find all bash-complete.sh files
+    # Expected structure: scan_dir/module/tool/scripts/bash-complete.sh
+    #                     scan_dir/module/tool/config/brief.json
     for root, dirs, files in os.walk(scan_dir):
         for file in files:
-            if file.endswith("_args.json"):
+            if file == "bash-complete.sh":
                 file_path = os.path.join(root, file)
                 try:
                     with open(file_path, 'r') as f:
-                        data = json.load(f)
-                        tool_name = data.get("tool_name")
-                        if tool_name:
-                            # root is something like scan_dir/net/netwatcher/config
-                            # we want the path to the binary: scan_dir/net/netwatcher/bin/netwatcher
+                        content = f.read()
+                        # Match complete -W 'options' tool_name
+                        # Support multi-line options
+                        match = re.search(r"complete\s+-W\s+['\"](.*?)['\"]\s+(\S+)", content, re.DOTALL)
+                        if match:
+                            options_str = match.group(1)
+                            tool_name = match.group(2)
                             
-                            # Get the tool directory (parent of config)
+                            # Split options and filter out empty strings
+                            options = [opt.strip() for opt in options_str.split() if opt.strip()]
+                            
+                            # root is something like scan_dir/net/netwatcher/scripts
+                            # Get the tool directory (parent of scripts)
                             tool_dir = os.path.dirname(root)
                             
                             # Binary path relative to scan_dir
-                            # For own tools: module/tool/bin/tool
-                            # For third party (like nettrace): module/tool/bin/tool
                             bin_path_abs = os.path.join(tool_dir, "bin", tool_name)
                             bin_path_rel = os.path.relpath(bin_path_abs, scan_dir)
                             
+                            # Try to read description from brief.json
+                            description = "No description available"
+                            brief_json_path = os.path.join(tool_dir, "config", "brief.json")
+                            if os.path.exists(brief_json_path):
+                                try:
+                                    with open(brief_json_path, 'r') as brief_f:
+                                        brief_data = json.load(brief_f)
+                                        description = brief_data.get("description", description)
+                                except Exception as e:
+                                    print(f"Warning: Could not read {brief_json_path}: {e}")
+                            
                             commands[tool_name] = {
                                 "bin_path": bin_path_rel,
-                                "options": data.get("options", [])
+                                "description": description,
+                                "options": options
                             }
                 except Exception as e:
                     print(f"Error processing {file_path}: {e}")
@@ -48,8 +65,8 @@ def generate_commands_data(scan_dir, output_file):
         f.write("\n")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Generate commands_data.py from JSON metadata")
-    parser.add_argument("--scan-dir", required=True, help="Directory to scan for JSON metadata files")
+    parser = argparse.ArgumentParser(description="Generate commands_data.py from bash-complete.sh files")
+    parser.add_argument("--scan-dir", required=True, help="Directory to scan for bash-complete.sh files")
     parser.add_argument("--output", required=True, help="Output Python file path")
     
     args = parser.parse_args()

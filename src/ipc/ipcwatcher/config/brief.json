@@ -1,0 +1,4 @@
+{
+    "tool_name": "ipcwatcher",
+    "description": "a tool for tracing IPC like unix domain socket and shared memory"
+}

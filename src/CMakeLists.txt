@@ -25,7 +25,7 @@ option(BUILD_FS_WATCHER "is build fs_watcher? "             OFF)
 # memory部分
 option(BUILD_MEM_WATCHER "is build mem_watcher? "           OFF)
 # net部分
-option(BUILD_NET_WATCHER "is build net_watcher? "           ON)
+option(BUILD_NET_WATCHER "is build netwatcher? "           ON)
 option(BUILD_DELAY_ANALYSIS "is build delay_analysis? "     OFF)
 # process部分
 option(BUILD_CPU_WATCHER "is build cpu_watcher? "           OFF)
@@ -35,19 +35,19 @@ option(BUILD_KVM_WATCHER "is build kvm_watcher? "           OFF)
 # system_diagnosis
 option(BUILD_STACK_ANALYZER "is build stack_analyzer? "     OFF)
 # IPC
-option(BUILD_IPC_WATCHER "is build ipc_watcher? "     ON)
+option(BUILD_IPC_WATCHER "is build ipcwatcher? "     ON)
 
 if (BUILD_ALL)
     message(STATUS "build all tools")
     add_subdirectory(memory/mem_watcher)
-    add_subdirectory(net/net_watcher)
+    add_subdirectory(net/netwatcher)
     add_subdirectory(net/delay_analysis)
     add_subdirectory(process/cpu_watcher)
     add_subdirectory(process/proc_image)
     # TODO(fzy, 2024.03.13) 没有kvm的环境
     # add_subdirectory(hypervisor/kvm_watcher)
     add_subdirectory(system_diagnosis/stack_analyzer)
-    add_subdirectory(ipc/ipc_watcher)
+    add_subdirectory(ipc/ipcwatcher)
 else ()
     message(STATUS "----------------------------------------")
     message(STATUS "build fs_watcher? ${BUILD_FS_WATCHER}")
@@ -60,9 +60,9 @@ else ()
         add_subdirectory(memory/mem_watcher)
     endif ()
 
-    message(STATUS "build net_watcher? ${BUILD_NET_WATCHER}")
+    message(STATUS "build netwatcher? ${BUILD_NET_WATCHER}")
     if (BUILD_NET_WATCHER)
-        add_subdirectory(net/net_watcher)
+        add_subdirectory(net/netwatcher)
     endif ()
 
     message(STATUS "build delay_analysis? ${BUILD_DELAY_ANALYSIS}")
@@ -90,9 +90,9 @@ else ()
         add_subdirectory(system_diagnosis/stack_analyzer)
     endif ()
 
-    message(STATUS "build ipc_watcher? ${BUILD_IPC_WATCHER}")
+    message(STATUS "build ipcwatcher? ${BUILD_IPC_WATCHER}")
     if (BUILD_IPC_WATCHER)
-        add_subdirectory(ipc/ipc_watcher)
+        add_subdirectory(ipc/ipcwatcher)
     endif ()
 
     message(STATUS "----------------------------------------")

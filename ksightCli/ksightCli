@@ -1,107 +1,124 @@
 #!/usr/bin/env python3
-import click
-import os
-import subprocess
-import sys
+"""
+ksightCli - ksight 内核可观测性工具集的统一命令行界面。
 
-# Add the script's directory to sys.path to ensure we can import commands_data
+该脚本动态加载工具元数据，并利用 Click 框架提供参数解析和自动补全功能。
+执行时，它会根据用户输入调用相应的后端二进制工具。
+"""
+
+import os
+import sys
+import subprocess
+import click
+
+# 确保可以导入同目录下的元数据文件
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
-# Try to import generated commands data
 try:
     from commands_data import COMMANDS
 except ImportError:
     COMMANDS = {}
 
-@click.group(name="ksightCli", context_settings=dict(
-    help_option_names=['-h', '--help'],
-))
+def get_install_root():
+    """
+    智能获取 ksight 的安装根目录。
+    """
+    # 1. 检查是否在标准安装路径下运行
+    if os.path.basename(script_dir) == "ksightCli":
+        return os.path.dirname(script_dir)
+    
+    # 2. 检查默认安装路径
+    default_path = "/usr/local/bin/ksight"
+    if os.path.exists(default_path):
+        return default_path
+    
+    # 3. 检查开发环境下的构建目录
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    dev_path = os.path.join(base_dir, "build", "install")
+    if os.path.exists(dev_path):
+        return dev_path
+        
+    return default_path
+
+@click.group(context_settings=dict(help_option_names=['-h', '--help']))
 def cli():
-    """Ksight CLI - A unified interface for kernel observability tools."""
+    """ksightCli: ksight 工具集的统一入口。"""
     pass
 
-def create_command(name, info):
-    @click.command(name=name, context_settings=dict(
-        ignore_unknown_options=True,
-        allow_extra_args=True,
-    ))
-    @click.pass_context
-    def cmd(ctx, **kwargs):
-        """Execute the backend tool."""
-        # Determine install_dir
-        # 1. Check if we are running from the installed location: /usr/local/bin/ksight/ksightCli/ksightCli
-        #    In this case, the install_dir is the parent of our directory.
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        if os.path.basename(script_dir) == "ksightCli":
-            install_dir = os.path.dirname(script_dir)
-        else:
-            # 2. Fallback to default or local build
-            install_dir = "/usr/local/bin/ksight"
-            if not os.path.exists(install_dir):
-                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                install_dir = os.path.join(base_dir, "build", "install")
-            
-        bin_path = os.path.join(install_dir, info["bin_path"])
+def create_command_callback(tool_name, tool_info):
+    """
+    为指定的工具创建一个 Click 命令回调函数。
+    """
+    def callback(**kwargs):
+        install_root = get_install_root()
+        bin_path = os.path.join(install_root, tool_info['bin_path'])
         
         if not os.path.exists(bin_path):
-            click.echo(f"Error: Backend tool not found at {bin_path}", err=True)
+            click.secho(f"错误: 找不到后端工具二进制文件: {bin_path}", fg='red', err=True)
             sys.exit(1)
             
-        # Get all arguments passed after the command name from sys.argv
-        # to ensure we pass everything (including flags click might have parsed)
+        # 组装命令行参数
+        # 我们从 sys.argv 中提取原始参数，以确保传递给后端工具的格式完全正确
         try:
-            # Find the command name in sys.argv to get everything after it
-            # We use the last occurrence in case the tool name matches something earlier
-            cmd_name = ctx.command.name
-            # Find all indices of cmd_name
-            indices = [i for i, x in enumerate(sys.argv) if x == cmd_name]
-            if indices:
-                raw_args = sys.argv[indices[-1] + 1:]
-            else:
-                raw_args = ctx.args
-        except Exception:
-            raw_args = ctx.args
+            # 找到工具名在参数列表中的位置，取其后的所有内容
+            idx = sys.argv.index(tool_name)
+            cmd_args = sys.argv[idx + 1:]
+        except ValueError:
+            cmd_args = []
             
-        # Combine binary path with passed arguments
-        args = [bin_path] + raw_args
+        full_cmd = [bin_path] + cmd_args
         
         try:
-            # Execute the tool and pipe output
-            subprocess.run(args)
+            # 执行后端工具，保持交互性
+            # 透传退出码
+            result = subprocess.run(full_cmd)
+            sys.exit(result.returncode)
         except KeyboardInterrupt:
-            pass
+            # 优雅处理 Ctrl+C
+            sys.exit(130)
         except Exception as e:
-            click.echo(f"Error executing tool: {e}", err=True)
+            click.secho(f"执行工具时出错: {e}", fg='red', err=True)
             sys.exit(1)
-
-    # Add options dynamically for help and tab completion
-    for opt in info.get("options", []):
-        flags = opt["flags"]
-        help_text = opt["help"]
-        opt_type = opt["type"]
-        
-        # Map JSON types to click types
-        click_type = click.UNPROCESSED
-        if opt_type == "int":
-            click_type = int
-        elif opt_type == "string":
-            click_type = str
-        elif opt_type == "bool":
-            click_type = bool
-
-        # For boolean flags, we use is_flag=True
-        if opt_type == "bool":
-            cmd = click.option(*flags, help=help_text, is_flag=True)(cmd)
-        else:
-            cmd = click.option(*flags, help=help_text, type=click_type)(cmd)
             
-    return cmd
+    return callback
 
-# Register all commands from metadata
-for name, info in COMMANDS.items():
-    cli.add_command(create_command(name, info))
+def build_cli():
+    """
+    根据 COMMANDS 元数据动态构建 CLI 结构。
+    """
+    for tool_name, tool_info in COMMANDS.items():
+        desc = tool_info.get('description', f"运行 {tool_name} 工具")
+        options = tool_info.get('options', [])
+        
+        # 创建命令对象
+        # 关键点：设置 help_option_names=[] 禁用 Click 对该子命令的帮助拦截。
+        # 这样 -h 和 --help 就会被视为普通参数透传给后端工具。
+        cmd = click.Command(
+            name=tool_name,
+            help=desc,
+            callback=create_command_callback(tool_name, tool_info),
+            context_settings=dict(
+                ignore_unknown_options=True,
+                allow_extra_args=True,
+                help_option_names=[] 
+            )
+        )
+        
+        # 注册选项以支持自动补全
+        seen_flags = set()
+        for opt_str in options:
+            if opt_str.startswith('-') and opt_str not in seen_flags:
+                # 注册为选项，让 Click 的补全机制能够识别这些 flag。
+                # 使用 expose_value=False 避免污染回调参数。
+                option = click.Option([opt_str], is_flag=True, expose_value=False, help=f"传递 {opt_str} 给后端工具")
+                cmd.params.append(option)
+                seen_flags.add(opt_str)
+        
+        cli.add_command(cmd)
 
 if __name__ == "__main__":
+    build_cli()
+    # 设置程序名称，方便帮助信息显示
     cli(prog_name="ksightCli")

@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # Ksight Orchestration Script
-# This script handles building, installation, and setup of Ksight tools and CLI.
+# This script handles building, installation, and setup of ksight tools and CLI.
+# sample： sudo ./run.sh
 
 set -e
 
 INSTALL_DIR="/usr/local/bin/ksight"
-BIN_DIR="${INSTALL_DIR}/bin"
-CONFIG_DIR="${INSTALL_DIR}/config"
 KSIGHT_CLI_DIR="$(pwd)/ksightCli"
 
 # Colors for output
@@ -56,7 +55,14 @@ check_deps() {
 }
 
 build_and_install() {
-    log_info "Building and installing Ksight tools..."
+    log_info "Building and installing ksight tools..."
+
+    # 检查当前文件夹，确保在 ksight 根目录下运行 run.sh
+    if [ ! -f "CMakeLists.txt" ] || [ ! -d "src" ] || [ ! -d "ksightCli" ]; then
+        log_error "This script must be run from the ksight root directory."
+        log_error "Please navigate to the ksight project root and try again."
+        exit 1
+    fi
     
     mkdir -p build
     cd build
@@ -70,7 +76,8 @@ build_and_install() {
 
 install_third_party() {
     log_info "Installing third-party tools..."
-    
+    # third_party 工具，目前采用自主安装的方式进行
+    # nettrace的安装   
     ARCH=$(uname -m)
     THIRD_PARTY_SRC="third_tools/binary/nettrace/${ARCH}"
     
@@ -82,30 +89,20 @@ install_third_party() {
     # Create target directories for nettrace
     mkdir -p "${INSTALL_DIR}/net/nettrace/bin"
     mkdir -p "${INSTALL_DIR}/net/nettrace/config"
+    mkdir -p "${INSTALL_DIR}/net/nettrace/scripts"
     
     # Copy nettrace binary and config
     cp "${THIRD_PARTY_SRC}/bin/nettrace" "${INSTALL_DIR}/net/nettrace/bin/"
-    cp "${THIRD_PARTY_SRC}/config/nettrace_args.json" "${INSTALL_DIR}/net/nettrace/config/"
-    
+    cp "${THIRD_PARTY_SRC}/config/brief.json" "${INSTALL_DIR}/net/nettrace/config/"
+    cp "${THIRD_PARTY_SRC}/scripts/bash-complete.sh" "${INSTALL_DIR}/net/nettrace/scripts/"
+
     log_info "Third-party tools installed."
 }
 
 generate_metadata() {
-    log_info "Generating command metadata for ksightCli..."
-    
-    # Generate JSON for own tools
-    "${INSTALL_DIR}/ipc/ipcwatcher/bin/ipcwatcher" --generateConfigJson > /dev/null
-    "${INSTALL_DIR}/net/netwatcher/bin/netwatcher" --generateConfigJson > /dev/null
-    
-    # Create config directories and move generated JSONs
-    mkdir -p "${INSTALL_DIR}/ipc/ipcwatcher/config"
-    mkdir -p "${INSTALL_DIR}/net/netwatcher/config"
-    
-    mv ipcwatcher_args.json "${INSTALL_DIR}/ipc/ipcwatcher/config/"
-    mv netwatcher_args.json "${INSTALL_DIR}/net/netwatcher/config/"
-    
+    log_info "Generating command metadata for ksightCli..."    
     # Run gen_cmd_data.py to create commands_data.py
-    # Now scanning the entire INSTALL_DIR
+    # Now scanning the entire INSTALL_DIR for bash-complete.sh
     python3 "${KSIGHT_CLI_DIR}/gen_cmd_data.py" --scan-dir "${INSTALL_DIR}" --output "${KSIGHT_CLI_DIR}/commands_data.py"
     
     log_info "Metadata generated."
@@ -125,10 +122,39 @@ setup_ksight_cli() {
     # Create symlink in /usr/local/bin
     ln -sf "${INSTALL_DIR}/ksightCli/ksightCli" /usr/local/bin/ksightCli
     
-    log_info "ksightCli setup complete. You can now use 'ksightCli' command."
-    log_info "To enable tab completion, run: eval \"\$(_KSIGHTCLI_COMPLETE=source ksightCli)\""
+    # Add eval command to .bashrc if not already present
+    # When running with sudo, we need to get the actual user's home directory
+    if [ -n "${SUDO_USER}" ]; then
+        # Running under sudo, get the actual user's home directory
+        ACTUAL_USER="${SUDO_USER}"
+        ACTUAL_HOME=$(eval echo ~${SUDO_USER})
+    else
+        # Not running under sudo
+        ACTUAL_USER="${USER}"
+        ACTUAL_HOME="${HOME}"
+    fi
+    
+    BASHRC="${ACTUAL_HOME}/.bashrc"
 
-    # 将eval 命令写入.bashrc文件
+    
+    CLICK_VERSION=$(python3 -c "import click; print(click.__version__.split('.')[0])")
+    if [ "$CLICK_VERSION" -ge "8" ]; then
+        COMP_METHOD="bash_source"
+    else
+        COMP_METHOD="source"
+    fi
+    COMP_CMD="eval \"\$(_KSIGHTCLI_COMPLETE=$COMP_METHOD ksightCli)\""
+    
+    if ! grep -qF "${COMP_CMD}" "${BASHRC}"; then
+        log_info "Adding auto-completion to ${BASHRC}..."
+        echo -e "\n# ksight CLI auto-completion\n${COMP_CMD}" >> "${BASHRC}"
+        source "${BASHRC}"
+        log_info "Auto-completion added. Please restart shell to enable it"
+    else
+        log_info "Auto-completion already configured in ${BASHRC}"
+    fi
+
+    log_info "ksightCli setup complete. You can now use 'ksightCli' command."
 }
 
 main() {
@@ -139,7 +165,7 @@ main() {
     generate_metadata
     setup_ksight_cli
     
-    log_info "Ksight installation finished successfully!"
+    log_info "ksight installation finished successfully!"
 }
 
 main "$@"
