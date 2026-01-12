@@ -49,7 +49,7 @@ char _license[] SEC("license") = "GPL";
 #define bpf_debug(fmt, ...) {}
 #endif
 
-#define TASK_RUNNING			0x00000000
+#define TASK_RUNNING			0x00000000   // include/linux/sched.h
 #define TASK_INTERRUPTIBLE		0x00000001
 #define TASK_UNINTERRUPTIBLE		0x00000002
 #define TASK_NEW			0x00000800
@@ -57,7 +57,7 @@ char _license[] SEC("license") = "GPL";
 
 #define SCHED_EXT		7
 
-#define TIF_NEED_RESCHED 1
+#define TIF_NEED_RESCHED 1  // arch/arm64/include/asm/thread_info.h, X86是3
 
 #define BUDGET_CALLBACK	0
 #define PERIOD_CALLBACK	1
@@ -69,17 +69,13 @@ char _license[] SEC("license") = "GPL";
 
 UEI_DEFINE(uei);
 
-const volatile s32 usersched_pid;
+const volatile s32 usersched_pid;  // 当前rms服务的pid
 
 enum rms_timer_set_remain_mode {
 	SET_REMAIN_MODE_REMAIN = 0,
 	SET_REMAIN_MODE_ABS = 1,
 };
-// struct rms_timer: 对 BPF 原生 bpf_timer 的封装。
-// t: 内核 bpf_timer 结构体。
-// periodic_time: 如果是周期定时器，记录周期时长。
-// remain_time: 记录定时器被取消时的剩余时间，用于任务迁移或暂停后恢复。
-// callback_index: 区分是预算定时器还是周期定时器。
+
 struct rms_timer {
 	struct bpf_timer t;
 	u64 periodic_time;
@@ -89,12 +85,12 @@ struct rms_timer {
 	u64 callback_index;
 	pid_t arg;
 };
-// 存储每个 RMS 任务的核心属性
+
 struct task_attr {
-	int cpu;   // 任务绑定的 CPU
-	u64 budget; // 任务在每个周期内的最大允许执行时间
-	u64 period; // 任务的周期
-	u64 is_yield;  // 标记任务是否已用尽其预算并“让出”（yield）了 CPU
+	int cpu;
+	u64 budget;
+	u64 period;
+	u64 is_yield;
 #ifdef FEATURE_MIGRATION
 	u64 is_migrate;
 #endif
@@ -104,8 +100,8 @@ struct utilization_entry {
 	double cpu_utilization;
 	int task_num;
 };
-// 实现了一个简单的 per-CPU 环形队列，用于存放就绪任务的 PID
-struct task_queue {
+
+struct task_queue {   // RMS的CPU就绪队列
 	struct bpf_spin_lock lock;
 	pid_t pid[MAX_TASK_NR];
 	uint head, tail;
@@ -186,7 +182,7 @@ static bool cpu_queue_push(int cpu, pid_t pid)
 		return false;
 	}
 
-	queue->pid[queue->tail] = pid;
+	queue->pid[queue->tail] = pid;    // 插在队列尾部
 	queue->tail = (queue->tail + 1) % MAX_TASK_NR;
 	bpf_spin_unlock(lock);
 	return true;
@@ -345,13 +341,13 @@ static int rms_callback_budget(void *map, int *key, struct rms_timer *timer)
 		}
 	}
 #endif
-
+	// 请求一次内核抢占，强制当前任务停止执行
 	scx_bpf_kick_cpu(p_attr->cpu, SCX_KICK_PREEMPT);
 	timer->pending = 0;
 	refresh_timer(timer);
 	return 0;
 }
-
+// 周期时间到后的回调函数
 static int rms_callback_period(void *map, int *key, struct rms_timer *timer)
 {
 	pid_t pid = timer->arg;
@@ -378,8 +374,8 @@ static int rms_callback_period(void *map, int *key, struct rms_timer *timer)
 	bpf_debug("bpf push %d %s on cpu%d", pid, t->comm, t_attr->cpu);
 
 	cpu_queue_push(t_attr->cpu, pid);
-	scx_bpf_kick_cpu(t_attr->cpu, SCX_KICK_PREEMPT);
-	t_budget->remain_time = t_attr->budget;
+	scx_bpf_kick_cpu(t_attr->cpu, SCX_KICK_PREEMPT); // 以中断的形式唤醒？
+	t_budget->remain_time = t_attr->budget;  // 剩下的时间为什么是预算？
 	timer->pending = 0;
 	bpf_task_release(t);
 	refresh_timer(timer);
@@ -391,7 +387,7 @@ rms_exited:
 	exit_rms_task(timer->arg);
 	return 0;
 }
-
+// 定时器，到期时间，周期，callback号，flag
 static void rms_timer_start(struct rms_timer *timer, u64 tim, u64 period_tim, u64 callback_index, pid_t arg)
 {
 	if (timer->pending) {
@@ -404,7 +400,7 @@ static void rms_timer_start(struct rms_timer *timer, u64 tim, u64 period_tim, u6
 	timer->remain_time = tim - rms_get_timestamp();
 	timer->callback_index = callback_index;
 	timer->arg = arg;
-
+	// 定时器到期后的回调函数
 	if (timer->callback_index == BUDGET_CALLBACK)
 		bpf_timer_set_callback(&timer->t, (void *)rms_callback_budget);
 	if (timer->callback_index == PERIOD_CALLBACK)
@@ -445,7 +441,8 @@ void BPF_STRUCT_OPS(rms_enqueue, struct task_struct *p, u64 enq_flags)
 	struct task_attr *p_attr;
 
 	if (is_usersched_task(p)) {
-		scx_bpf_dispatch(p, SCX_DSQ_LOCAL, SCX_SLICE_DFL, enq_flags);
+		// scx_bpf_dispatch(p, SCX_DSQ_LOCAL, SCX_SLICE_DFL, enq_flags);
+		scx_bpf_dsq_insert(p, SCX_DSQ_LOCAL, SCX_SLICE_DFL, enq_flags);
 		return;
 	}
 
@@ -458,7 +455,8 @@ void BPF_STRUCT_OPS(rms_enqueue, struct task_struct *p, u64 enq_flags)
 
 	if (!p_attr->is_yield) {
 		bpf_debug("bpf dispatch %d %s to cpu%d dsq", p->pid, p->comm, cpu);
-		scx_bpf_dispatch_vtime(p, cpu_to_dsq(cpu), SCX_SLICE_INF, p_attr->period, 0);
+		// scx_bpf_dispatch_vtime(p, cpu_to_dsq(cpu), SCX_SLICE_INF, p_attr->period, 0);
+		scx_bpf_dsq_insert_vtime(p, cpu_to_dsq(cpu), SCX_SLICE_INF, p_attr->period, 0);
 		if (cpu != cur_cpu)
 			scx_bpf_kick_cpu(cpu, SCX_KICK_PREEMPT);
 	} else {
@@ -511,7 +509,8 @@ static int dispatch_loop(u32 index, void *context)
 	}
 #endif
 	bpf_debug("bpf dispatch %d %s on cpu%d", p->pid, p->comm, cpu);
-	scx_bpf_dispatch_vtime(p, cpu_to_dsq(cpu), SCX_SLICE_INF, t_attr->period, 0);
+	// scx_bpf_dispatch_vtime(p, cpu_to_dsq(cpu), SCX_SLICE_INF, t_attr->period, 0);
+	scx_bpf_dsq_insert_vtime(p, cpu_to_dsq(cpu), SCX_SLICE_INF, t_attr->period, 0);
 	bpf_task_release(p);
 	return 0;
 }
@@ -519,7 +518,8 @@ static int dispatch_loop(u32 index, void *context)
 void BPF_STRUCT_OPS(rms_dispatch, s32 cpu, struct task_struct *prev)
 {
 	bpf_loop(MAX_TASK_NR, dispatch_loop, &cpu, 0);
-	scx_bpf_consume(cpu_to_dsq(cpu));
+	// scx_bpf_consume(cpu_to_dsq(cpu));
+	scx_bpf_dsq_move_to_local(cpu_to_dsq(cpu));
 }
 
 void BPF_STRUCT_OPS(rms_running, struct task_struct *p)
@@ -562,7 +562,7 @@ bool BPF_STRUCT_OPS(rms_yield, struct task_struct *from, struct task_struct *to)
 	struct task_attr *p_attr = bpf_map_lookup_elem(&task_attr_hmap, &pid);
 
 	/* enforce kernel to call bpf_enqueue */
-	from->scx.slice = 0;
+	from->scx.slice = 0;  // 强制立即调度，不听tick周期的节拍，可运行时间到0，也就是触发调度
 	if (is_usersched_task(from))
 		return true;
 
@@ -577,11 +577,12 @@ bool BPF_STRUCT_OPS(rms_yield, struct task_struct *from, struct task_struct *to)
 	}
 	return true;
 }
-
+// 用户空间调用 设置 CPU 亲和性（如 sched_setaffinity）的接口时触发
 void BPF_STRUCT_OPS(rms_set_cpumask, struct task_struct *p, const struct cpumask *cpumask)
 {
+	// 程序绑定CPU核心，然后bpf_get_smp_processor_id获取到
 	bpf_debug("bpf set_cpumask %d %s on cpu%d", p->pid, p->comm, bpf_get_smp_processor_id());
-	if (is_usersched_task(p))
+	if (is_usersched_task(p))  // rms服务不用rms调度
 		return;
 
 	if (p->policy == SCHED_EXT) {
@@ -595,6 +596,7 @@ void BPF_STRUCT_OPS(rms_set_cpumask, struct task_struct *p, const struct cpumask
 			bpf_debug("bpf first init rms task");
 
 			bpf_debug("rms %d %s budget %ld period %ld", p->pid, p->comm, p_attr->budget, p_attr->period);
+			// 作用是什么?
 			bpf_map_update_elem(&budget_timer_hmap, &pid, &empty_timer, BPF_NOEXIST);
 			bpf_map_update_elem(&sched_timer_hmap, &pid, &empty_timer, BPF_NOEXIST);
 
@@ -603,6 +605,7 @@ void BPF_STRUCT_OPS(rms_set_cpumask, struct task_struct *p, const struct cpumask
 
 			if (p_budget) {
 				rms_timer_init(p_budget, (void *)&budget_timer_hmap);
+				// 预算时间，应用空间赋的值，最终到这里
 				p_budget->remain_time = p_attr->budget;
 			}
 
@@ -611,7 +614,7 @@ void BPF_STRUCT_OPS(rms_set_cpumask, struct task_struct *p, const struct cpumask
 				rms_timer_start(p_sched, rms_get_timestamp() + p_attr->period,
 								p_attr->period, PERIOD_CALLBACK, p->pid);
 			}
-			p->scx.slice = SCX_SLICE_INF;
+			p->scx.slice = SCX_SLICE_INF;  // task运行时间无穷大
 		} else if (p_sched && p_budget && p_attr) {
 			u32 prev_cpu = scx_bpf_task_cpu(p);
 
@@ -635,7 +638,7 @@ void BPF_STRUCT_OPS(rms_disable, struct task_struct *p)
 		exit_rms_task(p->pid);
 	}
 }
-
+// 核心：创建local DSQ 与 global DSQ
 s32 BPF_STRUCT_OPS_SLEEPABLE(rms_init)
 {
 	int err;
@@ -657,7 +660,6 @@ s32 BPF_STRUCT_OPS_SLEEPABLE(rms_init)
 	}
 
 	/* Create the global shared DSQ (for regular tasks) */
-	// 分发队列
 	err = scx_bpf_create_dsq(SHARED_DSQ, -1);
 	if (err < 0) {
 		scx_bpf_error("Failed to create shared DSQ: %d", err);
@@ -676,16 +678,42 @@ void BPF_STRUCT_OPS(rms_exit, struct scx_exit_info *ei)
  * need to use bpf_dispatch function to control the tasks.
  */
 SCX_OPS_DEFINE(rms_ops,
+	// 选择 CPU：为正在唤醒的任务p选择一个目标 CPU。
+	// 任务 p 正在被唤醒（从睡眠状态变为可运行状态）时触发
 	.select_cpu		= (void *)rms_select_cpu,
+	// 任务入队：将任务p放入 BPF 调度器的就绪队列中
+	// 任务p准备运行（成为可运行状态），但未被 select_cpu 直接调度时触发。
+	// 例如，任务p 的时间片用完后再次入队
 	.enqueue		= (void *)rms_enqueue,
+	// 任务出队：从 BPF 调度器的队列中移除任务p
+	// 更新任务的调度属性（如优先级、权重）时，或者在其他需要暂时隔离任务的操作中触发。
 	.dequeue		= (void *)rms_dequeue,
+	// 任务分发：从 BPF 调度器中选择一个或多个任务并将其分发到 CPU 的本地调度队列（DSQ）中
+	// 当前 CPU 的本地 DSQ 变空时（即 CPU 无法从本地队列找到下一个任务时）触发
 	.dispatch		= (void *)rms_dispatch,
+	// 开始运行：任务P即将开始在 CPU 上执行。
+	// 任务P被调度并开始在 CPU 上运行时触发
 	.running		= (void *)rms_running,
+	// 停止运行：任务P即将停止执行（可能是因为时间片耗尽、被抢占或进入睡眠）
+	// 任务P被切换出 CPU 时触发
 	.stopping		= (void *)rms_stopping,
+	// 任务让出：当前任务P主动放弃 CPU。
+	// 任务P调用类似 sched_yield() 的系统调用或通过其他机制主动让出 CPU 时触发。
 	.yield			= (void *)rms_yield,
+	// 设置 CPU 亲和性：更新任务P可以运行的 CPU 集合
+	// 用户空间调用 设置 CPU 亲和性（如 sched_setaffinity）的接口时触发
 	.set_cpumask	= (void *)rms_set_cpumask,
+	// 禁用 BPF 调度：为任务P禁用 BPF 调度。
+	// 任务 退出 SCX 调度类、退出系统，或 BPF 调度器 被卸载 时触发
 	.disable		= (void *)rms_disable,
+	// 初始化 BPF 调度器：在调度器加载后执行一次性的初始化操作。
+	// BPF 调度器 首次加载 到内核时触发
 	.init			= (void *)rms_init,
+	// 清理 BPF 调度器：执行清理操作
+	// BPF 调度器 被卸载 或 加载失败 时触发
 	.exit			= (void *)rms_exit,
+	// kernel/sched/ext.c
+	// SCX_OPS_ENQ_LAST: 控制当 CPU 上没有其他可运行任务时的行为。默认情况下，调度器会继续运行当前任务，但设置此标志后会将任务传递给 BPF 调度器处理
+	// SCX_OPS_SWITCH_PARTIAL 控制调度器的切换模式。设置时只处理 SCHED_EXT 策略的任务，清除时也处理 SCHED_NORMAL 任务。
 	.flags			= SCX_OPS_ENQ_LAST | SCX_OPS_SWITCH_PARTIAL,
 	.name			= "rms");
