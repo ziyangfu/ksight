@@ -1,65 +1,51 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <errno.h>
-#include <arpa/inet.h>
+#include <atomic>
+#include <csignal>
+#include <iostream>
 
-#include "tcpaccd.skel.h"
+#include "ArgParser.h"
+#include "ConfigArgs.h"
+#include "TcpAccdBpf.h"
+#include "argparse/argparse.hpp"
+#include "spdlog/spdlog.h"
 
-static volatile bool exiting = false;
+std::atomic<bool> gStoped(false);
 
-static void sig_handler(int sig)
-{
-    exiting = true;
+void signalHandler(int signum) {
+  if (signum == SIGINT) {
+    SPDLOG_INFO("Received SIGINT, preparing to exit...");
+    gStoped = true;
+  }
 }
 
-int main(int argc, char **argv)
-{
-    struct bpf_redir *skel;
-    int cgfd = -1, ret = 1;
+int main(int argc, char **argv) {
+  spdlog::set_level(spdlog::level::info);
+  signal(SIGINT, signalHandler);
 
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
+  net::tcpAccd::ConfigArgs config;
+  argparse::ArgumentParser parser("tcpaccd");
+  net::tcpAccd::cmdParser(parser, config);
 
-    // 打开并加载 BPF 程序
-    skel = tcpaccd__open();
-    if (!skel) {
-        fprintf(stderr, "Failed to open BPF skeleton\n");
-        goto cleanup;
-    }
+  try {
+    parser.parse_args(argc, argv);
+  } catch (const std::runtime_error &err) {
+    SPDLOG_ERROR("{}", err.what());
+    return 1;
+  }
 
-    // 加载 BPF 程序
-    ret = tcpaccd__load(skel);
-    if (ret) {
-        fprintf(stderr, "Failed to load BPF programs\n");
-        goto cleanup;
-    }
+  net::tcpAccd::TcpAccdBpf tcpAccdBpf(config);
 
-    // 附加 sockops 程序到 cgroup
-    cgfd = open("/sys/fs/cgroup/unified", O_RDONLY);
-    if (cgfd < 0) {
-        fprintf(stderr, "Failed to open cgroup\n");
-        goto cleanup;
-    }
+  tcpAccdBpf.open();
+  tcpAccdBpf.load();
+  tcpAccdBpf.attach();
 
-    ret = tcpaccd__attach(skel);
-    if (ret) {
-        fprintf(stderr, "Failed to attach BPF programs\n");
-        goto cleanup;
-    }
+  SPDLOG_INFO("tcpaccd is running. Press Ctrl+C to stop.");
 
-    printf("Socket acceleration loaded successfully! Press Ctrl+C to exit.\n");
+  while (!gStoped) {
+    tcpAccdBpf.poll();
+  }
 
-    while (!exiting) {
-        sleep(1);
-    }
+  tcpAccdBpf.destroy();
+  SPDLOG_INFO("tcpaccd exited.");
 
-    ret = 0;
-
-cleanup:
-    if (cgfd >= 0)
-        close(cgfd);
-    tcpaccd__destroy(skel);
-    return ret;
+  return 0;
 }
