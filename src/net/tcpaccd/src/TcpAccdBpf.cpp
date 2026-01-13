@@ -4,12 +4,6 @@
 #include <iostream>
 #include <unistd.h>
 
-extern "C" {
-#include "net/tcpaccd/tcpaccd.skel.h"
-#include <bpf/bpf.h>
-#include <bpf/libbpf.h>
-}
-
 namespace net::tcpAccd {
 
 TcpAccdBpf::TcpAccdBpf(ConfigArgs &config)
