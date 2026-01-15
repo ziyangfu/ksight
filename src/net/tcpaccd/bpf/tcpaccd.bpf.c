@@ -27,14 +27,6 @@
 #include <bpf/bpf_helpers.h>
 
 #define MAX_ENTRIES 65535
-
-struct {
-  __uint(type, BPF_MAP_TYPE_SOCKHASH);
-  __uint(key_size, sizeof(struct sock_key)); // ipv4 + ports
-  __uint(value_size, sizeof(int));
-  __uint(max_entries, MAX_ENTRIES);
-} sock_ops_map SEC(".maps");
-
 // sock_key 结构定义
 struct sock_key {
   __u32 sip4;
@@ -46,6 +38,13 @@ struct sock_key {
   __u32 sport;
   __u32 dport;
 } __attribute__((packed));
+
+struct {
+  __uint(type, BPF_MAP_TYPE_SOCKHASH);
+  __uint(key_size, sizeof(struct sock_key));
+  __uint(value_size, sizeof(int));
+  __uint(max_entries, MAX_ENTRIES);
+} sock_ops_map SEC(".maps");
 
 /*
  * extract the key that identifies the destination socket in the sock_ops_map
@@ -66,6 +65,7 @@ static inline void extract_key4_from_msg(struct sk_msg_md *msg,
 // 拦截sendmsg系统调用，socket重定向
 SEC("sk_msg")
 int bpf_redir(struct sk_msg_md *msg) {
+  bpf_printk("bpf_redir\n");
   struct sock_key key = {};
   extract_key4_from_msg(msg, &key);
   // 将当前正在发送的消息（sk_msg）重定向到另一个 Socket
@@ -124,6 +124,7 @@ static inline void bpf_sock_ops_ipv4(struct bpf_sock_ops *skops) {
 // IPv4，就执行记录操作
 SEC("sockops")
 int bpf_sockmap(struct bpf_sock_ops *skops) {
+  bpf_printk("bpf_sockmap\n");
   switch (skops->op) {
   case BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB: // 被动建连，注意这个分支没有break，即C语言的穿透行为
   case BPF_SOCK_OPS_ACTIVE_ESTABLISHED_CB: // 主动建连

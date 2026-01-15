@@ -81,7 +81,13 @@ COMMANDS = {
         "description": "a daemon for accerate TCP in IPC",
         "options": [
             "-h",
-            "--help"
+            "--help",
+            "-c",
+            "--cgroup",
+            "-v",
+            "--version",
+            "-V",
+            "--verbose"
         ]
     },
     "nettrace": {

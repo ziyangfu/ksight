@@ -63,6 +63,7 @@ endforeach()
 
 
 add_executable(${TOOL_NAME} ${${TOOL_NAME}_SRCS})
+target_compile_definitions(${TOOL_NAME} PRIVATE FMT_HEADER_ONLY)
 target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} pcap rt)
 foreach (app ${apps})
     get_filename_component(app_stem ${app} NAME_WE)
