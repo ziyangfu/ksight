@@ -19,29 +19,31 @@
 include_directories(fs hypervisor memory net process system_diagnosis ipc)
 # Tips: cmake的 option选项会存储在 <build_dir>/CMakeCache.txt中，若需要修改配置，请先删除CMakeCache.txt
 #       再运行 cmake -DXXX= ON .. 更新新的配置选项
-option(BUILD_ALL "is build all tools? "                     OFF)
-# fs部分
-option(BUILD_FS_WATCHER "is build fs_watcher? "             OFF)
+option(BUILD_ALL "is build all tools? "                     OFF )
+# fs部分    
+option(BUILD_FS_WATCHER "is build fs_watcher? "             OFF )
 # memory部分
-option(BUILD_MEM_WATCHER "is build mem_watcher? "           OFF)
+option(BUILD_MEM_WATCHER "is build mem_watcher? "           OFF )
 # net部分
-option(BUILD_NET_WATCHER "is build netwatcher? "           ON)
-option(BUILD_DELAY_ANALYSIS "is build delay_analysis? "     OFF)
+option(BUILD_NET_WATCHER "is build netwatcher? "            ON  )
+option(BUILD_WIREFISHER "is build wirefisher? "             OFF )
+option(BUILD_TCPACCD "is build tcpaccd? "                   ON )
 # process部分
-option(BUILD_CPU_WATCHER "is build cpu_watcher? "           OFF)
-option(BUILD_PROC_IMAGE "is build proc_image? "             OFF)
+option(BUILD_CPU_WATCHER "is build cpu_watcher? "           OFF )
+option(BUILD_PROC_IMAGE "is build proc_image? "             OFF )
+option(BUILD_SCHED_EXT_RMS "is build sched_ext_rms? "       OFF )
 # hypervisor部分
-option(BUILD_KVM_WATCHER "is build kvm_watcher? "           OFF)
+option(BUILD_KVM_WATCHER "is build kvm_watcher? "           OFF )
 # system_diagnosis
-option(BUILD_STACK_ANALYZER "is build stack_analyzer? "     OFF)
+option(BUILD_STACK_ANALYZER "is build stack_analyzer? "     OFF )
 # IPC
-option(BUILD_IPC_WATCHER "is build ipcwatcher? "     ON)
+option(BUILD_IPC_WATCHER "is build ipcwatcher? "             ON )
 
 if (BUILD_ALL)
+    # 当前暂时不可用
     message(STATUS "build all tools")
     add_subdirectory(memory/mem_watcher)
     add_subdirectory(net/netwatcher)
-    add_subdirectory(net/delay_analysis)
     add_subdirectory(process/cpu_watcher)
     add_subdirectory(process/proc_image)
     # TODO(fzy, 2024.03.13) 没有kvm的环境
@@ -65,9 +67,14 @@ else ()
         add_subdirectory(net/netwatcher)
     endif ()
 
-    message(STATUS "build delay_analysis? ${BUILD_DELAY_ANALYSIS}")
-    if (BUILD_DELAY_ANALYSIS)
-        add_subdirectory(net/delay_analysis)
+    message(STATUS "build wirefisher? ${BUILD_WIREFISHER}")
+    if (BUILD_WIREFISHER)
+        add_subdirectory(net/wirefisher)
+    endif ()
+
+    message(STATUS "build tcpaccd? ${BUILD_TCPACCD}")
+    if (BUILD_TCPACCD)
+        add_subdirectory(net/tcpaccd)
     endif ()
 
     message(STATUS "build cpu_watcher? ${BUILD_CPU_WATCHER}")
@@ -79,7 +86,10 @@ else ()
     if (BUILD_PROC_IMAGE)
         add_subdirectory(process/proc_image)
     endif ()
-
+    message(STATUS "build sched_ext_rms? ${BUILD_SCHED_EXT_RMS}")
+    if (BUILD_SCHED_EXT_RMS)
+        add_subdirectory(process/sched_ext_rms)
+    endif ()
     message(STATUS "build kvm_watcher? ${BUILD_KVM_WATCHER}")
     if (BUILD_KVM_WATCHER)
         add_subdirectory(hypervisor/kvm_watcher)

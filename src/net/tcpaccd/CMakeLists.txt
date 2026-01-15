@@ -1,5 +1,5 @@
 # \copyright
-# Copyright (c) 2024 by the lmp/magic_eyes project authors. All Rights Reserved.
+# Copyright (c) 2026 by the ksight project authors. All Rights Reserved.
 #
 # This file is open source software, licensed to you under the terms
 # of the Apache License, Version 2.0 (the "License").  See the NOTICE file
@@ -8,10 +8,10 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
-#      ipcwatcher 工具 CMakeLists 文件
+#      tcpaccd 工具 CMakeLists 文件
 # -----------------------------------------------------------------------------------------
-set(TOOL_NAME ipcwatcher)
-set(TOOL_BELONG_TO_MODULE ipc)
+set(TOOL_NAME tcpaccd)
+set(TOOL_BELONG_TO_MODULE net)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -63,7 +63,6 @@ endforeach()
 
 
 add_executable(${TOOL_NAME} ${${TOOL_NAME}_SRCS})
-# 告诉编译器，fmt库用的纯头文件形式，因此不需要链接时，找fmt的库
 target_compile_definitions(${TOOL_NAME} PRIVATE FMT_HEADER_ONLY)
 target_link_libraries(${TOOL_NAME} ${CMAKE_THREAD_LIBS_INIT} pcap rt)
 foreach (app ${apps})

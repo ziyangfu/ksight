@@ -76,6 +76,20 @@ COMMANDS = {
             "--help"
         ]
     },
+    "tcpaccd": {
+        "bin_path": "net/tcpaccd/bin/tcpaccd",
+        "description": "a daemon for accerate TCP in IPC",
+        "options": [
+            "-h",
+            "--help",
+            "-c",
+            "--cgroup",
+            "-v",
+            "--version",
+            "-V",
+            "--verbose"
+        ]
+    },
     "nettrace": {
         "bin_path": "net/nettrace/bin/nettrace",
         "description": "a tool to trace skb in kernel and diagnose network problem",
