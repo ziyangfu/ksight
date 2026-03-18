@@ -1,5 +1,7 @@
 # ksight
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ksight-RG/ksight)
+
 > [简体中文](./docs/00_introduction/README_CN.md)
 
 ## 1. Introduction

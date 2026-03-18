@@ -23,6 +23,9 @@
 
 ### V0.0.3
 
+- [ ] perfetto集成，工具生成特定的trace文件，在perfectto中回放
+- [ ] 集成io-uring追踪工具，原始地址：[uring-trace](https://github.com/ocaml-multicore/uring-trace)
+- [ ] 修改构建工程，skel可以按需加载and attach，按需detach
 - [ ] connector，使用Python开发，为HTTP server，功能为终端管理与消息转发路由。
   - 该程序默认随系统systemd启动，名称为ksight-connector，放在新仓库中。
   - 后端采集器与前端程序，均作为client接入。

@@ -122,6 +122,8 @@ static inline void bpf_sock_ops_ipv4(struct bpf_sock_ops *skops) {
 
 // 无论是被动建立连接（作为服务器）还是主动建立连接（作为客户端），只要连接已建立，且是
 // IPv4，就执行记录操作
+// net/ipv4/tcp_input.c +191
+// 真正执行下述程序：BPF_CGROUP_RUN_PROG_SOCK_OPS(&sock_ops);
 SEC("sockops")
 int bpf_sockmap(struct bpf_sock_ops *skops) {
   bpf_printk("bpf_sockmap\n");
