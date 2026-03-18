@@ -1,0 +1,46 @@
+{
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--all-scopes-completion",
+        "--completion-style=detailed",
+        "--header-insertion=never",
+        "-j=4",
+        "--pch-storage=disk"
+    ],
+    "clangd.fallbackFlags": [
+        "-I${workspaceFolder}/src",
+        "-I${workspaceFolder}/third_party",
+        "-I${workspaceFolder}/src-gen"
+    ],
+    "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+    "cmake.configureOnOpen": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    "editor.trimAutoWhitespace": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "files.associations": {
+        "*.h": "cpp",
+        "*.c": "c"
+    },
+    "files.exclude": {
+        "**/build": true,
+        "**/.git": true,
+        "**/.vscode": false,
+        "**/.DS_Store": true
+    },
+    "search.exclude": {
+        "**/build": true,
+        "**/.git": true,
+        "**/third_party": true
+    },
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/ksightCli",
+        "${workspaceFolder}/src"
+    ],
+    "python.linting.enabled": true,
+    "python.formatting.provider": "autopep8"
+}
