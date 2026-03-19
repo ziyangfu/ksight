@@ -27,11 +27,21 @@ class DiagnoseEngine:
             response_msg = self.llm.chat(self.history, tools=KSIGHT_TOOLS)
             
             # 处理响应 (兼容 OpenAI 消息对象或 Ollama 字典)
-            content = getattr(response_msg, "content", None) or response_msg.get("content", "")
-            tool_calls = getattr(response_msg, "tool_calls", None) or response_msg.get("tool_calls", [])
-            
-            # 将 AI 的回复加入历史
-            self.history.append(response_msg)
+            if isinstance(response_msg, dict):
+                content = response_msg.get("content", "")
+                tool_calls = response_msg.get("tool_calls", [])
+                # 将响应加入历史
+                self.history.append(response_msg)
+            else:
+                # 假设是 OpenAI 的 ChatCompletionMessage 对象
+                content = getattr(response_msg, "content", "")
+                tool_calls = getattr(response_msg, "tool_calls", [])
+                # OpenAI SDK 的消息对象可以通过 model_dump() 转换为 dict
+                # 或者手动提取必要字段以保持 history 纯净
+                msg_dict = {"role": "assistant", "content": content}
+                if tool_calls:
+                    msg_dict["tool_calls"] = tool_calls
+                self.history.append(msg_dict)
             
             if not tool_calls:
                 # 如果没有工具调用，说明 AI 已经给出结论或需要用户进一步输入
@@ -45,8 +55,12 @@ class DiagnoseEngine:
                     func_args = json.loads(tool_call.function.arguments)
                     call_id = tool_call.id
                 else:
+                    # 字典格式处理
                     func_name = tool_call["function"]["name"]
                     func_args = tool_call["function"]["arguments"]
+                    # 确保 args 是 dict
+                    if isinstance(func_args, str):
+                        func_args = json.loads(func_args)
                     call_id = tool_call.get("id")
 
                 logger.info(f"AI 调用工具: {func_name}, 参数: {func_args}")

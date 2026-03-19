@@ -22,8 +22,10 @@ class ToolResult:
             return f"Error: {self.error}\nOutput: {self.output}"
         return self.output
 
-def run_command(cmd: List[str], timeout: int = 30) -> ToolResult:
+def run_command(cmd: List[str], timeout: int = 30, sudo: bool = False) -> ToolResult:
     """运行外部命令并返回结果"""
+    if sudo and os.getuid() != 0:
+        cmd = ["sudo", "-n"] + cmd  # 使用 -n 避免交互式输入密码
     try:
         process = subprocess.run(
             cmd,
@@ -106,6 +108,22 @@ KSIGHT_TOOLS = [
                 "properties": {}
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ksight_nettrace",
+            "description": "ksight 网络追踪工具，用于追踪内核中的 skb 并诊断网络问题。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "args": {
+                        "type": "string",
+                        "description": "传递给 nettrace 的参数，如 '-s 1.1.1.1' 指定源地址，'-d 2.2.2.2' 指定目的地址。"
+                    }
+                }
+            }
+        }
     }
 ]
 
@@ -118,12 +136,12 @@ class ToolExecutor:
         if name == "ksight_netwatcher":
             bin_path = os.path.join(self.install_root, "net/netwatcher/bin/netwatcher")
             cmd = [bin_path] + args.get("args", "").split()
-            return str(run_command(cmd))
+            return str(run_command(cmd, sudo=True))
         
         elif name == "ksight_ipcwatcher":
             bin_path = os.path.join(self.install_root, "ipc/ipcwatcher/bin/ipcwatcher")
             cmd = [bin_path] + args.get("args", "").split()
-            return str(run_command(cmd))
+            return str(run_command(cmd, sudo=True))
 
         elif name == "system_top":
             # 简化 top 调用，直接用 -b -n 1
@@ -138,6 +156,11 @@ class ToolExecutor:
         elif name == "system_df":
             cmd = ["df", "-h"]
             return str(run_command(cmd))
+
+        elif name == "ksight_nettrace":
+            bin_path = os.path.join(self.install_root, "net/nettrace/bin/nettrace")
+            cmd = [bin_path] + args.get("args", "").split()
+            return str(run_command(cmd, sudo=True))
 
         else:
             return f"Error: Unknown tool {name}"
