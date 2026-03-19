@@ -3,7 +3,6 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
-#include <iostream>
 #include <unistd.h>
 
 namespace net::tcpAccd {

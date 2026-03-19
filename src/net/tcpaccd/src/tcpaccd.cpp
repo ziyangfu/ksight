@@ -1,6 +1,5 @@
 #include <atomic>
 #include <csignal>
-#include <iostream>
 
 #include "ArgParser.h"
 #include "ConfigArgs.h"
