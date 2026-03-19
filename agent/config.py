@@ -1,5 +1,12 @@
 import os
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # 如果没有安装 python-dotenv，也可以手动尝试从根目录读取 .env 文件
+    pass
+
 class Config:
     # 远程 Qwen 配置
     QWEN_BASE_URL = os.getenv("QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
@@ -9,7 +16,7 @@ class Config:
     # 本地 Ollama 配置
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL_DEEPSEEK = "deepseek-r1:7b"
-    OLLAMA_MODEL_QWEN = "qwen2.5:4b"  # 用户提到 qwen3.5:4b，但目前主流是 2.5，这里先按用户所述或常用命名
+    OLLAMA_MODEL_QWEN = "qwen3.5:4b"
     
     # 诊断引擎配置
     MAX_ROUNDS = 10

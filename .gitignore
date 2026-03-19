@@ -15,10 +15,17 @@ platforms/aarch64/arm64_deps/
 
 # magic_eyes_cli, python
 # venv
+venv/
+.venv/
 src/magic_eyes_cli/venv/
 # __pycache__
 *.pyc
+__pycache__/
 src/magic_eyes_cli/core/__pycache__/
+
+# Environment variables
+.env
+.env.local
 
 # Prerequisites
 *.d
