@@ -1,6 +1,6 @@
-<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/25.0.2 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="25.0.2">
+<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/25.0.2 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="25.0.2" pages="2">
   <diagram name="ipc_watcher" id="vjbvdwllAMUu8z_T3wv6">
-    <mxGraphModel dx="1393" dy="635" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1843" dy="635" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -63,6 +63,124 @@
         </mxCell>
         <mxCell id="7DhU9praVriHjYLxwFtj-7" value="......" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry y="130" width="100" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="8dDZhOjwHVomS95oNwtk" name="agent">
+    <mxGraphModel dx="1900" dy="662" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-18" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="-130" y="580" width="760" height="510" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-17" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="680" y="875" width="170" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-3" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry y="875" width="360" height="145" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="RFZ5PfubWLBfJQctyStE-1" target="RFZ5PfubWLBfJQctyStE-3" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="135" y="150" />
+              <mxPoint x="415" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-1" value="agent" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="80" y="240" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="RFZ5PfubWLBfJQctyStE-3" target="RFZ5PfubWLBfJQctyStE-1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-3" value="nettrace" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="360" y="240" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-4" value="ipcwatcher" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="360" y="310" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-5" value="netwatcher" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="360" y="380" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-6" value="tcpaccd" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="360" y="460" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-7" value="UDP&amp;nbsp;&lt;div&gt;发送json数据&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="220" y="230" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-10" value="subprocess 调用，拉起采集器程序" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="180" y="120" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-11" value="ksightCli agent run 自动运行诊断智能体&lt;br&gt;&lt;div&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;ksightCli agent chat 互动智能诊断&lt;/span&gt;&amp;nbsp;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="590" y="50" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-12" value="- 帮我打开TCP本地加速&lt;div&gt;- 识别到本地通信速率瓶颈，打开加速&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="500" y="470" width="170" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-13" value="json文件：标识每个工具，具有的能力，传达给agent" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="500" y="520" width="250" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-14" value="eBPF工具" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="500" y="250" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-15" value="工具层" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="-90" y="940" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="RFZ5PfubWLBfJQctyStE-19" value="第三方工具，包装器开发（knettrace）" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="580" y="250" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-1" value="非特权级工具" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="890" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-2" value="特权级工具eBPF" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="970" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-4" value="Python开发" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="200" y="890" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-5" value="内核态 C，用户态C++" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="190" y="970" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-6" value="Linux内核" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry y="1030" width="560" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-7" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="880" width="170" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-8" value="Qwen3.5 4B" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="390" y="940" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-9" value="Qwen3.5 LLM" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="680" y="930" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-10" value="agent" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="800" width="500" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-12" value="智能体层" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-90" y="815" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-13" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry y="770" width="40" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-14" value="ksightCli" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry y="710" width="560" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-15" value="封装层" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-90" y="725" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-16" value="Actor" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="600" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-19" value="非特权级工具开发与调用：函数形式提供API，agent采用函数callling" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="750" y="640" width="330" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-20" value="工具清单：&lt;div&gt;非特权级工具插件：&lt;/div&gt;&lt;div&gt;1. 连通性测试 ICMP ping&lt;/div&gt;&lt;div&gt;2.&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;TSN_cap&lt;/div&gt;&lt;div&gt;DDS_cap&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-120" y="1190" width="780" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="vSzsg5A0ET1umwCN_AJK-21" value="手动调用常规工具：ksightCli gtool ping&lt;div&gt;手动调用agent： ksightCli agent run/chat&lt;/div&gt;&lt;div&gt;手动调用特权级工具：sudo&amp;nbsp;&lt;span style=&quot;background-color: initial;&quot;&gt;ksightCli nettrace&lt;/span&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="670" y="1100" width="390" height="120" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
