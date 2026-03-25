@@ -18,8 +18,7 @@
 ksight_add_tool(
     NAME tcpaccd
     MODULE net
-    BPF_FILES 
-        uds.bpf.c 
+    BPF_FILES
         tcpaccd.bpf.c
 )
 

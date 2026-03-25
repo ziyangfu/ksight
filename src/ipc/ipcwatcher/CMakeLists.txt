@@ -15,7 +15,8 @@ ksight_add_tool(
     NAME ipcwatcher
     MODULE ipc
     BPF_FILES 
-        ipcwatcher.bpf.c
+        shm.bpf.c
+        uds.bpf.c
 )
 
 target_link_libraries(ipcwatcher PRIVATE pcap rt)
