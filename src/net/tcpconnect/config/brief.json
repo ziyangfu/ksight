@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcpconnect",
+    "description": "Count/Trace active tcp connections"
+}

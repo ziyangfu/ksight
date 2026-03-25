@@ -90,6 +90,30 @@ COMMANDS = {
             "--verbose"
         ]
     },
+    "tcpconnect": {
+        "bin_path": "net/tcpconnect/bin/tcpconnect",
+        "description": "Count/Trace active tcp connections",
+        "options": [
+            "-v",
+            "--verbose",
+            "-t",
+            "--timestamp",
+            "-c",
+            "--count",
+            "-U",
+            "--print-uid",
+            "-p",
+            "--pid",
+            "-u",
+            "--uid",
+            "-s",
+            "--source-port",
+            "-P",
+            "--port",
+            "-h",
+            "--help"
+        ]
+    },
     "nettrace": {
         "bin_path": "net/nettrace/bin/nettrace",
         "description": "a tool to trace skb in kernel and diagnose network problem",
