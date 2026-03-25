@@ -1,0 +1,4 @@
+{
+    "tool_name": "gethostlatency",
+    "description": "Show latency for getaddrinfo/gethostbyname[2] calls"
+}

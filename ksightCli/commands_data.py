@@ -155,6 +155,20 @@ COMMANDS = {
             "--version"
         ]
     },
+    "gethostlatency": {
+        "bin_path": "net/gethostlatency/bin/gethostlatency",
+        "description": "Show latency for getaddrinfo/gethostbyname[2] calls",
+        "options": [
+            "-p",
+            "--pid",
+            "-l",
+            "--libc",
+            "-v",
+            "--verbose",
+            "-h",
+            "--help"
+        ]
+    },
     "bindsnoop": {
         "bin_path": "net/bindsnoop/bin/bindsnoop",
         "description": "a tool for tracing bind() syscall events",
@@ -170,6 +184,8 @@ COMMANDS = {
             "-c",
             "--cgroup",
             "-v",
+            "--version",
+            "-vvv",
             "--verbose",
             "-h",
             "--help"
