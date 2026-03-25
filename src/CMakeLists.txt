@@ -27,6 +27,7 @@ option(BUILD_FS_WATCHER "is build fs_watcher? "             OFF )
 option(BUILD_MEM_WATCHER "is build mem_watcher? "           OFF )
 # net部分
 option(BUILD_NET_WATCHER "is build netwatcher? "            ON  )
+option(BUILD_BINDSNOOP "is build bindsnoop? "              ON  )
 option(BUILD_WIREFISHER "is build wirefisher? "             OFF )
 option(BUILD_TCPACCD "is build tcpaccd? "                   ON )
 # process部分
@@ -45,6 +46,7 @@ if (BUILD_ALL)
     message(STATUS "build all tools")
     add_subdirectory(memory/mem_watcher)
     add_subdirectory(net/netwatcher)
+    add_subdirectory(net/bindsnoop)
     add_subdirectory(process/cpu_watcher)
     add_subdirectory(process/proc_image)
     # TODO(fzy, 2024.03.13) 没有kvm的环境
@@ -76,6 +78,11 @@ else ()
     message(STATUS "build tcpaccd? ${BUILD_TCPACCD}")
     if (BUILD_TCPACCD)
         add_subdirectory(net/tcpaccd)
+    endif ()
+
+    message(STATUS "build bindsnoop? ${BUILD_BINDSNOOP}")
+    if (BUILD_BINDSNOOP)
+        add_subdirectory(net/bindsnoop)
     endif ()
 
     message(STATUS "build cpu_watcher? ${BUILD_CPU_WATCHER}")
