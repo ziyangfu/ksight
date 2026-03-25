@@ -4,8 +4,7 @@
 # This file is open source software, licensed to you under the terms
 # of the Apache License, Version 2.0 (the "License").  See the NOTICE file
 # distributed with this work for additional information regarding copyright
-# ownership.  You may not use this file except in compliance with the License.
-# You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+# ownership.  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 # -----------------------------------------------------------------------------------------
 # \brief
 #      src 顶层 CMakeLists 文件
@@ -16,7 +15,9 @@
 #      编译单独某个工具，如 fs_watcher
 #           cmake -DBUILD_FS_WATCHER=ON ..
 # -----------------------------------------------------------------------------------------
-include_directories(fs hypervisor memory net process system_diagnosis ipc)
+
+# include_directories(fs hypervisor memory net process system_diagnosis ipc) # 被移除：所有子项目现在自行管理包含路径
+
 # Tips: cmake的 option选项会存储在 <build_dir>/CMakeCache.txt中，若需要修改配置，请先删除CMakeCache.txt
 #       再运行 cmake -DXXX= ON .. 更新新的配置选项
 option(BUILD_ALL "is build all tools? "                     OFF )
@@ -107,6 +108,3 @@ else ()
 
     message(STATUS "----------------------------------------")
 endif ()
-
-
-

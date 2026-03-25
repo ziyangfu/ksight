@@ -25,11 +25,11 @@
 #include <unistd.h> 
 #include <linux/perf_event.h>
 #include <asm/unistd.h>
-#include "cpu_watcher/include/cpu_watcher.h"
+#include "cpu_watcher.h"
 
-#include "process/cpu_watcher/sar.skel.h"
-#include "process/cpu_watcher/cs_delay.skel.h"
-#include "process/cpu_watcher/sc_delay.skel.h"
+#include "sar.skel.h"
+#include "cs_delay.skel.h"
+#include "sc_delay.skel.h"
 
 typedef long long unsigned int u64;
 typedef unsigned int u32;

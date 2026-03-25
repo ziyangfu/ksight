@@ -5,7 +5,7 @@
 #include <memory>
 
 extern "C" {
-#include "process/sche_ext_rms/scx_rms.skel.h"
+#include "scx_rms.skel.h"
 }
 
 namespace process::scheExtRms {

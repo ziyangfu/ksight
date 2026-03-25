@@ -100,9 +100,8 @@ endif()
 
 if(BPFOBJECT_VMLINUX_H)
   get_filename_component(GENERATED_VMLINUX_DIR ${BPFOBJECT_VMLINUX_H} DIRECTORY)
-  # fzy 修改 ----------------------------------------------------------------------------
+  # fzy 修改：使用全局包含虽然不理想，但目前项目结构依赖于它定位 vmlinux.h
   include_directories(${GENERATED_VMLINUX_DIR})
-  # -------------------------------------------------------------------------------------
 elseif(BPFOBJECT_BPFTOOL_EXE)
   # Generate vmlinux.h
   set(GENERATED_VMLINUX_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -146,36 +145,28 @@ else()
   message(FATAL_ERROR "Failed to determine BPF system includes: ${CLANG_SYSTEM_INCLUDES_error}")
 endif()
 
-# lht修改：统一使用顶层CMakeLists.txt中设置的ARCH
-# execute_process(COMMAND uname -m
-#   COMMAND sed -e "s/x86_64/x86/" -e "s/aarch64/arm64/" -e "s/ppc64le/powerpc/" -e "s/mips.*/mips/" -e "s/riscv64/riscv/"
-#   OUTPUT_VARIABLE ARCH_output
-#   ERROR_VARIABLE ARCH_error
-#   RESULT_VARIABLE ARCH_result
-#   OUTPUT_STRIP_TRAILING_WHITESPACE)
-# if(${ARCH_result} EQUAL 0)
-# #   set(ARCH ${ARCH_output})
-#   message(STATUS "BPF target arch: ${ARCH}")
-# else()
-#   message(FATAL_ERROR "Failed to determine target architecture: ${ARCH_error}")
-# endif()
 message(STATUS "BPF target arch: ${ARCH}")
 
 # 将 *.bpf.c 使用clang编译成 *.o，然后将 *.o 使用 bpftool 转换为 *.skel.h
 macro(bpf_object name input src_gen_dir)
-  set(BPF_C_FILE ${CMAKE_CURRENT_SOURCE_DIR}/bpf/${input})
-  set(BPF_O_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.bpf.o)
-  # bpf/*.bpf.c文件需要用到的头文件目录，一般为 <tool>/include目录
+  # 路径修正逻辑：如果 input 是绝对路径，直接使用；否则从当前源码目录的 bpf/ 下查找
+  if(IS_ABSOLUTE ${input})
+    set(BPF_C_FILE ${input})
+  else()
+    get_filename_component(BPF_C_FILE "${CMAKE_CURRENT_SOURCE_DIR}/bpf/${input}" ABSOLUTE)
+  endif()
+  
+  # 统一使用绝对路径输出
+  get_filename_component(BPF_O_FILE "${CMAKE_CURRENT_BINARY_DIR}/${name}.bpf.o" ABSOLUTE)
+  
+  # bpf/*.bpf.c 文件需要用到的头文件目录，一般为工具根目录下的 include
+  # 当从 ksight_add_tool 调用时，CMAKE_CURRENT_SOURCE_DIR 是子项目的 root
   set(BPF_PROJECT_SPECIAL_HEADER_FILES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-  # fzy 修改 ----------------------------------------------------------------------------
-  #set(BPF_SKEL_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.skel.h)
   set(BPF_SKEL_FILE_IN_SRC_GEN ${src_gen_dir}/${name}.skel.h)
-  # -------------------------------------------------------------------------------------
   set(OUTPUT_TARGET ${name}_skel)
 
   # Build BPF object file
-  # fzy modified , add -I${BPF_COMMON_FILES_DIR}, because of add some help source file in this dir
   add_custom_command(OUTPUT ${BPF_O_FILE}
     COMMAND ${BPFOBJECT_CLANG_EXE} -g -O2 -target bpf -D__TARGET_ARCH_${ARCH}
             ${CLANG_SYSTEM_INCLUDES} ${BPF_EXTRA_INCLUDES}
@@ -188,9 +179,6 @@ macro(bpf_object name input src_gen_dir)
     COMMENT "[clang] Building BPF object: ${name}")
 
   # Build BPF skeleton header
-  # fzy 修改 ----------------------------------------------------------------------------
-  # add_custom_command(OUTPUT ${BPF_SKEL_FILE}
-  # COMMAND bash -c "${BPFOBJECT_BPFTOOL_EXE} gen skeleton ${BPF_O_FILE} > ${BPF_SKEL_FILE}"
   add_custom_command(OUTPUT ${BPF_SKEL_FILE_IN_SRC_GEN}
     COMMAND bash -c "${BPFOBJECT_BPFTOOL_EXE} gen skeleton ${BPF_O_FILE} > ${BPF_SKEL_FILE_IN_SRC_GEN}"
     VERBATIM
@@ -198,14 +186,10 @@ macro(bpf_object name input src_gen_dir)
     COMMENT "[skel]  Building BPF skeleton: ${name}")
 
   add_library(${OUTPUT_TARGET} INTERFACE)
-  # fzy 修改 ----------------------------------------------------------------------------
-  # target_sources(${OUTPUT_TARGET} INTERFACE ${BPF_SKEL_FILE})
   target_sources(${OUTPUT_TARGET} INTERFACE ${BPF_SKEL_FILE_IN_SRC_GEN})
-  # ------------------------------------------------------------------------------------
   target_include_directories(${OUTPUT_TARGET} INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
   target_include_directories(${OUTPUT_TARGET} SYSTEM INTERFACE ${LIBBPF_INCLUDE_DIRS})
   
-#lht增加：修改不同编译环境编译依赖静态库 skel的依赖库
   if(ARCH STREQUAL "x86")
     target_link_libraries(${OUTPUT_TARGET} INTERFACE ${LIBBPF_LIBRARIES} -lelf -lz)
   elseif(ARCH STREQUAL "arm64")
@@ -217,7 +201,6 @@ macro(bpf_object name input src_gen_dir)
     else()
       target_link_libraries(${OUTPUT_TARGET} INTERFACE ${LIBBPF_LIBRARIES} -lelf -lz)
     endif()
-  else()
   endif()
 
 endmacro()

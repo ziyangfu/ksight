@@ -29,14 +29,14 @@
 #include <bpf/libbpf.h>
 #include <bpf/bpf.h>
 
-#include "proc_image/include/proc_image.h"
-#include "proc_image/include/helpers.h"
+#include "proc_image.h"
+#include "helpers.h"
 
-// #include "process/proc_image/resource_image.skel.h"
-#include "process/proc_image/syscall_image.skel.h"
-#include "process/proc_image/lock_image.skel.h"
-#include "process/proc_image/keytime_image.skel.h"
-#include "process/proc_image/schedule_image.skel.h"
+// #include "resource_image.skel.h"
+#include "syscall_image.skel.h"
+#include "lock_image.skel.h"
+#include "keytime_image.skel.h"
+#include "schedule_image.skel.h"
 
 static int prev_image = 0;
 static volatile bool exiting = false;

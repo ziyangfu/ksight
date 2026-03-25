@@ -3,7 +3,7 @@
 
 #include "ConfigArgs.h"
 extern "C" {
-#include "net/tcpaccd/tcpaccd.skel.h"
+#include "tcpaccd.skel.h"
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 }

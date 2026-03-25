@@ -13,7 +13,7 @@
 #include "ConfigArgs.h"
 #include "ipcwatcher.h"
 extern "C" {
-#include "ipc/ipcwatcher/shm.skel.h"
+#include "shm.skel.h"
 }
 
 namespace ipc::ipcWatcher {

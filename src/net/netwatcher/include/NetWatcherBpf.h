@@ -4,10 +4,10 @@
 #include <string>
 #include <memory>
 #include "ConfigArgs.h"
-#include "netwatcher/include/netwatcher.h"
+#include "netwatcher.h"
 
 extern "C" {
-#include "net/netwatcher/netwatcher.skel.h"
+#include "netwatcher.skel.h"
 }
 
 namespace net::netWatcher {

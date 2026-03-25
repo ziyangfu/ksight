@@ -17,7 +17,7 @@
 #ifndef IPC_IPC_WATCHER_BPF__COMMON_BPF_H
 #define IPC_IPC_WATCHER_BPF__COMMON_BPF_H
 
-#include "../include/ipcwatcher.h"
+#include "ipcwatcher.h"
 
 #include "vmlinux.h"
 #include <asm-generic/errno.h>
