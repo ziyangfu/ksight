@@ -1,0 +1,4 @@
+{
+    "tool_name": "bindsnoop",
+    "description": "a tool for tracing bind() syscall events"
+}

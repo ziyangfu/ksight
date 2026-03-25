@@ -154,5 +154,25 @@ COMMANDS = {
             "-V",
             "--version"
         ]
+    },
+    "bindsnoop": {
+        "bin_path": "net/bindsnoop/bin/bindsnoop",
+        "description": "a tool for tracing bind() syscall events",
+        "options": [
+            "-t",
+            "--timestamp",
+            "-x",
+            "--failed",
+            "-p",
+            "--pid",
+            "-P",
+            "--ports",
+            "-c",
+            "--cgroup",
+            "-v",
+            "--verbose",
+            "-h",
+            "--help"
+        ]
     }
 }
