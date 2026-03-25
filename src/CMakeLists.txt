@@ -28,6 +28,8 @@ option(BUILD_MEM_WATCHER "is build mem_watcher? "           OFF )
 # net部分
 option(BUILD_NET_WATCHER "is build netwatcher? "            ON  )
 option(BUILD_BINDSNOOP "is build bindsnoop? "              ON  )
+option(BUILD_GETHOSTLATENCY "is build gethostlatency? "        ON  )
+option(BUILD_SOLISTEN "is build solisten? "               ON  )
 option(BUILD_WIREFISHER "is build wirefisher? "             OFF )
 option(BUILD_TCPACCD "is build tcpaccd? "                   ON )
 # process部分
@@ -83,6 +85,16 @@ else ()
     message(STATUS "build bindsnoop? ${BUILD_BINDSNOOP}")
     if (BUILD_BINDSNOOP)
         add_subdirectory(net/bindsnoop)
+    endif ()
+
+    message(STATUS "build gethostlatency? ${BUILD_GETHOSTLATENCY}")
+    if (BUILD_GETHOSTLATENCY)
+        add_subdirectory(net/gethostlatency)
+    endif ()
+
+    message(STATUS "build solisten? ${BUILD_SOLISTEN}")
+    if (BUILD_SOLISTEN)
+        add_subdirectory(net/solisten)
     endif ()
 
     message(STATUS "build cpu_watcher? ${BUILD_CPU_WATCHER}")

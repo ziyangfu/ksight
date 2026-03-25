@@ -1,0 +1,4 @@
+{
+    "tool_name": "solisten",
+    "description": "Trace IPv4 and IPv6 listen syscalls"
+}

@@ -163,10 +163,28 @@ COMMANDS = {
             "--pid",
             "-l",
             "--libc",
-            "-v",
+            "-vvv",
             "--verbose",
             "-h",
-            "--help"
+            "--help",
+            "-v",
+            "--version"
+        ]
+    },
+    "solisten": {
+        "bin_path": "net/solisten/bin/solisten",
+        "description": "Trace IPv4 and IPv6 listen syscalls",
+        "options": [
+            "-p",
+            "--pid",
+            "-t",
+            "--timestamp",
+            "-vvv",
+            "--verbose",
+            "-h",
+            "--help",
+            "-v",
+            "--version"
         ]
     },
     "bindsnoop": {
