@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcptop",
+    "description": "Summarize the top active TCP sessions - like top, but for TCP"
+}

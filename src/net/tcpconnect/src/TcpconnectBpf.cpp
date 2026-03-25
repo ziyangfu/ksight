@@ -4,7 +4,6 @@
 #include <sys/time.h>
 #include <cstring>
 #include <csignal>
-#include <iostream>
 #include <fcntl.h>
 #include <netinet/in.h>
 
@@ -135,7 +134,7 @@ void TcpconnectBpf::printCountIpv4(int map_fd) {
     uint32_t n = MAX_ENTRIES;
     struct ipv4_flow_key zero = {};
     
-    if (dump_hash(map_fd, keys, sizeof(keys[0]), counts, sizeof(counts[0]), &n, &zero) != 0) {
+    if (dump_hash(map_fd, keys, sizeof(keys[0]), counts, sizeof(counts[0]), &n, &zero, false) != 0) {
         SPDLOG_ERROR("Failed to dump IPv4 count map");
         return;
     }
@@ -161,7 +160,7 @@ void TcpconnectBpf::printCountIpv6(int map_fd) {
     uint32_t n = MAX_ENTRIES;
     struct ipv6_flow_key zero = {};
 
-    if (dump_hash(map_fd, keys, sizeof(keys[0]), counts, sizeof(counts[0]), &n, &zero) != 0) {
+    if (dump_hash(map_fd, keys, sizeof(keys[0]), counts, sizeof(counts[0]), &n, &zero, false) != 0) {
         SPDLOG_ERROR("Failed to dump IPv6 count map");
         return;
     }

@@ -227,6 +227,32 @@ COMMANDS = {
             "--version"
         ]
     },
+    "tcptop": {
+        "bin_path": "net/tcptop/bin/tcptop",
+        "description": "Summarize the top active TCP sessions - like top, but for TCP",
+        "options": [
+            "-p",
+            "--pid",
+            "-c",
+            "--cgroup",
+            "-4",
+            "--ipv4",
+            "-6",
+            "--ipv6",
+            "-S",
+            "--nosummary",
+            "-C",
+            "--noclear",
+            "-s",
+            "--sort",
+            "-r",
+            "--rows",
+            "-v",
+            "--verbose",
+            "-h",
+            "--help"
+        ]
+    },
     "solisten": {
         "bin_path": "net/solisten/bin/solisten",
         "description": "Trace IPv4 and IPv6 listen syscalls",
