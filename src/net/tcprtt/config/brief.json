@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcprtt",
+    "description": "Summarize TCP RTT as a histogram"
+}
