@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcplife",
+    "description": "Trace the lifespan of TCP sessions and summarize."
+}

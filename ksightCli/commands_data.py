@@ -247,6 +247,27 @@ COMMANDS = {
             "--remoteport"
         ]
     },
+    "tcplife": {
+        "bin_path": "net/tcplife/bin/tcplife",
+        "description": "Trace the lifespan of TCP sessions and summarize.",
+        "options": [
+            "-p",
+            "--pid",
+            "--verbose",
+            "-T",
+            "--timestamp",
+            "-4",
+            "--ipv4",
+            "-6",
+            "--ipv6",
+            "-w",
+            "--wide",
+            "-L",
+            "--localport",
+            "-D",
+            "--remoteport"
+        ]
+    },
     "tcptop": {
         "bin_path": "net/tcptop/bin/tcptop",
         "description": "Summarize the top active TCP sessions - like top, but for TCP",
