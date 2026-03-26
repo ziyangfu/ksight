@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcpstates",
+    "description": "Trace TCP session state changes and durations."
+}

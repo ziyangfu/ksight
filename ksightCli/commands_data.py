@@ -227,6 +227,26 @@ COMMANDS = {
             "--version"
         ]
     },
+    "tcpstates": {
+        "bin_path": "net/tcpstates/bin/tcpstates",
+        "description": "Trace TCP session state changes and durations.",
+        "options": [
+            "-v",
+            "--verbose",
+            "-T",
+            "--timestamp",
+            "-4",
+            "--ipv4",
+            "-6",
+            "--ipv6",
+            "-w",
+            "--wide",
+            "-L",
+            "--localport",
+            "-D",
+            "--remoteport"
+        ]
+    },
     "tcptop": {
         "bin_path": "net/tcptop/bin/tcptop",
         "description": "Summarize the top active TCP sessions - like top, but for TCP",
