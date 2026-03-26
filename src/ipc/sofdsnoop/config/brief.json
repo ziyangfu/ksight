@@ -1,0 +1,4 @@
+{
+    "tool_name": "sofdsnoop",
+    "description": "Trace file descriptors passed via Unix domain socket."
+}

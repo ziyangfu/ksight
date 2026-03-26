@@ -51,6 +51,7 @@ option(BUILD_KVM_WATCHER "is build kvm_watcher? "           OFF )
 option(BUILD_STACK_ANALYZER "is build stack_analyzer? "     OFF )
 # IPC
 option(BUILD_IPC_WATCHER "is build ipcwatcher? "             ON )
+option(BUILD_SOFDSNOOP "is build sofdsnoop? "               ON )
 
 if (BUILD_ALL)
     # 当前暂时不可用
@@ -177,6 +178,11 @@ else ()
     message(STATUS "build ipcwatcher? ${BUILD_IPC_WATCHER}")
     if (BUILD_IPC_WATCHER)
         add_subdirectory(ipc/ipcwatcher)
+    endif ()
+
+    message(STATUS "build sofdsnoop? ${BUILD_SOFDSNOOP}")
+    if (BUILD_SOFDSNOOP)
+        add_subdirectory(ipc/sofdsnoop)
     endif ()
 
     message(STATUS "----------------------------------------")

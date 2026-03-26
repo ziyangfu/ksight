@@ -28,6 +28,23 @@ COMMANDS = {
             "--help"
         ]
     },
+    "sofdsnoop": {
+        "bin_path": "ipc/sofdsnoop/bin/sofdsnoop",
+        "description": "Trace file descriptors passed via Unix domain socket.",
+        "options": [
+            "-T",
+            "--timestamp",
+            "-p",
+            "--pid",
+            "-t",
+            "--tid",
+            "-n",
+            "--name",
+            "-d",
+            "--duration",
+            "--verbose"
+        ]
+    },
     "tcpconnlat": {
         "bin_path": "net/tcpconnlat/bin/tcpconnlat",
         "description": "Trace TCP connects and show connection latency.",
