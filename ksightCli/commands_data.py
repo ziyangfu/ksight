@@ -323,6 +323,21 @@ COMMANDS = {
             "--version"
         ]
     },
+    "tcptracer": {
+        "bin_path": "net/tcptracer/bin/tcptracer",
+        "description": "tcptracer: Trace TCP connections",
+        "options": [
+            "-t",
+            "--timestamp",
+            "-U",
+            "--print-uid",
+            "-p",
+            "--pid",
+            "-u",
+            "--uid",
+            "--verbose"
+        ]
+    },
     "bindsnoop": {
         "bin_path": "net/bindsnoop/bin/bindsnoop",
         "description": "a tool for tracing bind() syscall events",
