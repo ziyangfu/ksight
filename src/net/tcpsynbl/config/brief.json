@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcpsynbl",
+    "description": "Summarize TCP SYN backlog as a histogram."
+}
