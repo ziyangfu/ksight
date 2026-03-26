@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcppktlat",
+    "description": "Trace latency between TCP received pkt and picked up by userspace thread."
+}

@@ -89,6 +89,25 @@ COMMANDS = {
             "--help"
         ]
     },
+    "tcppktlat": {
+        "bin_path": "net/tcppktlat/bin/tcppktlat",
+        "description": "Trace latency between TCP received pkt and picked up by userspace thread.",
+        "options": [
+            "-p",
+            "--pid",
+            "-t",
+            "--tid",
+            "-T",
+            "--timestamp",
+            "-l",
+            "--lport",
+            "-r",
+            "--rport",
+            "-w",
+            "--wide",
+            "--verbose"
+        ]
+    },
     "tcprtt": {
         "bin_path": "net/tcprtt/bin/tcprtt",
         "description": "Summarize TCP RTT as a histogram",
@@ -335,6 +354,19 @@ COMMANDS = {
             "--pid",
             "-u",
             "--uid",
+            "--verbose"
+        ]
+    },
+    "tcpsynbl": {
+        "bin_path": "net/tcpsynbl/bin/tcpsynbl",
+        "description": "Summarize TCP SYN backlog as a histogram.",
+        "options": [
+            "-T",
+            "--timestamp",
+            "-4",
+            "--ipv4",
+            "-6",
+            "--ipv6",
             "--verbose"
         ]
     },
