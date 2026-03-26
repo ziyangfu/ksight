@@ -28,6 +28,19 @@ COMMANDS = {
             "--help"
         ]
     },
+    "tcpconnlat": {
+        "bin_path": "net/tcpconnlat/bin/tcpconnlat",
+        "description": "Trace TCP connects and show connection latency.",
+        "options": [
+            "-t",
+            "--timestamp",
+            "-p",
+            "--pid",
+            "-L",
+            "--lport",
+            "--verbose"
+        ]
+    },
     "netwatcher": {
         "bin_path": "net/netwatcher/bin/netwatcher",
         "description": "a tool for tracing TCP/IP stack events",

@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcpconnlat",
+    "description": "Trace TCP connects and show connection latency."
+}
