@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcpretrans",
+    "description": "Trace TCP retransmits and TLPs."
+}

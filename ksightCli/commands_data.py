@@ -125,6 +125,23 @@ COMMANDS = {
             "--verbose"
         ]
     },
+    "tcpretrans": {
+        "bin_path": "net/tcpretrans/bin/tcpretrans",
+        "description": "Trace TCP retransmits and TLPs.",
+        "options": [
+            "-s",
+            "--sequence",
+            "-l",
+            "--lossprobe",
+            "-c",
+            "--count",
+            "-4",
+            "--ipv4",
+            "-6",
+            "--ipv6",
+            "--verbose"
+        ]
+    },
     "tcprtt": {
         "bin_path": "net/tcprtt/bin/tcprtt",
         "description": "Summarize TCP RTT as a histogram",
