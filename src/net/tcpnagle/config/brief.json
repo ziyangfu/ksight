@@ -1,0 +1,4 @@
+{
+    "tool_name": "tcpnagle",
+    "description": "Diagnostic and enforcement tool for TCP Nagle algorithm (TCP_NODELAY)"
+}

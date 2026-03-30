@@ -125,6 +125,22 @@ COMMANDS = {
             "--verbose"
         ]
     },
+    "tcpnagle": {
+        "bin_path": "net/tcpnagle/bin/tcpnagle",
+        "description": "Diagnostic and enforcement tool for TCP Nagle algorithm (TCP_NODELAY)",
+        "options": [
+            "-h",
+            "--help",
+            "-V",
+            "--verbose",
+            "-d",
+            "--disabled-only",
+            "-p",
+            "--pid",
+            "-c",
+            "--cgroup"
+        ]
+    },
     "tcpretrans": {
         "bin_path": "net/tcpretrans/bin/tcpretrans",
         "description": "Trace TCP retransmits and TLPs.",

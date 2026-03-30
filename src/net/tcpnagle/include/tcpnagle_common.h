@@ -1,8 +1,8 @@
 #ifndef NET_TCP_NAGLE_COMMON_H
 #define NET_TCP_NAGLE_COMMON_H
 
-#ifndef TASK_COMM_LEN
-#define TASK_COMM_LEN 16
+#ifndef TCPNAGLE_COMM_LEN
+#define TCPNAGLE_COMM_LEN 16
 #endif
 
 // BPF 传向用户态的事件结构

@@ -1,10 +1,9 @@
 #include "ArgParser.h"
-#include <iostream>
 
 namespace net::tcpNagle {
 
 void cmdParser(argparse::ArgumentParser &parser, ConfigArgs &config) {
-  parser.add_argument("-V", "--verbose")
+  parser.add_argument("-vvv", "--verbose")
       .help("Enable verbose output")
       .default_value(false)
       .implicit_value(true)
@@ -21,9 +20,10 @@ void cmdParser(argparse::ArgumentParser &parser, ConfigArgs &config) {
       .scan<'i', int>()
       .default_value(0)
       .store_into(config.pid);
-  
+
   parser.add_argument("-c", "--cgroup")
-      .help("Specify cgroup v2 path to forcefully disable Nagle algorithm for all apps within it (e.g., /sys/fs/cgroup)")
+      .help("Specify cgroup v2 path to forcefully disable Nagle algorithm for "
+            "all apps within it (e.g., /sys/fs/cgroup)")
       .default_value(std::string(""))
       .store_into(config.cgroupPath);
 }

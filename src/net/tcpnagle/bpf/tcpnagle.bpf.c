@@ -1,5 +1,16 @@
-#include "tcpnagle_common.h"
+#ifndef TASK_COMM_LEN
+#ifndef __TASK_COMM_LEN
+#define __TASK_COMM_LEN
+#endif
+#endif
+
+// 强制取消可能存在的宏定义，防止与 vmlinux.h 中的 enum 冲突
+#ifdef TASK_COMM_LEN
+#undef TASK_COMM_LEN
+#endif
+
 #include "vmlinux.h"
+#include "tcpnagle_common.h"
 
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
@@ -45,7 +56,10 @@ int tcpnagle_iter(struct bpf_iter__tcp *ctx) {
   event->daddr = skc->skc_daddr;
   event->sport = skc->skc_num;
   event->dport = bpf_ntohs(skc->skc_dport);
-  event->nonagle = BPF_CORE_READ(tp, nonagle);
+  
+  // 尝试直接访问 bitfield。在 iter 程序中，如果有 BTF 且支持 CO-RE，这由编译器处理。
+  // 若有问题，可能需要手动 bitfield 提取。
+  event->nonagle = tp->nonagle;
   event->inode = 0;
 
   // 获取 Inode 用于在用户态匹配 PID
@@ -68,7 +82,7 @@ int tcpnagle_iter(struct bpf_iter__tcp *ctx) {
 // 用于在 cgroup 内强制禁用 Nagle 算法的 sockops 程序
 SEC("sockops")
 int bpf_disable_nagle(struct bpf_sock_ops *skops) {
-  int op = (int)skops->op;
+  unsigned int op = skops->op;
   int one = 1;
 
   // 当连接建立时触发
