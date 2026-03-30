@@ -10,7 +10,7 @@
 namespace net::tcpNagle {
 
 TcpNagleBpf::TcpNagleBpf(ConfigArgs &config)
-    : config_(config), skel_(nullptr), ringBuffer_(nullptr) {}
+    : config_(config), skel_(nullptr), ringBuffer_(nullptr), cgroupFd_(-1) {}
 
 TcpNagleBpf::~TcpNagleBpf() { destroy(); }
 
@@ -28,7 +28,47 @@ void TcpNagleBpf::openAndLoad() {
   }
 }
 
+void TcpNagleBpf::attach() {
+  if (config_.cgroupPath.empty()) {
+    return;
+  }
+
+  SPDLOG_INFO("正在挂载 sockops 程序到 cgroup: {}", config_.cgroupPath);
+  cgroupFd_ = ::open(config_.cgroupPath.c_str(), O_RDONLY);
+  if (cgroupFd_ < 0) {
+    SPDLOG_ERROR("无法打开 cgroup 路径: {}. Error: {}",
+                 config_.cgroupPath, strerror(errno));
+    return;
+  }
+
+  int sockops_fd = bpf_program__fd(skel_->progs.bpf_disable_nagle);
+  if (sockops_fd < 0) {
+    SPDLOG_ERROR("无法获取 sockops 程序 FD");
+    return;
+  }
+
+  int err = bpf_prog_attach(sockops_fd, cgroupFd_, BPF_CGROUP_SOCK_OPS, 0);
+  if (err) {
+    SPDLOG_ERROR("挂载 sockops 到 cgroup 失败: {}. Error: {}", err,
+                 strerror(errno));
+    return;
+  }
+  SPDLOG_INFO("成功挂载！该 cgroup 下的所有新 TCP 连接将强制禁用 Nagle 算法。");
+}
+
+void TcpNagleBpf::detach() {
+  if (cgroupFd_ >= 0) {
+    int sockops_fd = bpf_program__fd(skel_->progs.bpf_disable_nagle);
+    if (sockops_fd >= 0) {
+      bpf_prog_detach2(sockops_fd, cgroupFd_, BPF_CGROUP_SOCK_OPS);
+    }
+    ::close(cgroupFd_);
+    cgroupFd_ = -1;
+  }
+}
+
 void TcpNagleBpf::destroy() {
+  detach();
   if (ringBuffer_) {
     ring_buffer__free(ringBuffer_);
     ringBuffer_ = nullptr;
@@ -42,7 +82,7 @@ void TcpNagleBpf::destroy() {
 void TcpNagleBpf::run() {
   buildProcMap();
 
-  // 1. 创建迭代器 Link
+  // 1. 创建迭代器 Link (针对现有 Socket 的快照探测)
   LIBBPF_OPTS(bpf_iter_attach_opts, opts);
   struct bpf_link *link =
       bpf_program__attach_iter(skel_->progs.tcpnagle_iter, &opts);
@@ -60,14 +100,14 @@ void TcpNagleBpf::run() {
   }
 
   // 表头打印 (在此处打印，确保结果在中间)
-  printf("\n%-10s %-25s %-25s %-20s %-15s\n", "状态", "本地地址:端口",
+  printf("\n%-10s %-25s %-25s %-20s %-15s\n", "类型", "本地地址:端口",
          "远端地址:端口", "程序(PID)", "Nagle状态");
   printf("%.110s\n", std::string(110, '-').c_str());
 
   // 3. 读取迭代器触发 BPF 程序
   char buf[64];
   while (::read(iter_fd, buf, sizeof(buf)) > 0) {
-      // BPF 程序产生的事件会写入 RingBuffer
+      // BPF 程序产生事件会通过 RingBuf 传输
   }
 
   // 4. 处理收集到的事件

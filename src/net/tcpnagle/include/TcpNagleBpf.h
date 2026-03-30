@@ -19,12 +19,12 @@ private:
   ConfigArgs &config_;
   struct tcpnagle_bpf *skel_;
   struct ring_buffer *ringBuffer_;
+  int cgroupFd_; // 用于挂载 sockops 的 cgroup 文件描述符
 
   struct ProcInfo {
     int pid;
     std::string comm;
   };
-  // Key: "src_ip:src_port" 字符串，用于匹配迭代器发现的 Socket
   std::map<std::string, ProcInfo> connToProc_;
 
 public:
@@ -35,9 +35,10 @@ public:
   void load();
   void openAndLoad();
   void attach();
+  void detach(); // 新增侦听解绑
   void destroy();
 
-  void run(); // 开始迭代并读取结果
+  void run(); // 对现有连接快照探测
 
 private:
   static int handleEvent(void *ctx, void *data, size_t len);
