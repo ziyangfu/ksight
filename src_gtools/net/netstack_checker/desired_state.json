@@ -7,13 +7,20 @@
     "net.ipv4.tcp_timestamps": "1",
     "net.core.rmem_max": "212992",
     "net.core.wmem_max": "212992",
-    "net.core.netdev_max_backlog": "1000"
+    "net.core.netdev_max_backlog": "1000",
+    "net.ipv4.tcp_rmem": "4096 87380 6291456",
+    "net.ipv4.tcp_wmem": "4096 16384 4194304"
   },
   "interface": {
     "eth0": {
       "min_speed": 1000,
       "duplex": "full",
       "mtu": 1500
+    },
+    "lo": {
+      "min_speed": 10000,
+      "duplex": "full",
+      "mtu": 65536
     }
   }
 }
