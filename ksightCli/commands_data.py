@@ -131,7 +131,7 @@ COMMANDS = {
         "options": [
             "-h",
             "--help",
-            "-V",
+            "-vvv",
             "--verbose",
             "-d",
             "--disabled-only",
