@@ -2,12 +2,19 @@
 #include "TcpNagleBpf.h"
 #include "spdlog/spdlog.h"
 #include <iostream>
+#include <unistd.h>
 
 using namespace net::tcpNagle;
 
 int main(int argc, const char **argv) {
   argparse::ArgumentParser parser("tcpnagle");
   ConfigArgs config;
+  
+  // 检查 root 权限
+  if (geteuid() != 0) {
+    SPDLOG_ERROR("tcpnagle 工具需要 root 权限运行。");
+    return 1;
+  }
 
   // 1. 解析参数
   cmdParser(parser, config);
