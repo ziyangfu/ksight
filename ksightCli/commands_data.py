@@ -190,6 +190,34 @@ COMMANDS = {
             "--help"
         ]
     },
+    "netstack_probe": {
+        "bin_path": "net/netstack_probe/bin/netstack_probe",
+        "description": "No description available",
+        "options": [
+            "-h",
+            "--help",
+            "-C",
+            "--check-config",
+            "-P",
+            "--probe",
+            "-r",
+            "--arping",
+            "-S",
+            "--stat",
+            "-A",
+            "--all",
+            "-t",
+            "--target",
+            "-i",
+            "--interface",
+            "-I",
+            "--iperf",
+            "-c",
+            "--config",
+            "-j",
+            "--json"
+        ]
+    },
     "tcpaccd": {
         "bin_path": "net/tcpaccd/bin/tcpaccd",
         "description": "a daemon for accerate TCP in IPC",

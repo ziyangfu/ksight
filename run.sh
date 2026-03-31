@@ -99,6 +99,21 @@ install_third_party() {
     log_info "Third-party tools installed."
 }
 
+install_gtools() {
+    log_info "Installing src_gtools (Python/Script tools)..."
+    
+    # Check if gtools_install.sh exists
+    if [ -f "$(pwd)/src_gtools/gtools_install.sh" ]; then
+        # Ensure it has execution permissions
+        chmod +x "$(pwd)/src_gtools/gtools_install.sh"
+        # Run gtools_install.sh with the standard INSTALL_DIR
+        bash "$(pwd)/src_gtools/gtools_install.sh" "${INSTALL_DIR}"
+        log_info "src_gtools tools installed."
+    else
+        log_warn "src_gtools/gtools_install.sh not found. Skipping gtools installation."
+    fi
+}
+
 generate_metadata() {
     log_info "Generating command metadata for ksightCli..."    
     # Run gen_cmd_data.py to create commands_data.py
@@ -162,6 +177,7 @@ main() {
     check_deps
     build_and_install
     install_third_party
+    install_gtools
     generate_metadata
     setup_ksight_cli
     

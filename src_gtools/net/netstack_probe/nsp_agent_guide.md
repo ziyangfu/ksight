@@ -6,7 +6,7 @@
 
 **核心功能**：
 
-1. **协议栈一致性审计 (Dimension A)**：基于 [desired_state.json](file:///home/fzy/Downloads/02_Personal_Dev/02_ksight_family/ksight/src_gtools/net/netstack_checker/desired_state.json) 核查内核 `sysctl` 参数，识别配置漂移。
+1. **协议栈一致性审计 (Dimension A)**：基于 desired_state.json 核查内核 `sysctl` 参数，识别配置漂移。
 2. **多层连通性探测 (Dimension B)**：集成 L3 (ping) 和 L2 (arping) 探测，量化延迟、抖动（mdev）与丢包。
 3. **实时性能与硬件审计 (Dimension C)**：监控瞬时带宽吞吐、软中断 (SoftIRQ) 分布以及网卡硬件协商状态。
 
