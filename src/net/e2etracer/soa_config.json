@@ -1,0 +1,20 @@
+[
+    {
+        "service_id": 4353,
+        "instance_id": 1,
+        "service_name": "VehicleSpeed",
+        "ip": "127.0.0.1",
+        "port": 30501,
+        "protocol": "udp",
+        "description": "Vehicle Speed Data Broadcast"
+    },
+    {
+        "service_id": 4354,
+        "instance_id": 1,
+        "service_name": "CameraStream",
+        "ip": "192.168.1.10",
+        "port": 30502,
+        "protocol": "tcp",
+        "description": "Front Camera Video Stream"
+    }
+]
