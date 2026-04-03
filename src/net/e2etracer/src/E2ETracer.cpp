@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <fstream>
+#include <iostream>
 #include "SoaManager.h"
 
 namespace ksight {
@@ -79,6 +81,57 @@ void E2ETracer::stop() {
 void E2ETracer::set_service_filter(uint32_t service_id, uint32_t instance_id) {
     target_service_id_ = service_id;
     target_instance_id_ = instance_id;
+}
+
+std::string E2ETracer::find_library_path(int pid, const std::string& lib_name) {
+    std::string maps_path = "/proc/" + std::to_string(pid) + "/maps";
+    std::ifstream maps_file(maps_path);
+    if (!maps_file.is_open()) {
+        return "";
+    }
+    
+    std::string line;
+    while (std::getline(maps_file, line)) {
+        // 查找包含目标库且具有可执行权限 (r-xp) 的映射记录
+        if (line.find(lib_name) != std::string::npos && line.find("r-xp") != std::string::npos) {
+            size_t slash_pos = line.find('/');
+            if (slash_pos != std::string::npos) {
+                return line.substr(slash_pos);
+            }
+        }
+    }
+    return "";
+}
+
+int E2ETracer::attach_middleware_uprobe(int target_pid, const std::string& lib_name, const std::string& symbol) {
+    std::string lib_path = find_library_path(target_pid, lib_name);
+    if (lib_path.empty()) {
+        std::cerr << "Cannot find library: " << lib_name << " in PID " << target_pid << std::endl;
+        return -1;
+    }
+
+    std::cout << "Found target library at: " << lib_path << " for PID " << target_pid << std::endl;
+
+    DECLARE_LIBBPF_OPTS(bpf_uprobe_opts, uprobe_opts);
+    uprobe_opts.func_name = symbol.c_str();
+    uprobe_opts.retprobe = false;
+
+    struct bpf_link* link = bpf_program__attach_uprobe_opts(
+        skel_->progs.uprobe_middleware_send,
+        target_pid,
+        lib_path.c_str(),
+        0,  // Offset is 0 because we provide func_name
+        &uprobe_opts
+    );
+
+    if (!link) {
+        std::cerr << "Failed to attach uprobe to " << lib_path << ":" << symbol << std::endl;
+        return -1;
+    }
+
+    std::cout << "Successfully attached uprobe to " << lib_name << ":" << symbol << std::endl;
+    uprobe_links_.push_back(link);
+    return 0;
 }
 
 int E2ETracer::handle_event(void *ctx, void *data, size_t data_sz) {
