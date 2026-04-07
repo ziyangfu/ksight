@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2023 Wenbo Zhang
-
+#include <vmlinux.h>
 // TCP层单层的耗时统计， netwatcher会有多层的耗时统计
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-#include <vmlinux.h>
 
 #include "compat.bpf.h"
 #include "core_fixes.bpf.h"
