@@ -23,6 +23,9 @@ src/magic_eyes_cli/venv/
 __pycache__/
 src/magic_eyes_cli/core/__pycache__/
 
+#ref
+ref/
+
 # Environment variables
 .env
 .env.local
