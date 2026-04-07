@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 #include "../bpf/e2etracer.h"
-#include "E2ETracer.skel.h"
+#include "e2etracer.skel.h"
 
 namespace ksight {
 namespace net {

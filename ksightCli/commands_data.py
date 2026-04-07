@@ -404,6 +404,16 @@ COMMANDS = {
             "--help"
         ]
     },
+    "e2etracer": {
+        "bin_path": "net/e2etracer/bin/e2etracer",
+        "description": "Automotive SOA vertical full-link tracer with context coloring.",
+        "options": [
+            "--config",
+            "--serviceID",
+            "--instanceID",
+            "--someip"
+        ]
+    },
     "solisten": {
         "bin_path": "net/solisten/bin/solisten",
         "description": "Trace IPv4 and IPv6 listen syscalls",

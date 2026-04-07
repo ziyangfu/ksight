@@ -6,8 +6,11 @@
 
 using namespace ksight::net;
 
-// 全局配置实例
+namespace ksight {
+namespace net {
 SoaManager g_soa_manager;
+} // namespace net
+} // namespace ksight
 
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser program("e2etracer");

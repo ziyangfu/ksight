@@ -14,7 +14,7 @@ ksight_add_tool(
     NAME e2etracer
     MODULE net
     BPF_FILES 
-        bpf/e2etracer.bpf.c
+        e2etracer.bpf.c
 )
 
 target_link_libraries(e2etracer PRIVATE pcap rt nlohmann_json::nlohmann_json)
