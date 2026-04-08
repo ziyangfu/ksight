@@ -1,10 +1,17 @@
 import os
 
+from pathlib import Path
+
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    # 1. 优先尝试从本文件所在目录加载(安装目录)
+    # 这确保了全局调用时能读取安装时的配置
+    current_file_dir = Path(__file__).parent
+    load_dotenv(dotenv_path=current_file_dir / ".env")
+    
+    # 2. 尝试从当前执行目录加载 (允许用户临时覆盖配置)
+    load_dotenv(dotenv_path=Path.cwd() / ".env", override=True)
 except ImportError:
-    # 如果没有安装 python-dotenv，也可以手动尝试从根目录读取 .env 文件
     pass
 
 class Config:

@@ -1,7 +1,9 @@
 import os
 import subprocess
+import json
 from typing import Dict, Any, List, Optional
 from .config import config
+from .ipc import TempUdsServer
 
 def get_install_root():
     """获取 ksight 的安装根目录（复用 ksightCli 的逻辑）"""
@@ -22,7 +24,7 @@ class ToolResult:
             return f"Error: {self.error}\nOutput: {self.output}"
         return self.output
 
-def run_command(cmd: List[str], timeout: int = 30, sudo: bool = False) -> ToolResult:
+def run_command(cmd: List[str], timeout: int = 30, sudo: bool = False, env: Optional[Dict[str, str]] = None) -> ToolResult:
     """运行外部命令并返回结果"""
     if sudo and os.getuid() != 0:
         cmd = ["sudo", "-n"] + cmd  # 使用 -n 避免交互式输入密码
@@ -32,7 +34,8 @@ def run_command(cmd: List[str], timeout: int = 30, sudo: bool = False) -> ToolRe
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout
+            timeout=timeout,
+            env=env
         )
         return ToolResult(process.stdout, process.stderr, process.returncode)
     except subprocess.TimeoutExpired:
@@ -124,6 +127,22 @@ KSIGHT_TOOLS = [
                 }
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ksight_tcpnagle",
+            "description": "ksight TCP Nagle 算法诊断工具，用于检查连接是否禁用 Nagle (TCP_NODELAY)。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "args": {
+                        "type": "string",
+                        "description": "传递给 tcpnagle 的参数，如 '-p <pid>' 过滤进程。"
+                    }
+                }
+            }
+        }
     }
 ]
 
@@ -136,12 +155,12 @@ class ToolExecutor:
         if name == "ksight_netwatcher":
             bin_path = os.path.join(self.install_root, "net/netwatcher/bin/netwatcher")
             cmd = [bin_path] + args.get("args", "").split()
-            return str(run_command(cmd, sudo=True))
+            return self._run_with_uds(cmd)
         
         elif name == "ksight_ipcwatcher":
             bin_path = os.path.join(self.install_root, "ipc/ipcwatcher/bin/ipcwatcher")
             cmd = [bin_path] + args.get("args", "").split()
-            return str(run_command(cmd, sudo=True))
+            return self._run_with_uds(cmd)
 
         elif name == "system_top":
             # 简化 top 调用，直接用 -b -n 1
@@ -160,9 +179,41 @@ class ToolExecutor:
         elif name == "ksight_nettrace":
             bin_path = os.path.join(self.install_root, "net/nettrace/bin/nettrace")
             cmd = [bin_path] + args.get("args", "").split()
-            return str(run_command(cmd, sudo=True))
+            return self._run_with_uds(cmd)
+
+        elif name == "ksight_tcpnagle":
+            # 如果是在开发环境，可能在 build 目录下
+            bin_path = os.path.join(self.install_root, "net/tcpnagle/bin/tcpnagle")
+            if not os.path.exists(bin_path):
+                # 兼容 build_tmp 目录 (用于当前测试)
+                script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                bin_path = os.path.join(script_dir, "build_tmp/src/net/tcpnagle/tcpnagle")
+            
+            cmd = [bin_path] + args.get("args", "").split()
+            return self._run_with_uds(cmd)
 
         else:
             return f"Error: Unknown tool {name}"
+
+    def _run_with_uds(self, cmd: List[str]) -> str:
+        """带 UDS 通信的工具执行逻辑"""
+        with TempUdsServer() as server:
+            env = os.environ.copy()
+            env["KSIGHT_AGENT_SOCK"] = server.socket_path
+            # 增加 agent 模式标志
+            if "--agent" not in cmd:
+                cmd.append("--agent")
+            if "--ojson" not in cmd:
+                cmd.append("--ojson")
+            
+            res = run_command(cmd, sudo=True, env=env)
+            
+            # 尝试从 UDS 获取结构化结果
+            uds_res = server.receive_json(timeout=3.0)
+            if uds_res is not None:
+                return json.dumps(uds_res, indent=2, ensure_ascii=False)
+            
+            # 如果 UDS 失败，回退到 stdout
+            return str(res)
 
 tool_executor = ToolExecutor()
