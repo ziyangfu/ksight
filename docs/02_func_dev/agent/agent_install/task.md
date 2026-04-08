@@ -1,0 +1,13 @@
+- [ ] **Phase 1: Agent 模块安装准备**
+    - [ ] 创建 `agent/requirements.txt`: 包含 `openai`, `python-dotenv`, `click`, `spdlog` 等依赖
+    - [ ] 创建 `agent/agent_install.sh`: 实现源码拷贝、venv 创建、依赖安装及 .env 初始化
+    - [ ] 修改 `agent/config.py`: 适配多路径 `.env` 加载逻辑 (当前目录 + 安装目录)
+- [ ] **Phase 2: ksightCli 重构与包装器实现**
+    - [ ] 重命名 `ksightCli/ksightCli` 为 `ksightCli/ksightCli.py`
+    - [ ] 修改 `run.sh`:
+        - [ ] 集成 `install_agent` 函数调用
+        - [ ] 重写 `setup_ksight_cli`: 生成 `/usr/local/bin/ksightCli` Shell 包装脚本
+- [ ] **Phase 3: 全局安装与验证**
+    - [ ] 执行 `sudo ./run.sh` 进行完整构建安装
+    - [ ] 验证：在非项目根目录下执行 `ksightCli agent -h`
+    - [ ] 验证：在非项目根目录下执行 `ksightCli agent chat`
