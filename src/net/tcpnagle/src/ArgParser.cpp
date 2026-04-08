@@ -26,6 +26,18 @@ void cmdParser(argparse::ArgumentParser &parser, ConfigArgs &config) {
             "all apps within it (e.g., /sys/fs/cgroup)")
       .default_value(std::string(""))
       .store_into(config.cgroupPath);
+
+  parser.add_argument("--agent")
+      .help("Enable agent mode (output to UDS)")
+      .default_value(false)
+      .implicit_value(true)
+      .store_into(config.agentMode);
+
+  parser.add_argument("--ojson")
+      .help("Output result in JSON format")
+      .default_value(false)
+      .implicit_value(true)
+      .store_into(config.outputJson);
 }
 
 } // namespace net::tcpNagle

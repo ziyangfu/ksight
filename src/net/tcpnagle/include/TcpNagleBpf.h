@@ -5,6 +5,7 @@
 #include "tcpnagle_common.h"
 #include <map>
 #include <string>
+#include <nlohmann/json.hpp>
 
 extern "C" {
 #include "tcpnagle.skel.h"
@@ -45,6 +46,8 @@ private:
   void processEvent(const struct tcpnagle_event *event);
   void buildProcMap();
   std::string addr2str(uint32_t addr, uint16_t port);
+
+  nlohmann::json resultsJson_;
 };
 
 } // namespace net::tcpNagle

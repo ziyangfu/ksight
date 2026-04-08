@@ -1,4 +1,5 @@
 #include "TcpNagleBpf.h"
+#include "AgentCom.hpp"
 #include "spdlog/spdlog.h"
 #include <arpa/inet.h>
 #include <dirent.h>
@@ -100,9 +101,13 @@ void TcpNagleBpf::run() {
   }
 
   // 表头打印 (在此处打印，确保结果在中间)
-  printf("\n%-10s %-25s %-25s %-20s %-15s\n", "类型", "本地地址:端口",
-         "远端地址:端口", "程序(PID)", "Nagle状态");
-  printf("%.110s\n", std::string(110, '-').c_str());
+  if (!config_.agentMode && !config_.outputJson) {
+      printf("\n%-10s %-25s %-25s %-20s %-15s\n", "类型", "本地地址:端口",
+             "远端地址:端口", "程序(PID)", "Nagle状态");
+      printf("%.110s\n", std::string(110, '-').c_str());
+  }
+
+  resultsJson_ = nlohmann::json::array();
 
   // 3. 读取迭代器触发 BPF 程序
   char buf[64];
@@ -115,7 +120,14 @@ void TcpNagleBpf::run() {
 
   ::close(iter_fd);
   bpf_link__destroy(link);
-  printf("%.110s\n\n", std::string(110, '-').c_str());
+
+  if (config_.agentMode) {
+      AgentCom::send(resultsJson_);
+  } else if (config_.outputJson) {
+      printf("%s\n", resultsJson_.dump(4).c_str());
+  } else {
+      printf("%.110s\n\n", std::string(110, '-').c_str());
+  }
 }
 
 void TcpNagleBpf::buildProcMap() {
@@ -196,13 +208,38 @@ void TcpNagleBpf::processEvent(const struct tcpnagle_event *event) {
   std::string remote = std::string(d_addr_str) + ":" + std::to_string(event->dport);
   std::string prog_info = (pid != 0) ? (comm + "(" + std::to_string(pid) + ")") : "unknown";
   
-  std::string status;
-  if (event->nonagle == 1) status = "✅ DISABLED";
-  else if (event->nonagle == 2) status = "⚠ CORKED";
-  else status = "❌ ENABLED";
+  std::string status_str;
+  bool nagle_enabled = true;
+  if (event->nonagle == 1) {
+      status_str = "DISABLED";
+      nagle_enabled = false;
+  } else if (event->nonagle == 2) {
+      status_str = "CORKED";
+  } else {
+      status_str = "ENABLED";
+  }
 
-  printf("%-10s %-25s %-25s %-20s %-15s\n", "连接", local.c_str(),
-         remote.c_str(), prog_info.c_str(), status.c_str());
+  if (config_.agentMode || config_.outputJson) {
+      nlohmann::json obj;
+      obj["type"] = "connection";
+      obj["local"] = local;
+      obj["remote"] = remote;
+      obj["program"] = (pid != 0) ? comm : "unknown";
+      obj["pid"] = pid;
+      obj["status"] = status_str;
+      obj["nagle_enabled"] = nagle_enabled;
+      resultsJson_.push_back(obj);
+  }
+
+  if (!config_.agentMode && !config_.outputJson) {
+      std::string status_display;
+      if (event->nonagle == 1) status_display = "✅ DISABLED";
+      else if (event->nonagle == 2) status_display = "⚠ CORKED";
+      else status_display = "❌ ENABLED";
+
+      printf("%-10s %-25s %-25s %-20s %-15s\n", "连接", local.c_str(),
+             remote.c_str(), prog_info.c_str(), status_display.c_str());
+  }
 }
 
 } // namespace net::tcpNagle
