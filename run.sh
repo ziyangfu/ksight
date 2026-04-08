@@ -114,6 +114,17 @@ install_gtools() {
     fi
 }
 
+install_agent() {
+    log_info "Installing ksight Agent..."
+    if [ -f "$(pwd)/agent/agent_install.sh" ]; then
+        chmod +x "$(pwd)/agent/agent_install.sh"
+        bash "$(pwd)/agent/agent_install.sh" "${INSTALL_DIR}"
+        log_info "ksight Agent installed."
+    else
+        log_warn "agent/agent_install.sh not found. Skipping agent installation."
+    fi
+}
+
 generate_metadata() {
     log_info "Generating command metadata for ksightCli..."    
     # Run gen_cmd_data.py to create commands_data.py
@@ -129,13 +140,18 @@ setup_ksight_cli() {
     # Create ksightCli directory in INSTALL_DIR
     mkdir -p "${INSTALL_DIR}/ksightCli"
     
-    # Copy ksightCli and generated commands_data.py
-    cp "${KSIGHT_CLI_DIR}/ksightCli" "${INSTALL_DIR}/ksightCli/"
+    # Copy ksightCli.py and generated commands_data.py
+    cp "${KSIGHT_CLI_DIR}/ksightCli.py" "${INSTALL_DIR}/ksightCli/"
     cp "${KSIGHT_CLI_DIR}/commands_data.py" "${INSTALL_DIR}/ksightCli/"
-    chmod +x "${INSTALL_DIR}/ksightCli/ksightCli"
+    
+    # Inject shebang with venv python path
+    log_info "Injecting venv shebang into ksightCli.py..."
+    sed -i "1s|.*|#!${INSTALL_DIR}/venv/bin/python3|" "${INSTALL_DIR}/ksightCli/ksightCli.py"
+    chmod +x "${INSTALL_DIR}/ksightCli/ksightCli.py"
     
     # Create symlink in /usr/local/bin
-    ln -sf "${INSTALL_DIR}/ksightCli/ksightCli" /usr/local/bin/ksightCli
+    log_info "Creating ksightCli symlink..."
+    ln -sf "${INSTALL_DIR}/ksightCli/ksightCli.py" /usr/local/bin/ksightCli
     
     # Add eval command to .bashrc if not already present
     # When running with sudo, we need to get the actual user's home directory
@@ -152,22 +168,23 @@ setup_ksight_cli() {
     BASHRC="${ACTUAL_HOME}/.bashrc"
 
     
-    CLICK_VERSION=$(python3 -c "import click; print(click.__version__.split('.')[0])")
+    # 用 venv 中的 Click 版本（而非系统 Python）确定补全方式
+    CLICK_VERSION=$("${INSTALL_DIR}/venv/bin/python3" -c "import click; print(click.__version__.split('.')[0])")
     if [ "$CLICK_VERSION" -ge "8" ]; then
         COMP_METHOD="bash_source"
     else
         COMP_METHOD="source"
     fi
-    COMP_CMD="eval \"\$(_KSIGHTCLI_COMPLETE=$COMP_METHOD ksightCli)\""
-    
-    if ! grep -qF "${COMP_CMD}" "${BASHRC}"; then
-        log_info "Adding auto-completion to ${BASHRC}..."
-        echo -e "\n# ksight CLI auto-completion\n${COMP_CMD}" >> "${BASHRC}"
-        source "${BASHRC}"
-        log_info "Auto-completion added. Please restart shell to enable it"
-    else
-        log_info "Auto-completion already configured in ${BASHRC}"
-    fi
+    COMP_CMD="eval \"\$(_KSIGHTCLI_COMPLETE=${COMP_METHOD} ksightCli)\""
+
+    # 先删除所有旧版本补全行（无论是 source 还是 bash_source 格式）
+    sed -i '/# ksight CLI auto-completion/d' "${BASHRC}"
+    sed -i '/_KSIGHTCLI_COMPLETE=.*ksightCli/d' "${BASHRC}"
+
+    # 重新写入最新格式
+    log_info "Adding auto-completion (method: ${COMP_METHOD}) to ${BASHRC}..."
+    echo -e "\n# ksight CLI auto-completion\n${COMP_CMD}" >> "${BASHRC}"
+    log_info "Auto-completion added. Please run 'source ~/.bashrc' or restart shell."
 
     log_info "ksightCli setup complete. You can now use 'ksightCli' command."
 }
@@ -178,6 +195,7 @@ main() {
     build_and_install
     install_third_party
     install_gtools
+    install_agent
     generate_metadata
     setup_ksight_cli
     

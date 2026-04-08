@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/local/bin/ksight/venv/bin/python3
 """
 ksightCli - ksight 内核可观测性工具集的统一命令行界面。
 
@@ -11,8 +11,9 @@ import sys
 import subprocess
 import click
 
-# 确保可以导入同目录及项目根目录下的模块
-script_dir = os.path.dirname(os.path.abspath(__file__))
+# 使用 realpath 跟随符号链接，确保在任意位置调用时都能正确找到模块
+# os.path.abspath() 不解析符号链接，当入口是 /usr/local/bin/ksightCli 软链接时会算出错误路径
+script_dir = os.path.dirname(os.path.realpath(__file__))
 project_root = os.path.dirname(script_dir)
 for p in [script_dir, project_root]:
     if p not in sys.path:

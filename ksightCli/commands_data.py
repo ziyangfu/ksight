@@ -138,7 +138,9 @@ COMMANDS = {
             "-p",
             "--pid",
             "-c",
-            "--cgroup"
+            "--cgroup",
+            "--agent",
+            "--ojson"
         ]
     },
     "tcpretrans": {
