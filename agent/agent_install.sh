@@ -59,17 +59,17 @@ DOTENV_TARGET="${INSTALL_DIR}/agent/.env"
 if [ -f "${PROJECT_ROOT}/.env" ]; then
     log_info "Copying .env from project root to ${DOTENV_TARGET}..."
     cp "${PROJECT_ROOT}/.env" "${DOTENV_TARGET}"
-    chmod 600 "${DOTENV_TARGET}"
+    chmod 644 "${DOTENV_TARGET}"
 elif [ -f "$(pwd)/.env" ]; then
     log_info "Copying .env from current directory to ${DOTENV_TARGET}..."
     cp "$(pwd)/.env" "${DOTENV_TARGET}"
-    chmod 600 "${DOTENV_TARGET}"
+    chmod 644 "${DOTENV_TARGET}"
 fi
 
 if [ ! -f "${DOTENV_TARGET}" ]; then
     log_warn "No .env file found. Creating an empty one in ${DOTENV_TARGET}."
     touch "${DOTENV_TARGET}"
-    chmod 600 "${DOTENV_TARGET}"
+    chmod 644 "${DOTENV_TARGET}"
 fi
 
 log_info "Agent installation finished successfully."
