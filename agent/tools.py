@@ -206,14 +206,45 @@ class ToolExecutor:
             if "--ojson" not in cmd:
                 cmd.append("--ojson")
             
-            res = run_command(cmd, sudo=True, env=env)
+            # 由于 ksight 工具需要 root 权限，必须提权
+            if os.getuid() != 0:
+                cmd = ["sudo", "-n", "-E"] + cmd
             
-            # 尝试从 UDS 获取结构化结果
-            uds_res = server.receive_json(timeout=3.0)
-            if uds_res is not None:
-                return json.dumps(uds_res, indent=2, ensure_ascii=False)
-            
-            # 如果 UDS 失败，回退到 stdout
-            return str(res)
+            try:
+                # 异步启动进程，使得 UDS Server 可以并发 Accept
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    env=env
+                )
+                
+                # 尝试从 UDS 获取结构化数据，超时时间给足够短（失败说明工具本身没进正确逻辑或退出太快）
+                uds_res = server.receive_json(timeout=5.0)
+                
+                # 获取命令执行的最终标准输出和错误（设置合理超时）
+                try:
+                    stdout, stderr = process.communicate(timeout=30.0)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    stdout, stderr = process.communicate()
+                
+                # 拦截特定的 sudo 权限错误，给 AI 明确的指导，以便让 AI 告诉用户
+                if process.returncode != 0 and "sudo: a password is required" in stderr:
+                    return (
+                        "权限错误：调用底层系统分析工具需要 root(sudo) 权限。\n"
+                        "请建议用户停止当前会话，使用 `sudo ksightCli agent chat` 命令重新进入智能系统诊断。"
+                    )
+                
+                if uds_res is not None:
+                    return json.dumps(uds_res, indent=2, ensure_ascii=False)
+                
+                # 如果 UDS 失败，回退到 stderr / stdout 结合
+                if process.returncode != 0 and stderr:
+                    return f"Error: {stderr}\nOutput: {stdout}"
+                return stdout or "Command returned empty output and no UDS data."
+            except Exception as e:
+                return f"Error spawning command: {e}"
 
 tool_executor = ToolExecutor()

@@ -95,6 +95,8 @@ def run_agent_chat(client_type: str = "remote", model_name: Optional[str] = None
             
         except KeyboardInterrupt:
             break
+        except EOFError:
+            break
         except Exception as e:
             logger.error(f"Error: {e}")
             print(f"发生错误: {e}")
