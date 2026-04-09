@@ -16,9 +16,8 @@ def test():
     
     print(f"UDS Server listening on {sock_path}")
     
-    # Run tcpnagle
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    bin_path = os.path.join(script_dir, "build_tmp/src/net/tcpnagle/tcpnagle")
+    # Run tcpnagle — 使用已安装的 binary
+    bin_path = "/usr/local/bin/ksight/net/tcpnagle/bin/tcpnagle"
     
     if not os.path.exists(bin_path):
         print(f"Error: {bin_path} not found")
